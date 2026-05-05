@@ -181,11 +181,7 @@
   PaydApp.mountShell({
     active: 'clients',
     title: 'Клиент',
-    breadcrumbs: [
-      { label: 'Главная', href: 'dashboard.html' },
-      { label: 'Клиенты', href: 'clients.html' },
-      { label: 'Карточка' }
-    ]
+    breadcrumbs: []
   });
 
   const fmt = (v) => Math.round(+v || 0).toLocaleString('ru-RU').replace(/,/g, ' ') + ' ₽';

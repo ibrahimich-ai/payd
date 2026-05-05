@@ -1074,11 +1074,7 @@
   PaydApp.mountShell({
     active: _section.active,
     title: `Заявка №${_app.number}`,
-    breadcrumbs: [
-      { label: 'Главная', href: 'dashboard.html' },
-      { label: _section.label, href: _backUrl },
-      { label: `#${_app.number}` }
-    ]
+    breadcrumbs: []
   });
 
   // ===== Render application data =====
