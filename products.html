@@ -213,6 +213,15 @@
       <input class="input" id="cat-new-name" placeholder="Название новой категории" />
       <button class="btn primary" id="cat-add" data-no-handler="true">+ Добавить</button>
     </div>
+    <div style="margin-top: 12px; padding: 12px; background: var(--surface-2); border-radius: 8px; font-size: 12px;">
+      <div style="font-weight: 600; margin-bottom: 6px;">Готовые шаблоны:</div>
+      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+        <button class="btn sm" id="seed-phones" data-no-handler="true">📱 iPhone (13 моделей)</button>
+        <button class="btn sm" id="seed-samsung" data-no-handler="true">📱 Samsung Galaxy</button>
+        <button class="btn sm" id="seed-laptops" data-no-handler="true">💻 Ноутбуки (Apple/Dell/Lenovo)</button>
+      </div>
+      <div style="margin-top: 6px; color: var(--text-3); font-size: 11px;">Добавит группы и подгруппы под нужный бренд</div>
+    </div>
     <div class="modal-actions">
       <button class="btn primary" id="cat-close" data-no-handler="true">Готово</button>
     </div>
@@ -632,6 +641,81 @@
   });
   document.getElementById('cat-new-name').addEventListener('keydown', e => {
     if (e.key === 'Enter') document.getElementById('cat-add').click();
+  });
+
+  // ============ Seed templates ============
+  function seedTemplate(rootName, brandName, models) {
+    const cats = loadCats();
+    // Find or create root
+    let root = cats.find(c => c.name === rootName && !c.parent);
+    if (!root) {
+      root = { id: newCatId(), name: rootName, parent: null };
+      cats.push(root);
+    }
+    // Find or create brand
+    let brand = cats.find(c => c.name === brandName && c.parent === root.id);
+    if (!brand) {
+      brand = { id: newCatId(), name: brandName, parent: root.id };
+      cats.push(brand);
+    }
+    // Add models (skip duplicates)
+    let added = 0;
+    models.forEach(m => {
+      if (!cats.some(c => c.name === m && c.parent === brand.id)) {
+        cats.push({ id: newCatId(), name: m, parent: brand.id });
+        added++;
+      }
+    });
+    saveCats(cats);
+    expandedCats.add(root.id);
+    expandedCats.add(brand.id);
+    return { added, brand: brand.name, root: root.name };
+  }
+
+  document.getElementById('seed-phones').addEventListener('click', () => {
+    const models = [
+      'iPhone 12','iPhone 13','iPhone 14','iPhone 15',
+      'iPhone 16E','iPhone 16','iPhone 16 Pro','iPhone 16 Pro Max',
+      'iPhone 17 Air','iPhone 17','iPhone 17 Pro','iPhone 17 Pro Max','iPhone 17E'
+    ];
+    const { added, brand } = seedTemplate('Смартфоны', 'iPhone', models);
+    PaydApp.toast(added ? `Добавлено ${added} моделей в «${brand}»` : 'Все модели уже есть', added ? 'success' : 'info');
+    renderCatManage();
+    refresh();
+  });
+
+  document.getElementById('seed-samsung').addEventListener('click', () => {
+    const models = [
+      'Galaxy S25','Galaxy S25 Ultra','Galaxy S24','Galaxy S24 Ultra',
+      'Galaxy A55','Galaxy A35','Galaxy A25',
+      'Galaxy Z Fold 6','Galaxy Z Flip 6'
+    ];
+    const { added, brand } = seedTemplate('Смартфоны', 'Samsung', models);
+    PaydApp.toast(added ? `Добавлено ${added} моделей в «${brand}»` : 'Все модели уже есть', added ? 'success' : 'info');
+    renderCatManage();
+    refresh();
+  });
+
+  document.getElementById('seed-laptops').addEventListener('click', () => {
+    const cats = loadCats();
+    let root = cats.find(c => c.name === 'Ноутбуки' && !c.parent);
+    if (!root) {
+      root = { id: newCatId(), name: 'Ноутбуки', parent: null };
+      cats.push(root);
+    }
+    const brands = ['Apple', 'Dell', 'Lenovo', 'HP', 'ASUS'];
+    let added = 0;
+    brands.forEach(name => {
+      if (!cats.some(c => c.name === name && c.parent === root.id)) {
+        cats.push({ id: newCatId(), name, parent: root.id });
+        added++;
+      }
+    });
+    saveCats(cats);
+    expandedCats.add(root.id);
+    PaydApp.toast(added ? `Добавлено ${added} брендов в «Ноутбуки»` : 'Все бренды уже есть', added ? 'success' : 'info');
+    renderCatManage();
+    refresh();
   });
 
   // ============ Search ============
