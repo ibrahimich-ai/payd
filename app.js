@@ -576,8 +576,8 @@ function confirmDialog({ title = 'Подтвердите действие', mess
       <h3>${title}</h3>
       <p>${message}</p>
       <div class="payd-modal-actions">
-        <button class="btn cancel">${cancelText}</button>
-        <button class="btn ${danger ? 'danger' : 'primary'} ok">${okText}</button>
+        <button class="btn cancel" data-no-handler="true">${cancelText}</button>
+        <button class="btn ${danger ? 'danger' : 'primary'} ok" data-no-handler="true">${okText}</button>
       </div>
     </div>
   `;
@@ -710,6 +710,8 @@ function initButtonHandlers() {
     const btn = e.target.closest('button.btn, button.icon-btn, .btn:not(a)');
     if (!btn || btn.tagName === 'A' || btn.hasAttribute('onclick') || btn.closest('form')) return;
     if (btn.dataset.noHandler === 'true') return;
+    // Skip clicks inside confirm/own modals
+    if (btn.closest('.payd-modal-backdrop, .modal-bg')) return;
 
     handleSemanticButton(e, btn);
   });

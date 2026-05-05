@@ -63,7 +63,7 @@
   .partner-name { font-size: 15px; font-weight: 700; }
   .partner-meta { font-size: 11px; color: var(--text-3); margin-top: 2px; }
 
-  .partner-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .partner-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); }
   .ps-item .l { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; }
   .ps-item .v { font-size: 14px; font-weight: 700; margin-top: 2px; }
 
@@ -241,14 +241,6 @@
               <input class="input" id="p-name" value="${data.name || ''}" placeholder="Например: ТехноМир — Грозный" />
             </div>
             <div class="field">
-              <label class="field-label">Юр. лицо</label>
-              <input class="input" id="p-legal" value="${data.legal || ''}" placeholder="ИП Тагаев Р.А. / ООО ..." />
-            </div>
-            <div class="field">
-              <label class="field-label">ИНН</label>
-              <input class="input" id="p-inn" value="${data.inn || ''}" placeholder="200148273912" />
-            </div>
-            <div class="field">
               <label class="field-label">Контактное лицо</label>
               <input class="input" id="p-contact" value="${data.contact || ''}" placeholder="Тагаев Руслан Анатольевич" />
             </div>
@@ -256,16 +248,12 @@
               <label class="field-label">Адрес торговой точки *</label>
               <input class="input" id="p-address" value="${data.address || ''}" placeholder="Грозный, пр. Путина, 18" />
             </div>
-            <div class="field">
+            <div class="field" style="grid-column: span 2;">
               <label class="field-label">Телефон</label>
               <input class="input" id="p-phone" value="${data.phone || ''}" placeholder="+7 8712 22-44-66" />
             </div>
-            <div class="field">
-              <label class="field-label">Email</label>
-              <input class="input" id="p-email" value="${data.email || ''}" placeholder="info@partner.ru" />
-            </div>
           </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
             <div class="field">
               <label class="field-label">Категория</label>
               <select class="select" id="p-category">${sel(data.category || 'phone', [
@@ -283,22 +271,12 @@
                 ['indigo','Индиго'],['violet','Сиреневый'],['gray','Серый']
               ])}</select>
             </div>
-            <div class="field">
-              <label class="field-label">Комиссия Payd</label>
-              <input class="input" id="p-commission" value="${data.commission || '4'}" placeholder="4" />
-            </div>
           </div>
           <div class="field">
             <label class="field-label">Статус</label>
             <select class="select" id="p-status">${sel(data.status || 'success', [
               ['success','Активный'],['gray','Новый'],['warning','Низкая активность'],['danger','Заморожен']
             ])}</select>
-          </div>
-
-          <div style="border-top: 1px solid var(--border); padding-top: 14px; margin-top: 4px;">
-            <div style="font-size: 12px; color: var(--text-3); line-height: 1.5;">
-              Тарифы единые для всех партнёров — настраиваются в разделе <a href="settings.html" style="color: var(--primary); font-weight: 600;">Настройки → Тарифы</a>.
-            </div>
           </div>
         </div>
       `;
@@ -307,15 +285,11 @@
     function readForm(modal) {
       return {
         name: modal.querySelector('#p-name').value.trim(),
-        legal: modal.querySelector('#p-legal').value.trim(),
-        inn: modal.querySelector('#p-inn').value.trim(),
         contact: modal.querySelector('#p-contact').value.trim(),
         address: modal.querySelector('#p-address').value.trim(),
         phone: modal.querySelector('#p-phone').value.trim(),
-        email: modal.querySelector('#p-email').value.trim(),
         category: modal.querySelector('#p-category').value,
         color: modal.querySelector('#p-color').value,
-        commission: modal.querySelector('#p-commission').value.replace(/\D/g, '') || '4',
         status: modal.querySelector('#p-status').value
       };
     }
@@ -334,12 +308,13 @@
       const card = document.createElement('div');
       card.className = 'partner-card';
       card.dataset.partner = JSON.stringify(data);
+      const meta = [data.contact, data.address, data.phone].filter(Boolean).join(' · ');
       card.innerHTML = `
         <div class="partner-head">
           <div class="partner-logo" style="background: ${palette.bg}; color: ${palette.color};">${icon}</div>
           <div style="flex: 1; min-width: 0;">
             <div class="partner-name">${data.name}</div>
-            <div class="partner-meta">${data.legal}${data.address ? ' · ' + data.address : ''}</div>
+            <div class="partner-meta">${meta || '—'}</div>
             <div class="partner-tags">
               <span class="badge ${statusCls}">${statusLabel}</span>
             </div>
@@ -348,7 +323,6 @@
         <div class="partner-stats">
           <div class="ps-item"><div class="l">Сделок</div><div class="v">${isNew ? '0' : (data.deals || '0')}</div></div>
           <div class="ps-item"><div class="l">Оборот</div><div class="v">${isNew ? '0 ₽' : (data.turnover || '0 ₽')}</div></div>
-          <div class="ps-item"><div class="l">Комиссия</div><div class="v" style="color: var(--success);">${data.commission}%</div></div>
         </div>
       `;
       return card;
