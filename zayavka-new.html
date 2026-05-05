@@ -462,8 +462,23 @@
     // 3. Applications (used to extract previous clients/products)
     try { allApps = await PaydDB.list('applications') || []; } catch (_) { allApps = []; }
 
-    // Distinct clients with phone/passport/address from previous apps
+    // Distinct clients: from manual list + previous applications
     const clientsMap = {};
+    // Manual clients (created on clients.html)
+    try {
+      const manual = JSON.parse(localStorage.getItem('payd.clients.v1') || '{}');
+      Object.values(manual).forEach(c => {
+        if (!c.name) return;
+        clientsMap[c.name] = {
+          _label: c.name,
+          name: c.name,
+          phone: c.phone || '',
+          passport: c.passport || '',
+          address: c.address || ''
+        };
+      });
+    } catch (_) {}
+    // From applications
     allApps.forEach(a => {
       const name = a.client_name || a.client?.name;
       if (!name) return;

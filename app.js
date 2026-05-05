@@ -157,6 +157,9 @@ function buildTopbar(opts = {}) {
   return `
     <div class="topbar">
       <div class="topbar-left">
+        <button class="icon-btn tb-back-btn" id="tb-back-btn" data-no-handler="true" title="Назад" aria-label="Назад" style="margin-right:6px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        </button>
         <div>
           ${crumbs}
           <div class="page-title">${title}</div>
@@ -217,6 +220,25 @@ function mountShell({ active, title, breadcrumbs, actions }) {
   initButtonHandlers();
   initMobileSidebar();
   initTopbarCalc();
+  initTopbarBack({ active });
+}
+
+function initTopbarBack({ active }) {
+  const btn = document.getElementById('tb-back-btn');
+  if (!btn) return;
+  // Скрываем на дашборде — там некуда возвращаться
+  if (active === 'dashboard') {
+    btn.style.display = 'none';
+    return;
+  }
+  btn.addEventListener('click', e => {
+    e.preventDefault();
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.location.href = 'dashboard.html';
+    }
+  });
 }
 
 /* ============================================================

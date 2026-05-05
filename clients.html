@@ -25,6 +25,29 @@
   .ccm-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-top: 12px; border-top: 1px solid var(--border); }
   .ccm-stat .l { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; }
   .ccm-stat .v { font-size: 14px; font-weight: 700; margin-top: 2px; }
+
+  .empty-state { padding: 60px 20px; text-align: center; color: var(--text-3); font-size: 14px; }
+  .empty-state svg { margin: 0 auto 12px; opacity: .4; }
+
+  .modal-bg {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(15, 23, 42, .55);
+    z-index: 1000;
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    max-width: 540px; width: 100%;
+    padding: 24px;
+  }
+  .modal h3 { font-size: 17px; font-weight: 700; margin-bottom: 16px; }
+  .modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 </style>
 </head>
 <body>
@@ -34,14 +57,14 @@
 <div class="page-head">
   <div>
     <h1>Клиенты</h1>
-    <div class="desc">База клиентов · 1 248 человек</div>
+    <div class="desc" id="cl-desc">База клиентов</div>
   </div>
   <div class="page-head-actions">
-    <button class="btn">
+    <button class="btn" id="cl-export" data-no-handler="true">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Экспорт
     </button>
-    <button class="btn primary">
+    <button class="btn primary" id="cl-new" data-no-handler="true">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Новый клиент
     </button>
@@ -51,311 +74,76 @@
 <div class="stat-grid cols-4 mb-5">
   <div class="stat" style="padding: 14px 16px;">
     <div class="stat-label">Всего клиентов</div>
-    <div class="stat-value" style="font-size: 22px;">1 248</div>
-    <div class="stat-sub" style="color: var(--success);">+47 за месяц</div>
+    <div class="stat-value" style="font-size: 22px;" id="kpi-total">0</div>
+    <div class="stat-sub" id="kpi-total-sub">—</div>
   </div>
   <div class="stat" style="padding: 14px 16px;">
     <div class="stat-label">Активные</div>
-    <div class="stat-value" style="font-size: 22px; color: var(--primary);">147</div>
-    <div class="stat-sub">С действующими сделками</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--primary);" id="kpi-active">0</div>
+    <div class="stat-sub">с действующими сделками</div>
   </div>
   <div class="stat" style="padding: 14px 16px;">
     <div class="stat-label">Постоянные</div>
-    <div class="stat-value" style="font-size: 22px; color: var(--success);">328</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--success);" id="kpi-regular">0</div>
     <div class="stat-sub">2+ закрытых сделки</div>
   </div>
   <div class="stat" style="padding: 14px 16px;">
     <div class="stat-label">VIP клиенты</div>
-    <div class="stat-value" style="font-size: 22px; color: var(--warning);">42</div>
-    <div class="stat-sub">5+ сделок · персональные условия</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--warning);" id="kpi-vip">0</div>
+    <div class="stat-sub">5+ сделок</div>
   </div>
-</div>
-
-<div class="chip-row mb-4">
-  <div class="chip active">Все <span class="count">1 248</span></div>
-  <div class="chip">Активные <span class="count">147</span></div>
-  <div class="chip">VIP <span class="count">42</span></div>
-  <div class="chip">Постоянные <span class="count">328</span></div>
-  <div class="chip">Новые <span class="count">47</span></div>
-  <div class="chip">Просрочка <span class="count">23</span></div>
-  <div class="chip">Чёрный список <span class="count">12</span></div>
 </div>
 
 <div class="filter-bar">
   <div class="filter-search">
     <span class="si"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
-    <input type="text" placeholder="Поиск по ФИО, телефону, ИНН, паспорту..." />
-  </div>
-  <div class="filter-extras">
-    <button class="btn sm">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-      Список
-    </button>
-    <button class="btn sm" style="border-color: var(--primary); color: var(--primary);">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-      Карточки
-    </button>
+    <input type="text" id="cl-search" placeholder="Поиск по ФИО, телефону, паспорту..." />
   </div>
 </div>
 
-<div class="clients-grid">
-  <div class="client-card-mini" onclick="window.location='client.html'">
-    <div class="ccm-head">
-      <div class="avatar c1 lg">ДЛ</div>
-      <div style="flex: 1; min-width: 0;">
-        <div class="ccm-name">Даурбекова Луиза Саид-Усмановна</div>
-        <div class="ccm-meta">+7 989 918-51-58 · 53 года</div>
-        <div style="margin-top: 6px;"><span class="badge success">Постоянный</span></div>
-      </div>
-    </div>
-    <div class="ccm-stats">
-      <div class="ccm-stat">
-        <div class="l">Сделок</div>
-        <div class="v">3</div>
-      </div>
-      <div class="ccm-stat">
-        <div class="l">Сумма</div>
-        <div class="v">38 400 ₽</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="client-card-mini" onclick="window.location='client.html'">
-    <div class="ccm-head">
-      <div class="avatar c2 lg">ТР</div>
-      <div style="flex: 1; min-width: 0;">
-        <div class="ccm-name">Тазуев Рамзан Султанович</div>
-        <div class="ccm-meta">+7 928 891-23-45 · 41 год</div>
-        <div style="margin-top: 6px;"><span class="badge primary">Новый</span></div>
-      </div>
-    </div>
-    <div class="ccm-stats">
-      <div class="ccm-stat">
-        <div class="l">Сделок</div>
-        <div class="v">1</div>
-      </div>
-      <div class="ccm-stat">
-        <div class="l">Сумма</div>
-        <div class="v">84 200 ₽</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="client-card-mini" onclick="window.location='client.html'">
-    <div class="ccm-head">
-      <div class="avatar c3 lg">ХА</div>
-      <div style="flex: 1; min-width: 0;">
-        <div class="ccm-name">Хасиев Ахмед Хамзатович</div>
-        <div class="ccm-meta">+7 928 449-12-08 · 35 лет</div>
-        <div style="margin-top: 6px;"><span class="badge warning">VIP · 7 сделок</span></div>
-      </div>
-    </div>
-    <div class="ccm-stats">
-      <div class="ccm-stat">
-        <div class="l">Сделок</div>
-        <div class="v">7</div>
-      </div>
-      <div class="ccm-stat">
-        <div class="l">Сумма</div>
-        <div class="v">412 000 ₽</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="client-card-mini" onclick="window.location='client.html'">
-    <div class="ccm-head">
-      <div class="avatar c4 lg">ИЯ</div>
-      <div style="flex: 1; min-width: 0;">
-        <div class="ccm-name">Исраилов Якуб Анзорович</div>
-        <div class="ccm-meta">+7 963 311-45-78 · 29 лет</div>
-        <div style="margin-top: 6px;"><span class="badge danger">Просрочка 5 дн</span></div>
-      </div>
-    </div>
-    <div class="ccm-stats">
-      <div class="ccm-stat">
-        <div class="l">Сделок</div>
-        <div class="v">2</div>
-      </div>
-      <div class="ccm-stat">
-        <div class="l">Сумма</div>
-        <div class="v">94 600 ₽</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="client-card-mini" onclick="window.location='client.html'">
-    <div class="ccm-head">
-      <div class="avatar c5 lg">ЭП</div>
-      <div style="flex: 1; min-width: 0;">
-        <div class="ccm-name">Эльмурзаева Петимат Алиевна</div>
-        <div class="ccm-meta">+7 963 712-44-89 · 47 лет</div>
-        <div style="margin-top: 6px;"><span class="badge gray">Постоянный</span></div>
-      </div>
-    </div>
-    <div class="ccm-stats">
-      <div class="ccm-stat">
-        <div class="l">Сделок</div>
-        <div class="v">4</div>
-      </div>
-      <div class="ccm-stat">
-        <div class="l">Сумма</div>
-        <div class="v">186 400 ₽</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="client-card-mini" onclick="window.location='client.html'">
-    <div class="ccm-head">
-      <div class="avatar c6 lg">ГИ</div>
-      <div style="flex: 1; min-width: 0;">
-        <div class="ccm-name">Гайтаев Ислам Магомедович</div>
-        <div class="ccm-meta">+7 938 022-87-13 · 36 лет</div>
-        <div style="margin-top: 6px;"><span class="badge warning dot">На проверке</span></div>
-      </div>
-    </div>
-    <div class="ccm-stats">
-      <div class="ccm-stat">
-        <div class="l">Сделок</div>
-        <div class="v">3</div>
-      </div>
-      <div class="ccm-stat">
-        <div class="l">Сумма</div>
-        <div class="v">218 200 ₽</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="client-card-mini" onclick="window.location='client.html'">
-    <div class="ccm-head">
-      <div class="avatar c7 lg">МА</div>
-      <div style="flex: 1; min-width: 0;">
-        <div class="ccm-name">Магомедов Адам Султанович</div>
-        <div class="ccm-meta">+7 989 156-22-44 · 32 года</div>
-        <div style="margin-top: 6px;"><span class="badge success">Постоянный</span></div>
-      </div>
-    </div>
-    <div class="ccm-stats">
-      <div class="ccm-stat">
-        <div class="l">Сделок</div>
-        <div class="v">5</div>
-      </div>
-      <div class="ccm-stat">
-        <div class="l">Сумма</div>
-        <div class="v">324 800 ₽</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="client-card-mini" onclick="window.location='client.html'">
-    <div class="ccm-head">
-      <div class="avatar c1 lg">УМ</div>
-      <div style="flex: 1; min-width: 0;">
-        <div class="ccm-name">Усманов Магомед Идрисович</div>
-        <div class="ccm-meta">+7 928 778-04-12 · 38 лет</div>
-        <div style="margin-top: 6px;"><span class="badge gray">Постоянный</span></div>
-      </div>
-    </div>
-    <div class="ccm-stats">
-      <div class="ccm-stat">
-        <div class="l">Сделок</div>
-        <div class="v">2</div>
-      </div>
-      <div class="ccm-stat">
-        <div class="l">Сумма</div>
-        <div class="v">128 500 ₽</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="client-card-mini" onclick="window.location='client.html'">
-    <div class="ccm-head">
-      <div class="avatar c2 lg">АЗ</div>
-      <div style="flex: 1; min-width: 0;">
-        <div class="ccm-name">Абдулаева Зарема Магомедовна</div>
-        <div class="ccm-meta">+7 928 005-67-21 · 28 лет</div>
-        <div style="margin-top: 6px;"><span class="badge primary">Новый</span></div>
-      </div>
-    </div>
-    <div class="ccm-stats">
-      <div class="ccm-stat">
-        <div class="l">Сделок</div>
-        <div class="v">1</div>
-      </div>
-      <div class="ccm-stat">
-        <div class="l">Сумма</div>
-        <div class="v">58 200 ₽</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="client-card-mini" onclick="window.location='client.html'">
-    <div class="ccm-head">
-      <div class="avatar c3 lg">ВА</div>
-      <div style="flex: 1; min-width: 0;">
-        <div class="ccm-name">Вагапов Адам Русланович</div>
-        <div class="ccm-meta">+7 989 220-11-09 · 26 лет</div>
-        <div style="margin-top: 6px;"><span class="badge gray">Активный</span></div>
-      </div>
-    </div>
-    <div class="ccm-stats">
-      <div class="ccm-stat">
-        <div class="l">Сделок</div>
-        <div class="v">3</div>
-      </div>
-      <div class="ccm-stat">
-        <div class="l">Сумма</div>
-        <div class="v">142 000 ₽</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="client-card-mini" onclick="window.location='client.html'">
-    <div class="ccm-head">
-      <div class="avatar c4 lg">ДА</div>
-      <div style="flex: 1; min-width: 0;">
-        <div class="ccm-name">Дудаев Анзор Магомедович</div>
-        <div class="ccm-meta">+7 938 411-08-92 · 44 года</div>
-        <div style="margin-top: 6px;"><span class="badge danger">Безнадёжный · 38 дн</span></div>
-      </div>
-    </div>
-    <div class="ccm-stats">
-      <div class="ccm-stat">
-        <div class="l">Сделок</div>
-        <div class="v">1</div>
-      </div>
-      <div class="ccm-stat">
-        <div class="l">Сумма</div>
-        <div class="v">88 200 ₽</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="client-card-mini" onclick="window.location='client.html'">
-    <div class="ccm-head">
-      <div class="avatar c5 lg">КА</div>
-      <div style="flex: 1; min-width: 0;">
-        <div class="ccm-name">Кадиров Артур Имранович</div>
-        <div class="ccm-meta">+7 928 612-33-77 · 31 год</div>
-        <div style="margin-top: 6px;"><span class="badge warning">Просрочка 3 дн</span></div>
-      </div>
-    </div>
-    <div class="ccm-stats">
-      <div class="ccm-stat">
-        <div class="l">Сделок</div>
-        <div class="v">2</div>
-      </div>
-      <div class="ccm-stat">
-        <div class="l">Сумма</div>
-        <div class="v">214 800 ₽</div>
-      </div>
-    </div>
-  </div>
+<div class="clients-grid" id="cl-grid">
+  <div class="empty-state" style="grid-column:1/-1;">Загрузка...</div>
 </div>
 
-<div style="padding: 20px 0; text-align: center;">
-  <button class="btn">Загрузить ещё (1 236 клиентов)</button>
 </div>
 
+<!-- ============ NEW CLIENT MODAL ============ -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <h3>Новый клиент</h3>
+    <div class="modal-row">
+      <div class="field">
+        <label class="field-label">ФИО *</label>
+        <input class="input" id="m-name" placeholder="Иванов Иван Иванович" />
+      </div>
+      <div class="field">
+        <label class="field-label">Телефон *</label>
+        <input class="input" id="m-phone" placeholder="+7 ___ ___-__-__" />
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="field">
+        <label class="field-label">Дата рождения</label>
+        <input class="input" id="m-dob" type="date" />
+      </div>
+      <div class="field">
+        <label class="field-label">Паспорт (серия номер)</label>
+        <input class="input" id="m-passport" placeholder="0000 000000" />
+      </div>
+    </div>
+    <div class="field" style="margin-bottom: 12px;">
+      <label class="field-label">Адрес регистрации</label>
+      <input class="input" id="m-address" placeholder="г. Грозный, ул. ..." />
+    </div>
+    <div class="field">
+      <label class="field-label">Заметка (необязательно)</label>
+      <textarea class="textarea" id="m-note" placeholder="Любая информация — где работает, рекомендации и т.д."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="m-cancel" data-no-handler="true">Отмена</button>
+      <button class="btn primary" id="m-save" data-no-handler="true">Сохранить</button>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -366,6 +154,208 @@
     active: 'clients',
     title: 'Клиенты',
     breadcrumbs: [{ label: 'Главная', href: 'dashboard.html' }, { label: 'Клиенты' }]
+  });
+
+  const CLIENTS_KEY = 'payd.clients.v1';
+
+  function loadClients() {
+    try { return JSON.parse(localStorage.getItem(CLIENTS_KEY) || '{}'); }
+    catch (_) { return {}; }
+  }
+  function saveClients(map) {
+    localStorage.setItem(CLIENTS_KEY, JSON.stringify(map));
+  }
+
+  function escapeHtml(s) {
+    return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  }
+  const fmt = (v) => Math.round(+v || 0).toLocaleString('ru-RU').replace(/,/g, ' ') + ' ₽';
+  function getInitials(name) {
+    const parts = (name || '').trim().split(/\s+/);
+    return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || '?';
+  }
+  function ageFromDob(dob) {
+    if (!dob) return null;
+    const d = new Date(dob);
+    if (isNaN(d.getTime())) return null;
+    const diff = Date.now() - d.getTime();
+    return Math.floor(diff / (365.25 * 24 * 3600 * 1000));
+  }
+
+  // ============ Render ============
+  let clientsState = [];
+  async function refresh() {
+    if (!window.PaydDB) return;
+
+    const apps = await PaydDB.list('applications').catch(() => []);
+    const stored = loadClients();
+
+    // Build a map: phone -> client info
+    const byPhone = {};
+
+    // From manually-saved clients
+    Object.values(stored).forEach(c => {
+      const key = c.phone || c.name;
+      if (!key) return;
+      byPhone[key] = { ...c, _source: 'manual', deals: 0, sum: 0 };
+    });
+
+    // From applications
+    apps.forEach(a => {
+      const name = a.client_name || a.client?.name;
+      const phone = a.client_phone || a.client?.phone || '';
+      if (!name) return;
+      const key = phone || name;
+      if (!byPhone[key]) {
+        byPhone[key] = {
+          name, phone,
+          passport: a.client_passport || '',
+          address: a.client_address || '',
+          deals: 0, sum: 0,
+          _source: 'app'
+        };
+      }
+      byPhone[key].deals++;
+      byPhone[key].sum += (+(a.amount || a.calc?.price) || 0);
+    });
+
+    clientsState = Object.values(byPhone).sort((a, b) => b.sum - a.sum);
+    renderGrid();
+    renderStats();
+  }
+
+  function renderGrid() {
+    const q = (document.getElementById('cl-search')?.value || '').toLowerCase().trim();
+    const filtered = q
+      ? clientsState.filter(c => (c.name || '').toLowerCase().includes(q) || (c.phone || '').toLowerCase().includes(q) || (c.passport || '').toLowerCase().includes(q))
+      : clientsState;
+
+    const grid = document.getElementById('cl-grid');
+    if (!filtered.length) {
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1;">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>
+          <div>${q ? 'Никого не нашли' : 'Клиентов пока нет'}</div>
+          <div style="font-size:12px;margin-top:6px;">${q ? 'Измени запрос' : 'Нажми «Новый клиент» чтобы добавить'}</div>
+        </div>
+      `;
+      return;
+    }
+    grid.innerHTML = filtered.map((c, i) => {
+      const colors = ['c1','c2','c3','c4','c5','c6','c7'];
+      const cls = colors[i % colors.length];
+      const age = ageFromDob(c.dob);
+      const meta = [c.phone, age && age + ' лет'].filter(Boolean).join(' · ');
+      const badge = c.deals >= 5
+        ? '<span class="badge warning">VIP · ' + c.deals + ' сделок</span>'
+        : c.deals >= 2 ? '<span class="badge success">Постоянный</span>'
+        : c.deals === 1 ? '<span class="badge primary">Новый</span>'
+        : '<span class="badge gray">Без сделок</span>';
+      return `
+        <div class="client-card-mini" data-phone="${escapeHtml(c.phone)}" data-name="${escapeHtml(c.name)}">
+          <div class="ccm-head">
+            <div class="avatar ${cls} lg">${getInitials(c.name)}</div>
+            <div style="flex:1;min-width:0;">
+              <div class="ccm-name">${escapeHtml(c.name)}</div>
+              <div class="ccm-meta">${escapeHtml(meta || 'без контактов')}</div>
+              <div style="margin-top:6px;">${badge}</div>
+            </div>
+          </div>
+          <div class="ccm-stats">
+            <div class="ccm-stat"><div class="l">Сделок</div><div class="v">${c.deals}</div></div>
+            <div class="ccm-stat"><div class="l">Сумма</div><div class="v">${fmt(c.sum)}</div></div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    grid.querySelectorAll('.client-card-mini').forEach(card => {
+      card.addEventListener('click', () => {
+        const phone = card.dataset.phone || '';
+        const name = card.dataset.name || '';
+        // Open client.html with phone/name as query params (client.html should read them)
+        location.href = 'client.html?phone=' + encodeURIComponent(phone) + '&name=' + encodeURIComponent(name);
+      });
+    });
+  }
+
+  function renderStats() {
+    document.getElementById('kpi-total').textContent = clientsState.length;
+    document.getElementById('kpi-total-sub').textContent = 'База клиентов · ' + clientsState.length + ' ' +
+      (clientsState.length === 1 ? 'человек' : 'чел.');
+    document.getElementById('cl-desc').textContent = 'База клиентов · ' + clientsState.length + ' ' +
+      (clientsState.length === 1 ? 'человек' : 'чел.');
+    document.getElementById('kpi-active').textContent = clientsState.filter(c => c.deals > 0).length;
+    document.getElementById('kpi-regular').textContent = clientsState.filter(c => c.deals >= 2).length;
+    document.getElementById('kpi-vip').textContent = clientsState.filter(c => c.deals >= 5).length;
+  }
+
+  // ============ Search ============
+  document.getElementById('cl-search').addEventListener('input', renderGrid);
+
+  // ============ New client modal ============
+  const modalBg = document.getElementById('modal-bg');
+  function openModal() {
+    ['m-name','m-phone','m-dob','m-passport','m-address','m-note'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    modalBg.classList.add('open');
+    setTimeout(() => document.getElementById('m-name').focus(), 50);
+  }
+  function closeModal() { modalBg.classList.remove('open'); }
+
+  document.getElementById('cl-new').addEventListener('click', openModal);
+  document.getElementById('m-cancel').addEventListener('click', closeModal);
+  modalBg.addEventListener('click', e => { if (e.target === modalBg) closeModal(); });
+
+  document.getElementById('m-save').addEventListener('click', async () => {
+    const name = document.getElementById('m-name').value.trim();
+    const phone = document.getElementById('m-phone').value.trim();
+    if (!name) { PaydApp.toast('Укажите ФИО', 'error'); return; }
+    if (!phone) { PaydApp.toast('Укажите телефон', 'error'); return; }
+
+    const dob = document.getElementById('m-dob').value;
+    const passport = document.getElementById('m-passport').value.trim();
+    const address = document.getElementById('m-address').value.trim();
+    const note = document.getElementById('m-note').value.trim();
+
+    const map = loadClients();
+    const key = phone || name;
+    map[key] = {
+      name, phone, dob, passport, address, note,
+      created_at: new Date().toISOString()
+    };
+    saveClients(map);
+    PaydApp.toast('Клиент добавлен', 'success');
+    closeModal();
+    refresh();
+  });
+
+  // ============ Export ============
+  document.getElementById('cl-export').addEventListener('click', () => {
+    if (!clientsState.length) { PaydApp.toast('Список пуст — нечего экспортировать', 'info'); return; }
+    const rows = [['ФИО', 'Телефон', 'Паспорт', 'Адрес', 'Сделок', 'Сумма']];
+    clientsState.forEach(c => rows.push([c.name, c.phone, c.passport, c.address, c.deals, c.sum]));
+    const csv = rows.map(r => r.map(v => '"' + String(v ?? '').replace(/"/g, '""') + '"').join(',')).join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'clients-' + new Date().toISOString().slice(0, 10) + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    PaydApp.toast('Файл скачан', 'success');
+  });
+
+  refresh();
+
+  // Re-render when other tabs change applications
+  if (window.PaydDB?.subscribe) {
+    PaydDB.subscribe('applications', refresh);
+  }
+  window.addEventListener('storage', e => {
+    if (e.key === CLIENTS_KEY) refresh();
   });
 </script>
 </body>
