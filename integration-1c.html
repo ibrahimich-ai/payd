@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>1С УНФ — Интеграция — Payd</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  /* Connection hero */
+  .conn-hero {
+    background: linear-gradient(135deg, #fef3c7, #fef9c3);
+    border: 1px solid #fcd34d;
+    border-radius: var(--radius);
+    padding: 18px 22px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .conn-hero.ok { background: linear-gradient(135deg, #ecfdf5, #d1fae5); border-color: #a7f3d0; }
+  .conn-hero .ic-big {
+    width: 56px; height: 56px;
+    background: white;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    flex-shrink: 0;
+  }
+  .conn-hero .info { flex: 1; min-width: 0; }
+  .conn-hero .info .ttl { font-size: 16px; font-weight: 700; color: #1a2332; }
+  .conn-hero .info .sub { font-size: 13px; color: var(--text-2); margin-top: 2px; }
+  .conn-hero .info .meta { font-size: 11px; color: var(--text-3); margin-top: 6px; display: flex; gap: 14px; flex-wrap: wrap; }
+
+  /* Tabs styling */
+  .int-tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); padding: 0 4px; margin-bottom: 16px; overflow-x: auto; }
+  .int-tab { padding: 12px 18px; font-size: 13px; font-weight: 500; color: var(--text-2); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: all .15s; display: inline-flex; align-items: center; gap: 8px; }
+  .int-tab:hover { color: var(--text); }
+  .int-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 700; }
+  .int-tab .badge { background: var(--surface-2); color: var(--text-3); padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .int-tab.active .badge { background: var(--primary-soft); color: var(--primary); }
+
+  .int-content { display: none; }
+  .int-content.active { display: block; }
+
+  /* Reference mapping cards */
+  .ref-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 14px; }
+  .ref-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+  .ref-card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .ref-card-icon { width: 40px; height: 40px; background: var(--primary-soft); color: var(--primary); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px; }
+  .ref-card-title { font-size: 14px; font-weight: 700; }
+  .ref-card-subtitle { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+
+  .map-row { display: flex; align-items: center; gap: 12px; padding: 10px; background: var(--surface-2); border-radius: 8px; margin-bottom: 8px; font-size: 12px; }
+  .map-row .from, .map-row .to { flex: 1; min-width: 0; padding: 6px 10px; background: white; border: 1px solid var(--border); border-radius: 6px; }
+  .map-row .from { border-left: 3px solid var(--primary); }
+  .map-row .to { border-left: 3px solid var(--warning); }
+  .map-row .arrow { color: var(--text-3); }
+  .map-label { font-size: 9px; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; font-weight: 700; }
+  .map-val { font-size: 12px; font-weight: 600; }
+
+  .ref-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding-top: 12px; margin-top: 12px; border-top: 1px solid var(--border); }
+  .ref-stats .stat-mini .l { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; }
+  .ref-stats .stat-mini .v { font-size: 14px; font-weight: 700; margin-top: 2px; }
+  .ref-stats .stat-mini.ok .v { color: var(--success); }
+  .ref-stats .stat-mini.warn .v { color: var(--warning); }
+
+  /* Document rules */
+  .doc-rule { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 12px; }
+  .doc-rule-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+  .doc-rule-flow { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; flex-wrap: wrap; }
+  .doc-flow-box { padding: 10px 14px; border-radius: 10px; flex: 1; min-width: 200px; }
+  .doc-flow-box.payd { background: var(--primary-soft); border: 1px solid #bfdbfe; }
+  .doc-flow-box.unf { background: linear-gradient(135deg, #fef3c7, #fde68a); border: 1px solid #fcd34d; }
+  .doc-flow-box .l { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+  .doc-flow-box.payd .l { color: var(--primary); }
+  .doc-flow-box.unf .l { color: #92400e; }
+  .doc-flow-box .v { font-size: 13px; font-weight: 700; margin-top: 2px; color: var(--text); }
+  .doc-flow-arrow { font-size: 18px; color: var(--text-3); }
+  .doc-rule-body { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding-top: 14px; border-top: 1px dashed var(--border); }
+  @media (max-width: 800px) { .doc-rule-body { grid-template-columns: 1fr; } }
+  .doc-field { font-size: 12px; }
+  .doc-field .l { color: var(--text-3); margin-bottom: 2px; }
+  .doc-field .v { font-weight: 600; color: var(--text); }
+
+  /* Help guide */
+  .step-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; margin-bottom: 12px; display: flex; gap: 18px; }
+  .step-num { width: 40px; height: 40px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; flex-shrink: 0; }
+  .step-card.done .step-num { background: var(--success); }
+  .step-content { flex: 1; min-width: 0; }
+  .step-content h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+  .step-content p { font-size: 13px; color: var(--text-2); line-height: 1.6; margin-bottom: 8px; }
+  .step-content ul { margin: 8px 0 8px 16px; font-size: 13px; color: var(--text-2); line-height: 1.7; }
+  .step-content code { background: #f1f4f9; padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; color: #1a2332; }
+  .step-card .tip { background: linear-gradient(135deg, #eff6ff, #dbeafe); border-left: 3px solid var(--primary); padding: 10px 12px; border-radius: 6px; font-size: 12px; color: #1e40af; margin-top: 10px; }
+  .step-card .warn { background: linear-gradient(135deg, #fffbeb, #fef3c7); border-left: 3px solid var(--warning); padding: 10px 12px; border-radius: 6px; font-size: 12px; color: #92400e; margin-top: 10px; }
+
+  /* Sync log table */
+  .log-row { display: grid; grid-template-columns: 80px 1fr 1fr 1fr 110px; gap: 14px; padding: 12px 18px; border-bottom: 1px solid var(--border); align-items: center; font-size: 12px; }
+  .log-row:hover { background: var(--surface-2); }
+  .log-row .time { font-family: monospace; color: var(--text-3); }
+  .log-row .doc { font-weight: 600; }
+  .log-row .arrow { text-align: center; color: var(--text-3); }
+
+  .video-thumb { background: linear-gradient(135deg, #1a2332, #2563eb); border-radius: 12px; padding: 24px; color: white; text-align: center; cursor: pointer; }
+  .video-thumb .play { width: 56px; height: 56px; background: rgba(255,255,255,.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; backdrop-filter: blur(10px); }
+</style>
+</head>
+<body>
+
+<div id="app-root">
+
+<div class="page-head">
+  <div>
+    <h1>1С УНФ 3.0 — Интеграция</h1>
+    <div class="desc">Обмен данными между Payd и «Управление нашей фирмой» · автоматическое создание документов</div>
+  </div>
+  <div class="page-head-actions">
+    <button class="btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      Синхронизировать сейчас
+    </button>
+    <button class="btn primary" id="btn-test-conn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      Проверить связь
+    </button>
+  </div>
+</div>
+
+<!-- CONNECTION STATUS HERO -->
+<div class="conn-hero ok" id="conn-status">
+  <div class="ic-big" style="background: white; color: #047857;">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>
+  </div>
+  <div class="info">
+    <div class="ttl" style="color: #047857;">Подключение установлено</div>
+    <div class="sub">База: <code style="background: white; padding: 2px 6px; border-radius: 3px;">http://1c.payd.local/unf/odata/standard.odata</code></div>
+    <div class="meta">
+      <span><b>Версия:</b> УНФ 3.0.6.142</span>
+      <span><b>Организация:</b> ООО «Payd»</span>
+      <span><b>Последняя синхронизация:</b> 2 минуты назад</span>
+      <span><b>Расписание:</b> каждые 10 минут</span>
+    </div>
+  </div>
+  <div style="text-align: right;">
+    <span class="badge success dot">Live</span>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stat-grid cols-4 mb-5">
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label">Документов сегодня</div>
+    <div class="stat-value" style="font-size: 22px;">47</div>
+    <div class="stat-sub" style="color: var(--success);">↑ ПКО, РКО, Поступления</div>
+  </div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label" style="color: var(--success);">Успешных</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--success);">45</div>
+    <div class="stat-sub">95,7% доставка</div>
+  </div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label" style="color: var(--danger);">С ошибками</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--danger);">2</div>
+    <div class="stat-sub">Артикулы не найдены</div>
+  </div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label">Справочники синхр.</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--primary);">5 / 5</div>
+    <div class="stat-sub">Все актуальны</div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="int-tabs">
+  <div class="int-tab active" data-tab="conn">⚙ Подключение</div>
+  <div class="int-tab" data-tab="refs">📚 Справочники <span class="badge">5</span></div>
+  <div class="int-tab" data-tab="docs">📄 Правила документов <span class="badge">6</span></div>
+  <div class="int-tab" data-tab="log">📋 Журнал обмена <span class="badge">47</span></div>
+  <div class="int-tab" data-tab="help">💡 Помощь новичку</div>
+</div>
+
+<!-- ========== TAB: CONNECTION ========== -->
+<div class="int-content active" data-content="conn">
+  <div class="card">
+    <div class="card-hd">
+      <h3>Подключение к базе 1С УНФ 3.0</h3>
+      <span class="status-dot success">Активно</span>
+    </div>
+    <div class="card-bd">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+        <div class="field">
+          <label class="field-label">Тип подключения</label>
+          <select class="select">
+            <option selected>OData (REST API) — рекомендуется</option>
+            <option>HTTP-сервис (HTTP-запросы)</option>
+            <option>Web-сервис (SOAP)</option>
+          </select>
+          <div class="field-help">OData — самый простой способ для УНФ 3.0</div>
+        </div>
+        <div class="field">
+          <label class="field-label">Версия конфигурации</label>
+          <select class="select">
+            <option selected>УНФ 3.0 (3.0.6.142)</option>
+            <option>УНФ 1.6</option>
+          </select>
+        </div>
+        <div class="field" style="grid-column: span 2;">
+          <label class="field-label">URL базы 1С (OData endpoint)</label>
+          <input class="input" value="http://1c.payd.local/unf/odata/standard.odata" />
+          <div class="field-help">Откройте 1С → Администрирование → Сервис → Публикация на веб-сервере → скопируйте адрес</div>
+        </div>
+        <div class="field">
+          <label class="field-label">Логин</label>
+          <input class="input" value="payd_api" />
+        </div>
+        <div class="field">
+          <label class="field-label">Пароль</label>
+          <input class="input" type="password" value="••••••••••••" />
+        </div>
+        <div class="field">
+          <label class="field-label">Организация в 1С</label>
+          <select class="select">
+            <option selected>ООО «Payd»</option>
+            <option>ИП Джабраилов И.М.</option>
+          </select>
+          <div class="field-help">От лица какой организации создавать документы</div>
+        </div>
+        <div class="field">
+          <label class="field-label">Расписание обмена</label>
+          <select class="select">
+            <option>В реальном времени (мгновенно)</option>
+            <option selected>Каждые 10 минут</option>
+            <option>Каждый час</option>
+            <option>Раз в сутки в 23:00</option>
+            <option>По кнопке (вручную)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="alert info" style="margin-bottom: 16px;">
+        <div class="ai"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div>
+        <div><b>Что нужно настроить в 1С УНФ 3.0:</b><br/>1. Опубликуйте базу на веб-сервере (IIS / Apache)<br/>2. Включите OData в Администрировании<br/>3. Создайте пользователя <code>payd_api</code> с правами «API + чтение/запись справочников и документов»</div>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <button class="btn primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>
+          Сохранить настройки
+        </button>
+        <button class="btn">Тест соединения</button>
+        <button class="btn danger" style="margin-left: auto;">Отключить интеграцию</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt-4">
+    <div class="card-hd">
+      <h3>Что синхронизируется</h3>
+    </div>
+    <div class="card-bd">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div style="padding: 12px; background: var(--surface-2); border-radius: 8px; display: flex; gap: 10px;">
+          <div style="width: 8px; height: 8px; background: var(--success); border-radius: 50%; margin-top: 6px; flex-shrink: 0;"></div>
+          <div>
+            <div style="font-weight: 600; font-size: 13px;">Из Payd → в 1С</div>
+            <div style="font-size: 12px; color: var(--text-2); margin-top: 4px;">Платежи (ПКО), возвраты (РКО), новые клиенты, договоры рассрочки, выдача товара (расходные накладные), зарплаты сотрудников</div>
+          </div>
+        </div>
+        <div style="padding: 12px; background: var(--surface-2); border-radius: 8px; display: flex; gap: 10px;">
+          <div style="width: 8px; height: 8px; background: var(--primary); border-radius: 50%; margin-top: 6px; flex-shrink: 0;"></div>
+          <div>
+            <div style="font-weight: 600; font-size: 13px;">Из 1С → в Payd</div>
+            <div style="font-size: 12px; color: var(--text-2); margin-top: 4px;">Номенклатура (товары), цены, остатки на складе, поступления товаров от поставщиков, контрагенты-поставщики</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== TAB: REFERENCES ========== -->
+<div class="int-content" data-content="refs">
+  <div class="alert info mb-4">
+    <div class="ai">📚</div>
+    <div><b>Сопоставление справочников</b> — это правила, по которым Payd «находит» совпадение между записью у нас и записью в 1С. Например, клиент «Даурбекова Луиза» в Payd и контрагент «Даурбекова Луиза Саид-Усмановна» в 1С — это один и тот же человек. Сопоставление по ИНН/паспорту самое надёжное.</div>
+  </div>
+
+  <div class="ref-grid">
+    <!-- 1. Контрагенты -->
+    <div class="ref-card">
+      <div class="ref-card-head">
+        <div class="ref-card-icon" style="background: var(--success-soft); color: var(--success);">👥</div>
+        <div style="flex: 1; min-width: 0;">
+          <div class="ref-card-title">Клиенты ↔ Контрагенты</div>
+          <div class="ref-card-subtitle">Физические лица — покупатели</div>
+        </div>
+        <div class="switch on"></div>
+      </div>
+      <div class="map-row">
+        <div class="from"><div class="map-label">Payd</div><div class="map-val">Клиенты</div></div>
+        <div class="arrow">↔</div>
+        <div class="to"><div class="map-label">1С УНФ</div><div class="map-val">Контрагенты · Группа «Покупатели физ. лица»</div></div>
+      </div>
+      <div style="font-size: 12px; color: var(--text-2); padding: 8px 0;"><b>Сопоставление по:</b> Паспорт (серия+номер) → ИНН → ФИО+телефон</div>
+      <div class="ref-stats">
+        <div class="stat-mini ok"><div class="l">Сопоставлено</div><div class="v">1 244</div></div>
+        <div class="stat-mini warn"><div class="l">Дубликаты</div><div class="v">3</div></div>
+        <div class="stat-mini"><div class="l">Создано в 1С</div><div class="v">+ 18</div></div>
+      </div>
+      <button class="btn sm" style="width: 100%; justify-content: center; margin-top: 10px;">Открыть таблицу сопоставления →</button>
+    </div>
+
+    <!-- 2. Номенклатура -->
+    <div class="ref-card">
+      <div class="ref-card-head">
+        <div class="ref-card-icon" style="background: var(--purple-soft); color: var(--purple);">📦</div>
+        <div style="flex: 1; min-width: 0;">
+          <div class="ref-card-title">Товары ↔ Номенклатура</div>
+          <div class="ref-card-subtitle">Каталог товаров для продажи</div>
+        </div>
+        <div class="switch on"></div>
+      </div>
+      <div class="map-row">
+        <div class="from"><div class="map-label">Payd</div><div class="map-val">Товары</div></div>
+        <div class="arrow">↔</div>
+        <div class="to"><div class="map-label">1С УНФ</div><div class="map-val">Номенклатура · Группа «Товары»</div></div>
+      </div>
+      <div style="font-size: 12px; color: var(--text-2); padding: 8px 0;"><b>Сопоставление по:</b> Артикул (внутренний код)<br/><b>Источник цен:</b> 1С (вид цены «Розничная»)</div>
+      <div class="ref-stats">
+        <div class="stat-mini ok"><div class="l">Сопоставлено</div><div class="v">384</div></div>
+        <div class="stat-mini warn"><div class="l">Без артикула</div><div class="v">2</div></div>
+        <div class="stat-mini"><div class="l">Из 1С</div><div class="v">100%</div></div>
+      </div>
+      <button class="btn sm" style="width: 100%; justify-content: center; margin-top: 10px;">Открыть таблицу сопоставления →</button>
+    </div>
+
+    <!-- 3. Кассы -->
+    <div class="ref-card">
+      <div class="ref-card-head">
+        <div class="ref-card-icon" style="background: var(--warning-soft); color: var(--warning);">💰</div>
+        <div style="flex: 1; min-width: 0;">
+          <div class="ref-card-title">Кассы ↔ Кассы</div>
+          <div class="ref-card-subtitle">Где принимаются платежи</div>
+        </div>
+        <div class="switch on"></div>
+      </div>
+      <div class="map-row">
+        <div class="from"><div class="map-label">Payd · Касса</div><div class="map-val">Главная касса (Аргун)</div></div>
+        <div class="arrow">→</div>
+        <div class="to"><div class="map-label">1С УНФ · Касса</div><div class="map-val">Касса организации (основная)</div></div>
+      </div>
+      <div class="map-row">
+        <div class="from"><div class="map-label">Payd · Карта</div><div class="map-val">Эквайринг СБЕР</div></div>
+        <div class="arrow">→</div>
+        <div class="to"><div class="map-label">1С УНФ · Банк</div><div class="map-val">Расчётный счёт Сбербанк ··· 4218</div></div>
+      </div>
+      <div class="map-row">
+        <div class="from"><div class="map-label">Payd · СБП</div><div class="map-val">СБП Тинькофф</div></div>
+        <div class="arrow">→</div>
+        <div class="to"><div class="map-label">1С УНФ · Банк</div><div class="map-val">Расчётный счёт Тинькофф ··· 8821</div></div>
+      </div>
+      <button class="btn sm" style="width: 100%; justify-content: center; margin-top: 10px;">Изменить сопоставление →</button>
+    </div>
+
+    <!-- 4. Сотрудники -->
+    <div class="ref-card">
+      <div class="ref-card-head">
+        <div class="ref-card-icon" style="background: var(--primary-soft); color: var(--primary);">👤</div>
+        <div style="flex: 1; min-width: 0;">
+          <div class="ref-card-title">Сотрудники ↔ Физ. лица</div>
+          <div class="ref-card-subtitle">Для зарплат и операций</div>
+        </div>
+        <div class="switch on"></div>
+      </div>
+      <div class="map-row">
+        <div class="from"><div class="map-label">Payd</div><div class="map-val">Сотрудники</div></div>
+        <div class="arrow">↔</div>
+        <div class="to"><div class="map-label">1С УНФ</div><div class="map-val">Сотрудники + Физ. лица</div></div>
+      </div>
+      <div style="font-size: 12px; color: var(--text-2); padding: 8px 0;"><b>Сопоставление по:</b> Email → ФИО</div>
+      <div class="ref-stats">
+        <div class="stat-mini ok"><div class="l">Сопоставлено</div><div class="v">18 / 18</div></div>
+        <div class="stat-mini"><div class="l">С зарплатой</div><div class="v">12</div></div>
+        <div class="stat-mini"><div class="l">% начислений</div><div class="v">10%</div></div>
+      </div>
+    </div>
+
+    <!-- 5. Партнёры/поставщики -->
+    <div class="ref-card">
+      <div class="ref-card-head">
+        <div class="ref-card-icon" style="background: var(--pink-soft); color: var(--pink);">🤝</div>
+        <div style="flex: 1; min-width: 0;">
+          <div class="ref-card-title">Партнёры ↔ Поставщики</div>
+          <div class="ref-card-subtitle">Магазины, у которых закупаем</div>
+        </div>
+        <div class="switch on"></div>
+      </div>
+      <div class="map-row">
+        <div class="from"><div class="map-label">Payd · Партнёр</div><div class="map-val">ТехноМир — Грозный</div></div>
+        <div class="arrow">↔</div>
+        <div class="to"><div class="map-label">1С · Контрагент</div><div class="map-val">ИП Тагаев Р.А. (ТехноМир)</div></div>
+      </div>
+      <div class="map-row">
+        <div class="from"><div class="map-label">Payd · Партнёр</div><div class="map-val">ДигиМаркет — Грозный Сити</div></div>
+        <div class="arrow">↔</div>
+        <div class="to"><div class="map-label">1С · Контрагент</div><div class="map-val">ООО «Альянс»</div></div>
+      </div>
+      <div class="ref-stats">
+        <div class="stat-mini ok"><div class="l">Сопоставлено</div><div class="v">26 / 28</div></div>
+        <div class="stat-mini warn"><div class="l">Не сопост.</div><div class="v">2</div></div>
+        <div class="stat-mini"><div class="l">Договоров</div><div class="v">28</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== TAB: DOCUMENT RULES ========== -->
+<div class="int-content" data-content="docs">
+  <div class="alert info mb-4">
+    <div class="ai">📄</div>
+    <div><b>Правила документов</b> — что и когда автоматически создаётся в 1С при действиях в Payd. Вы один раз настраиваете схему, дальше всё работает само. Важно: правила работают только в одну сторону «Payd → 1С».</div>
+  </div>
+
+  <!-- RULE 1: Платёж -->
+  <div class="doc-rule">
+    <div class="doc-rule-head">
+      <div class="doc-rule-flow">
+        <div class="doc-flow-box payd">
+          <div class="l">Триггер в Payd</div>
+          <div class="v">Кассир принял платёж</div>
+        </div>
+        <div class="doc-flow-arrow">→</div>
+        <div class="doc-flow-box unf">
+          <div class="l">Создаётся в 1С УНФ</div>
+          <div class="v">Приходный кассовый ордер (ПКО)</div>
+        </div>
+      </div>
+      <div class="switch on"></div>
+    </div>
+    <div class="doc-rule-body">
+      <div class="doc-field"><div class="l">Контрагент</div><div class="v">из карточки клиента (Payd → Клиенты)</div></div>
+      <div class="doc-field"><div class="l">Касса</div><div class="v">по способу оплаты (наличные / СБЕР / СБП)</div></div>
+      <div class="doc-field"><div class="l">Статья ДДС</div><div class="v">«Поступления от покупателей»</div></div>
+      <div class="doc-field"><div class="l">Назначение платежа</div><div class="v">«Оплата по договору №[номер] от [дата]»</div></div>
+      <div class="doc-field"><div class="l">Договор</div><div class="v">привязка к договору рассрочки</div></div>
+      <div class="doc-field"><div class="l">Когда</div><div class="v">мгновенно при приёме платежа</div></div>
+    </div>
+    <div style="display: flex; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border);">
+      <span class="badge success">42 ПКО создано сегодня</span>
+      <span class="badge gray">Шаблон по умолчанию</span>
+      <button class="btn sm" style="margin-left: auto;">Изменить шаблон</button>
+    </div>
+  </div>
+
+  <!-- RULE 2: Возврат -->
+  <div class="doc-rule">
+    <div class="doc-rule-head">
+      <div class="doc-rule-flow">
+        <div class="doc-flow-box payd"><div class="l">Триггер в Payd</div><div class="v">Возврат денег клиенту</div></div>
+        <div class="doc-flow-arrow">→</div>
+        <div class="doc-flow-box unf"><div class="l">Создаётся в 1С УНФ</div><div class="v">Расходный кассовый ордер (РКО)</div></div>
+      </div>
+      <div class="switch on"></div>
+    </div>
+    <div class="doc-rule-body">
+      <div class="doc-field"><div class="l">Получатель</div><div class="v">контрагент-клиент</div></div>
+      <div class="doc-field"><div class="l">Статья ДДС</div><div class="v">«Возврат покупателю»</div></div>
+      <div class="doc-field"><div class="l">Основание</div><div class="v">«Возврат по договору №[номер]»</div></div>
+      <div class="doc-field"><div class="l">Когда</div><div class="v">мгновенно при оформлении возврата</div></div>
+    </div>
+  </div>
+
+  <!-- RULE 3: Закупка -->
+  <div class="doc-rule">
+    <div class="doc-rule-head">
+      <div class="doc-rule-flow">
+        <div class="doc-flow-box payd"><div class="l">Триггер в Payd</div><div class="v">Закупка товара у партнёра</div></div>
+        <div class="doc-flow-arrow">→</div>
+        <div class="doc-flow-box unf"><div class="l">Создаётся в 1С УНФ</div><div class="v">Поступление товаров и услуг</div></div>
+      </div>
+      <div class="switch on"></div>
+    </div>
+    <div class="doc-rule-body">
+      <div class="doc-field"><div class="l">Поставщик</div><div class="v">партнёр-магазин</div></div>
+      <div class="doc-field"><div class="l">Склад</div><div class="v">«Основной склад»</div></div>
+      <div class="doc-field"><div class="l">Номенклатура</div><div class="v">по артикулу из заявки</div></div>
+      <div class="doc-field"><div class="l">Когда</div><div class="v">при подтверждении выдачи товара клиенту</div></div>
+    </div>
+  </div>
+
+  <!-- RULE 4: Зарплата -->
+  <div class="doc-rule">
+    <div class="doc-rule-head">
+      <div class="doc-rule-flow">
+        <div class="doc-flow-box payd"><div class="l">Триггер в Payd</div><div class="v">Выплата зарплаты сотруднику</div></div>
+        <div class="doc-flow-arrow">→</div>
+        <div class="doc-flow-box unf"><div class="l">Создаётся в 1С УНФ</div><div class="v">РКО + Начисление ЗП</div></div>
+      </div>
+      <div class="switch on"></div>
+    </div>
+    <div class="doc-rule-body">
+      <div class="doc-field"><div class="l">Получатель</div><div class="v">физ. лицо (сотрудник)</div></div>
+      <div class="doc-field"><div class="l">Статья ДДС</div><div class="v">«Заработная плата»</div></div>
+      <div class="doc-field"><div class="l">Состав</div><div class="v">оклад + премия (отдельные строки)</div></div>
+      <div class="doc-field"><div class="l">Когда</div><div class="v">после подтверждения в Payd → Сотрудники</div></div>
+    </div>
+  </div>
+
+  <!-- RULE 5: Партнёрская комиссия -->
+  <div class="doc-rule">
+    <div class="doc-rule-head">
+      <div class="doc-rule-flow">
+        <div class="doc-flow-box payd"><div class="l">Триггер в Payd</div><div class="v">Расчёт комиссии партнёру</div></div>
+        <div class="doc-flow-arrow">→</div>
+        <div class="doc-flow-box unf"><div class="l">Создаётся в 1С УНФ</div><div class="v">РКО · Платёж агенту</div></div>
+      </div>
+      <div class="switch on"></div>
+    </div>
+    <div class="doc-rule-body">
+      <div class="doc-field"><div class="l">Получатель</div><div class="v">партнёр (контрагент)</div></div>
+      <div class="doc-field"><div class="l">Статья ДДС</div><div class="v">«Расчёты с агентами»</div></div>
+      <div class="doc-field"><div class="l">Сумма</div><div class="v">из карточки партнёра (%)</div></div>
+      <div class="doc-field"><div class="l">Периодичность</div><div class="v">ежемесячно (5 числа)</div></div>
+    </div>
+  </div>
+
+  <!-- RULE 6: Списание -->
+  <div class="doc-rule">
+    <div class="doc-rule-head">
+      <div class="doc-rule-flow">
+        <div class="doc-flow-box payd"><div class="l">Триггер в Payd</div><div class="v">Долг признан безнадёжным</div></div>
+        <div class="doc-flow-arrow">→</div>
+        <div class="doc-flow-box unf"><div class="l">Создаётся в 1С УНФ</div><div class="v">Корректировка долга (списание)</div></div>
+      </div>
+      <div class="switch"></div>
+    </div>
+    <div class="doc-rule-body">
+      <div class="doc-field"><div class="l">Контрагент</div><div class="v">клиент-должник</div></div>
+      <div class="doc-field"><div class="l">Действие</div><div class="v">Списание долга на счёт прочих расходов</div></div>
+      <div class="doc-field"><div class="l">Подтверждение</div><div class="v">требует ручного одобрения в Payd</div></div>
+      <div class="doc-field"><div class="l">Статус</div><div class="v" style="color: var(--text-3);">Не активно — требует настройки</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== TAB: SYNC LOG ========== -->
+<div class="int-content" data-content="log">
+  <div class="filter-bar">
+    <div class="filter-search">
+      <span class="si"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+      <input type="text" placeholder="Поиск по номеру документа, клиенту, ошибке..." />
+    </div>
+    <div class="filter-extras">
+      <select><option>Все типы</option><option>ПКО</option><option>РКО</option><option>Поступления</option></select>
+      <select><option>Все статусы</option><option>Успешные</option><option>С ошибкой</option></select>
+      <select><option>Сегодня</option><option>За неделю</option></select>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="background: var(--surface-2); padding: 10px 18px; font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .04em; display: grid; grid-template-columns: 80px 1fr 1fr 1fr 110px; gap: 14px; border-bottom: 1px solid var(--border);">
+      <div>Время</div><div>Документ Payd</div><div>Действие</div><div>Документ 1С</div><div>Статус</div>
+    </div>
+
+    <div class="log-row">
+      <div class="time">14:23</div>
+      <div class="doc">Платёж #PMT-1248<div style="font-size: 11px; color: var(--text-3); font-weight: 400;">Даурбекова Л. · 3 500 ₽</div></div>
+      <div class="arrow">→ создать ПКО</div>
+      <div class="doc">ПКО №000042 от 02.05.2026<div style="font-size: 11px; color: var(--text-3); font-weight: 400;">Касса организации</div></div>
+      <div><span class="badge success dot">Успешно</span></div>
+    </div>
+
+    <div class="log-row">
+      <div class="time">13:42</div>
+      <div class="doc">Платёж #PMT-1247<div style="font-size: 11px; color: var(--text-3); font-weight: 400;">Хасиев А. · 10 500 ₽</div></div>
+      <div class="arrow">→ создать ПКО</div>
+      <div class="doc">ПКО №000041 от 02.05.2026<div style="font-size: 11px; color: var(--text-3); font-weight: 400;">Эквайринг СБЕР</div></div>
+      <div><span class="badge success dot">Успешно</span></div>
+    </div>
+
+    <div class="log-row" style="background: #fef2f2;">
+      <div class="time">12:18</div>
+      <div class="doc">Закупка #ZP-018<div style="font-size: 11px; color: var(--text-3); font-weight: 400;">ТехноМир · 4 шт iPhone</div></div>
+      <div class="arrow">→ Поступление</div>
+      <div class="doc" style="color: var(--danger);">Ошибка: Артикул 000001892 не найден в 1С</div>
+      <div><span class="badge danger dot">Ошибка</span></div>
+    </div>
+
+    <div class="log-row">
+      <div class="time">12:30</div>
+      <div class="doc">Зарплата · Бекуев М.<div style="font-size: 11px; color: var(--text-3); font-weight: 400;">209 800 ₽</div></div>
+      <div class="arrow">→ РКО + Начисление</div>
+      <div class="doc">РКО №000040 + Начисление<div style="font-size: 11px; color: var(--text-3); font-weight: 400;">Документы связаны</div></div>
+      <div><span class="badge success dot">Успешно</span></div>
+    </div>
+
+    <div class="log-row">
+      <div class="time">11:08</div>
+      <div class="doc">Партнёрская комиссия<div style="font-size: 11px; color: var(--text-3); font-weight: 400;">ТехноМир · 62 430 ₽</div></div>
+      <div class="arrow">→ создать РКО</div>
+      <div class="doc">РКО №000039 от 02.05.2026<div style="font-size: 11px; color: var(--text-3); font-weight: 400;">Расч. счёт СБЕР</div></div>
+      <div><span class="badge success dot">Успешно</span></div>
+    </div>
+
+    <div class="log-row">
+      <div class="time">10:45</div>
+      <div class="doc">Первоначальный взнос #147<div style="font-size: 11px; color: var(--text-3); font-weight: 400;">Тазуев Р. · 8 420 ₽</div></div>
+      <div class="arrow">→ создать ПКО</div>
+      <div class="doc">ПКО №000038 от 02.05.2026<div style="font-size: 11px; color: var(--text-3); font-weight: 400;">СБП Тинькофф</div></div>
+      <div><span class="badge success dot">Успешно</span></div>
+    </div>
+
+    <div class="log-row" style="background: #fef2f2;">
+      <div class="time">10:12</div>
+      <div class="doc">Новый клиент<div style="font-size: 11px; color: var(--text-3); font-weight: 400;">Магомадов Л.</div></div>
+      <div class="arrow">→ создать контрагента</div>
+      <div class="doc" style="color: var(--danger);">Ошибка: Дубликат по ИНН с контрагентом 1С</div>
+      <div><span class="badge danger dot">Конфликт</span></div>
+    </div>
+
+    <div class="pagination">
+      <div class="pagination-info">Показано 1–7 из 47 за сегодня</div>
+      <div class="pagination-controls">
+        <button class="page-btn" disabled>‹</button>
+        <button class="page-btn active">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">3</button>
+        <button class="page-btn">›</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== TAB: HELP ========== -->
+<div class="int-content" data-content="help">
+  <div class="alert info mb-4">
+    <div class="ai">💡</div>
+    <div><b>Этот раздел для не-программистов.</b> Здесь пошагово описано, что нужно сделать в 1С УНФ 3.0, чтобы Payd мог обмениваться данными. Все действия — через стандартный интерфейс 1С, без программирования.</div>
+  </div>
+
+  <div class="step-card done">
+    <div class="step-num">✓</div>
+    <div class="step-content">
+      <h3>Шаг 1. Что такое OData и зачем оно нужно</h3>
+      <p>OData — это «окно» в вашу базу 1С, через которое внешняя программа (Payd) может читать и записывать данные. Без OData синхронизация невозможна.</p>
+      <p>В УНФ 3.0 OData встроена «из коробки». Вам нужно её только включить — это делается за 5 минут в настройках.</p>
+      <div class="tip"><b>💡 Простыми словами:</b> представьте 1С как закрытую коробку. OData — это маленькое окошко, через которое Payd передаёт записки «создай ПКО на 3500 ₽» и получает ответ «создал, номер 042».</div>
+    </div>
+  </div>
+
+  <div class="step-card done">
+    <div class="step-num">✓</div>
+    <div class="step-content">
+      <h3>Шаг 2. Опубликуйте базу 1С на веб-сервере</h3>
+      <p>Это разовая операция. Если уже сделано — переходите к шагу 3.</p>
+      <ul>
+        <li>Откройте 1С УНФ 3.0 в режиме <b>Конфигуратор</b></li>
+        <li>Меню <b>Администрирование → Публикация на веб-сервере...</b></li>
+        <li>Имя публикации: <code>unf</code></li>
+        <li>Веб-сервер: IIS (Windows) или Apache (Linux)</li>
+        <li>Каталог: <code>C:\inetpub\wwwroot\unf</code> (или ваш)</li>
+        <li>✅ Поставьте галку <b>«Публиковать стандартный интерфейс OData»</b></li>
+        <li>Нажмите <b>Опубликовать</b></li>
+      </ul>
+      <div class="warn"><b>⚠️ Важно:</b> на сервере должен быть установлен веб-сервер (IIS включается через «Программы и компоненты»). Если не получается — попросите системного администратора.</div>
+    </div>
+  </div>
+
+  <div class="step-card done">
+    <div class="step-num">✓</div>
+    <div class="step-content">
+      <h3>Шаг 3. Создайте пользователя для API</h3>
+      <p>Чтобы Payd мог обращаться к 1С, ему нужен отдельный пользователь с логином и паролем. Не используйте свой личный аккаунт — это небезопасно.</p>
+      <ul>
+        <li>1С УНФ → <b>Администрирование → Настройки пользователей и прав → Пользователи</b></li>
+        <li>Кнопка <b>«Создать»</b></li>
+        <li>Имя: <code>payd_api</code></li>
+        <li>Полное имя: <code>Интеграция Payd</code></li>
+        <li>Установите пароль (запишите его — он понадобится в Payd)</li>
+        <li>На вкладке <b>«Права доступа»</b> выберите профиль <b>«Открытие внешних отчётов и обработок»</b> + <b>«Полные права»</b></li>
+        <li>Сохраните</li>
+      </ul>
+      <div class="tip"><b>💡 Совет:</b> запишите логин и пароль в надёжное место. В Payd → Настройки → Интеграция → 1С их нужно будет ввести.</div>
+    </div>
+  </div>
+
+  <div class="step-card done">
+    <div class="step-num">✓</div>
+    <div class="step-content">
+      <h3>Шаг 4. Подключите Payd к 1С</h3>
+      <p>В Payd на этой же странице во вкладке <b>«Подключение»</b> заполните 4 поля:</p>
+      <ul>
+        <li><b>URL базы:</b> <code>http://[адрес-вашего-сервера]/unf/odata/standard.odata</code></li>
+        <li><b>Логин:</b> <code>payd_api</code> (тот что создали в шаге 3)</li>
+        <li><b>Пароль:</b> ваш пароль</li>
+        <li><b>Организация:</b> выберите из списка после подключения</li>
+      </ul>
+      <p>Нажмите <b>«Тест соединения»</b>. Если всё правильно — увидите зелёную галку «Подключение установлено».</p>
+      <div class="warn"><b>⚠️ Если не подключается:</b> проверьте, открыт ли порт 80 (или 443 для HTTPS) на сервере, и доступен ли URL из Payd. Попробуйте открыть URL в браузере — должна появиться XML-страница со списком таблиц.</div>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">5</div>
+    <div class="step-content">
+      <h3>Шаг 5. Сопоставьте справочники</h3>
+      <p>Перейдите во вкладку <b>«Справочники»</b>. Для каждого справочника (Клиенты, Товары, Кассы, Сотрудники, Партнёры) проверьте:</p>
+      <ul>
+        <li>В каком справочнике 1С искать совпадение (Контрагенты / Номенклатура / ...)</li>
+        <li>По какому полю искать (ИНН / Артикул / Email)</li>
+        <li>Что делать если совпадение не найдено: создать в 1С / пропустить / спросить</li>
+      </ul>
+      <p>После настройки нажмите <b>«Запустить первичную синхронизацию»</b> — Payd сам найдёт все совпадения и предложит создать недостающие записи.</p>
+      <div class="tip"><b>💡 Совет:</b> начните с малого — сначала Клиенты, потом Товары. Так проще проверить, что всё правильно.</div>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">6</div>
+    <div class="step-content">
+      <h3>Шаг 6. Настройте правила документов</h3>
+      <p>Вкладка <b>«Правила документов»</b>. Здесь говорите Payd: «когда происходит вот это в Payd, создай такой документ в 1С».</p>
+      <p><b>Главные правила, которые нужны сразу:</b></p>
+      <ul>
+        <li>✅ <b>Платёж кассира → ПКО в 1С</b> — самое важное, включите в первую очередь</li>
+        <li>✅ <b>Возврат → РКО в 1С</b></li>
+        <li>✅ <b>Закупка товара → Поступление в 1С</b></li>
+        <li>⏸ <b>Зарплата → ЗП-начисление в 1С</b> — после того как наладите первые три</li>
+      </ul>
+      <p>Каждое правило проверьте на одной тестовой операции, прежде чем включать массово.</p>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">7</div>
+    <div class="step-content">
+      <h3>Шаг 7. Тестовый прогон</h3>
+      <p>После настройки сделайте контрольную проверку:</p>
+      <ul>
+        <li>Откройте кассу в Payd</li>
+        <li>Примите тестовый платёж 100 ₽ от любого клиента</li>
+        <li>Перейдите в 1С УНФ → <b>Деньги → Приходные кассовые ордера</b></li>
+        <li>Должен появиться новый ПКО на 100 ₽ с правильным контрагентом и кассой</li>
+      </ul>
+      <p>Если ПКО создался — всё работает. Если нет — посмотрите вкладку <b>«Журнал обмена»</b>, там будет описание ошибки.</p>
+      <div class="tip"><b>💡 Что делать если ошибка:</b> большинство ошибок — это «не найден контрагент» или «не найден артикул». Решение: создайте недостающую запись в 1С вручную, либо перейдите во вкладку «Справочники» и нажмите «Создать в 1С».</div>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">8</div>
+    <div class="step-content">
+      <h3>Куда смотреть, если что-то не работает</h3>
+      <ul>
+        <li><b>Журнал обмена</b> в этой странице — там видны все попытки и ошибки</li>
+        <li><b>1С УНФ → Администрирование → Активные пользователи</b> — должен быть видим payd_api когда идёт обмен</li>
+        <li><b>1С УНФ → Журнал регистрации</b> — там детальные логи на стороне 1С</li>
+        <li><b>Поддержка Payd:</b> +7 8712 22-44-66 (с 9:00 до 18:00)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card mt-6" style="background: linear-gradient(135deg, #1a2332, #2563eb); color: white; padding: 24px;">
+    <div style="display: flex; gap: 20px; align-items: center;">
+      <div class="video-thumb" style="width: 200px; flex-shrink: 0;">
+        <div class="play"><svg width="22" height="22" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
+        <div style="font-size: 12px;">Видеоинструкция</div>
+        <div style="font-size: 10px; opacity: .7; margin-top: 4px;">5 минут</div>
+      </div>
+      <div style="flex: 1;">
+        <h3 style="margin-bottom: 8px;">Видео-урок: Подключение 1С УНФ 3.0 за 5 минут</h3>
+        <p style="font-size: 13px; opacity: .85; margin-bottom: 14px; line-height: 1.6;">Все 7 шагов с реальной демонстрацией экрана. Покажем как опубликовать базу, создать пользователя и подключить Payd. Если делаете впервые — обязательно посмотрите.</p>
+        <button class="btn" style="background: white; color: var(--primary); border: none;">▶ Смотреть видео</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="db.js"></script>
+<script src="app.js"></script>
+<script>
+  PaydApp.mountShell({
+    active: 'integration-1c',
+    title: '1С УНФ 3.0 — Интеграция',
+    breadcrumbs: [
+      { label: 'Главная', href: 'dashboard.html' },
+      { label: 'Интеграции' },
+      { label: '1С УНФ 3.0' }
+    ]
+  });
+
+  // Tab switching
+  document.querySelectorAll('.int-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.int-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const target = tab.dataset.tab;
+      document.querySelectorAll('.int-content').forEach(c => {
+        c.classList.toggle('active', c.dataset.content === target);
+      });
+    });
+  });
+
+  // Test connection button
+  document.getElementById('btn-test-conn')?.addEventListener('click', e => {
+    e.preventDefault(); e.stopImmediatePropagation();
+    PaydApp.toast('Проверка соединения...', 'info');
+    setTimeout(() => {
+      PaydApp.toast('Соединение установлено', { type: 'success', subtitle: 'УНФ 3.0.6.142 · ООО «Payd» · 384 товара, 1 248 контрагентов' });
+    }, 1500);
+  }, true);
+</script>
+</body>
+</html>

@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Структура и цепочки — Payd</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .strk-grid { display: grid; grid-template-columns: 220px 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 1100px) { .strk-grid { grid-template-columns: 1fr; } }
+
+  /* Side nav */
+  .strk-nav { position: sticky; top: 18px; display: flex; flex-direction: column; gap: 2px; }
+  .strk-nav a {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 500;
+    color: var(--text-2);
+    text-decoration: none;
+    transition: all .12s;
+  }
+  .strk-nav a:hover { background: var(--surface-2); color: var(--text); }
+  .strk-nav a.active { background: var(--primary-soft); color: var(--primary); font-weight: 700; }
+  .strk-nav a .num { font-size: 10px; padding: 1px 6px; background: var(--surface-3); color: var(--text-3); border-radius: 999px; margin-left: auto; font-weight: 700; }
+  .strk-nav a.active .num { background: var(--primary); color: white; }
+
+  .section { margin-bottom: 32px; scroll-margin-top: 84px; }
+  .sec-h { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .sec-h .ico {
+    width: 32px; height: 32px;
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--primary-soft); color: var(--primary);
+    flex-shrink: 0;
+  }
+  .sec-h h2 { font-size: 18px; font-weight: 800; letter-spacing: -.01em; }
+  .sec-h .desc { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+
+  /* Org chart */
+  .org-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  @media (max-width: 900px) { .org-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 600px) { .org-grid { grid-template-columns: 1fr; } }
+
+  .org-cell {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    transition: all .15s;
+  }
+  .org-cell:hover { border-color: var(--primary); box-shadow: var(--shadow-sm); }
+  .org-cell .top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+  .org-cell .role-ic {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .org-cell .role-name { font-size: 14px; font-weight: 700; line-height: 1.2; }
+  .org-cell .role-count { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+  .org-cell .role-desc { font-size: 12px; color: var(--text-2); line-height: 1.5; }
+  .org-cell .role-link { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; font-size: 11px; color: var(--primary); font-weight: 600; text-decoration: none; }
+  .org-cell .role-tasks { margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; }
+  .org-cell .role-tasks .t { font-size: 11px; color: var(--text-2); display: flex; gap: 6px; }
+  .org-cell .role-tasks .t::before { content: '•'; color: var(--primary); flex-shrink: 0; }
+
+  /* Org headcount summary */
+  .head-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 16px; }
+  @media (max-width: 700px) { .head-summary { grid-template-columns: repeat(2, 1fr); } }
+  .head-cell { background: white; padding: 12px 16px; }
+  .head-cell .l { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; font-weight: 700; }
+  .head-cell .v { font-size: 22px; font-weight: 800; margin-top: 4px; }
+  .head-cell .s { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+
+  /* Flow diagram */
+  .flow-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0;
+    overflow: hidden;
+  }
+  .flow-step {
+    display: grid;
+    grid-template-columns: 70px 1fr 240px;
+    gap: 14px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border);
+    align-items: start;
+  }
+  .flow-step:last-child { border-bottom: none; }
+  .flow-step .stp {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid var(--border-strong);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 14px;
+    color: var(--text-2);
+    flex-shrink: 0;
+    position: relative;
+    margin: 0 auto;
+  }
+  .flow-step:not(:last-child) .stp::after {
+    content: ''; position: absolute;
+    top: 36px; left: 50%; transform: translateX(-50%);
+    width: 2px; height: calc(100% - 16px);
+    background: var(--border-strong);
+  }
+  .flow-step.role-mgr .stp { background: var(--primary); color: white; border-color: var(--primary); }
+  .flow-step.role-sb .stp { background: var(--warning); color: white; border-color: var(--warning); }
+  .flow-step.role-partner .stp { background: var(--purple); color: white; border-color: var(--purple); }
+  .flow-step.role-cashier .stp { background: var(--success); color: white; border-color: var(--success); }
+  .flow-step.role-collector .stp { background: var(--danger); color: white; border-color: var(--danger); }
+  .flow-step.role-inkass .stp { background: #0ea5e9; color: white; border-color: #0ea5e9; }
+  .flow-step .body .title { font-size: 14px; font-weight: 700; }
+  .flow-step .body .who { font-size: 11px; margin-top: 4px; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .flow-step.role-mgr .body .who { background: var(--primary-soft); color: var(--primary); }
+  .flow-step.role-sb .body .who { background: var(--warning-soft); color: #92400e; }
+  .flow-step.role-partner .body .who { background: var(--purple-soft); color: var(--purple); }
+  .flow-step.role-cashier .body .who { background: var(--success-soft); color: var(--success-2); }
+  .flow-step.role-collector .body .who { background: var(--danger-soft); color: var(--danger); }
+  .flow-step.role-inkass .body .who { background: #e0f2fe; color: #0369a1; }
+  .flow-step .body .desc { font-size: 12px; color: var(--text-2); line-height: 1.5; margin-top: 6px; }
+  .flow-step .body .docs { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+  .flow-step .body .doc-pill { font-size: 10px; padding: 2px 7px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; color: var(--text-2); font-weight: 600; }
+  .flow-step .links {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .flow-step .link-item {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; padding: 5px 10px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 6px;
+    text-decoration: none; color: var(--text-2);
+    transition: all .12s;
+  }
+  .flow-step .link-item:hover { color: var(--primary); border-color: var(--primary); background: var(--primary-soft); }
+  .flow-step .link-item code { font-family: 'SF Mono', monospace; font-size: 10px; color: var(--text-3); }
+
+  @media (max-width: 800px) {
+    .flow-step { grid-template-columns: 50px 1fr; }
+    .flow-step .links { grid-column: span 2; padding-top: 8px; border-top: 1px dashed var(--border); flex-direction: row; flex-wrap: wrap; }
+  }
+
+  /* Modules table */
+  .modules-tbl { width: 100%; border-collapse: separate; border-spacing: 0; }
+  .modules-tbl th, .modules-tbl td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; font-size: 13px; vertical-align: top; }
+  .modules-tbl thead th { background: var(--surface-2); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-3); font-weight: 700; }
+  .modules-tbl td.file { font-family: 'SF Mono', monospace; font-size: 12px; }
+  .modules-tbl td.file a { color: var(--primary); text-decoration: none; font-weight: 600; }
+  .modules-tbl td.file a:hover { text-decoration: underline; }
+  .mod-status { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
+  .mod-status.ok { background: var(--success-soft); color: var(--success-2); }
+  .mod-status.partial { background: var(--warning-soft); color: #92400e; }
+  .mod-status.stub { background: var(--surface-3); color: var(--text-3); }
+
+  /* Storage keys */
+  .keys-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  @media (max-width: 700px) { .keys-grid { grid-template-columns: 1fr; } }
+  .key-row {
+    display: grid; grid-template-columns: 1fr auto;
+    gap: 10px; padding: 10px 14px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    align-items: center;
+  }
+  .key-row .k { font-family: 'SF Mono', monospace; font-size: 11px; color: var(--primary); font-weight: 600; }
+  .key-row .d { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+  .key-row .who { font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 700; background: var(--surface-2); color: var(--text-3); white-space: nowrap; text-transform: uppercase; letter-spacing: .04em; }
+
+  /* Status check list */
+  .check-row {
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+  }
+  .check-row:last-child { border-bottom: none; }
+  .check-row .ic {
+    width: 26px; height: 26px;
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    color: white;
+    flex-shrink: 0;
+  }
+  .check-row.ok .ic { background: var(--success); }
+  .check-row.warn .ic { background: var(--warning); }
+  .check-row.err .ic { background: var(--danger); }
+  .check-row .info .t { font-size: 13px; font-weight: 600; }
+  .check-row .info .s { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+
+  /* Mini route */
+  .mini-route {
+    display: flex; align-items: center; gap: 0;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, #f0f7ff 0%, #faf5ff 100%);
+    border: 1px solid #c7d2fe;
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    overflow-x: auto;
+  }
+  .mini-route .mr-step {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    flex-shrink: 0;
+    min-width: 90px;
+    text-align: center;
+  }
+  .mini-route .mr-step .dot {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: white;
+    font-size: 14px;
+  }
+  .mini-route .mr-step.s1 .dot { background: var(--primary); }
+  .mini-route .mr-step.s2 .dot { background: var(--warning); }
+  .mini-route .mr-step.s3 .dot { background: var(--purple); }
+  .mini-route .mr-step.s4 .dot { background: var(--success); }
+  .mini-route .mr-step.s5 .dot { background: #0ea5e9; }
+  .mini-route .mr-step .lbl { font-size: 10px; font-weight: 700; line-height: 1.2; }
+  .mini-route .mr-arrow { color: var(--text-3); padding: 0 6px; flex-shrink: 0; }
+
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  .legend .lg { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2); }
+  .legend .lg .dot { width: 10px; height: 10px; border-radius: 50%; }
+
+</style>
+</head>
+<body>
+
+<div id="app-root">
+
+<div class="page-head">
+  <div>
+    <h1>Структура и цепочки</h1>
+    <div class="desc">Полный разбор платформы Payd · оргструктура · процесс сделки · модули · хранилища</div>
+  </div>
+  <div class="page-head-actions">
+    <button class="btn" onclick="window.print()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Печать
+    </button>
+  </div>
+</div>
+
+<div class="strk-grid">
+
+  <!-- ============== SIDE NAV ============== -->
+  <nav class="strk-nav">
+    <a href="#summary" class="active">📊 Сводка</a>
+    <a href="#org">👥 Оргструктура <span class="num">7</span></a>
+    <a href="#flow">🔄 Цепочка сделки <span class="num">11</span></a>
+    <a href="#modules">📦 Модули <span class="num">26</span></a>
+    <a href="#storage">💾 Хранилища данных</a>
+    <a href="#status">✓ Состояние модулей</a>
+    <a href="#issues">⚠️ Что доделать</a>
+  </nav>
+
+  <!-- ============== CONTENT ============== -->
+  <div>
+
+  <!-- ===== SUMMARY ===== -->
+  <div class="section" id="summary">
+    <div class="sec-h">
+      <div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+      <div>
+        <h2>Сводка</h2>
+        <div class="desc">Краткая статистика по платформе</div>
+      </div>
+    </div>
+    <div class="head-summary">
+      <div class="head-cell"><div class="l">Сотрудников</div><div class="v">21</div><div class="s">внутренний штат</div></div>
+      <div class="head-cell"><div class="l">Партнёров-агентов</div><div class="v">28</div><div class="s">внешние магазины</div></div>
+      <div class="head-cell"><div class="l">Модулей платформы</div><div class="v">26</div><div class="s">страниц/разделов</div></div>
+      <div class="head-cell"><div class="l">Этапов сделки</div><div class="v">11</div><div class="s">от заявки до закрытия</div></div>
+    </div>
+
+    <div class="legend">
+      <span class="lg"><span class="dot" style="background: var(--primary)"></span>Менеджер · CRM</span>
+      <span class="lg"><span class="dot" style="background: var(--warning)"></span>Служба безопасности</span>
+      <span class="lg"><span class="dot" style="background: var(--purple)"></span>Партнёр-агент</span>
+      <span class="lg"><span class="dot" style="background: var(--success)"></span>Касса</span>
+      <span class="lg"><span class="dot" style="background: var(--danger)"></span>Взыскание</span>
+      <span class="lg"><span class="dot" style="background: #0ea5e9"></span>Инкассатор</span>
+    </div>
+
+    <div class="mini-route">
+      <div class="mr-step s1"><div class="dot">1</div><div class="lbl">Заявка</div></div>
+      <div class="mr-arrow">→</div>
+      <div class="mr-step s2"><div class="dot">2</div><div class="lbl">СБ-проверка</div></div>
+      <div class="mr-arrow">→</div>
+      <div class="mr-step s3"><div class="dot">3</div><div class="lbl">Партнёр-резерв</div></div>
+      <div class="mr-arrow">→</div>
+      <div class="mr-step s3"><div class="dot">4</div><div class="lbl">Закупка Payd</div></div>
+      <div class="mr-arrow">→</div>
+      <div class="mr-step s3"><div class="dot">5</div><div class="lbl">Договор Мурабаха</div></div>
+      <div class="mr-arrow">→</div>
+      <div class="mr-step s4"><div class="dot">6</div><div class="lbl">Первый взнос</div></div>
+      <div class="mr-arrow">→</div>
+      <div class="mr-step s3"><div class="dot">7</div><div class="lbl">Выдача</div></div>
+      <div class="mr-arrow">→</div>
+      <div class="mr-step s5"><div class="dot">8</div><div class="lbl">Инкассация</div></div>
+      <div class="mr-arrow">→</div>
+      <div class="mr-step s4"><div class="dot">9</div><div class="lbl">Платежи</div></div>
+      <div class="mr-arrow">→</div>
+      <div class="mr-step s4"><div class="dot">10</div><div class="lbl">Закрытие</div></div>
+    </div>
+  </div>
+
+  <!-- ===== ORG STRUCTURE ===== -->
+  <div class="section" id="org">
+    <div class="sec-h">
+      <div class="ico" style="background: var(--primary-soft); color: var(--primary);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <div>
+        <h2>Оргструктура</h2>
+        <div class="desc">7 ролей · 21 человек штата · 28 партнёров</div>
+      </div>
+    </div>
+
+    <div class="org-grid">
+      <div class="org-cell">
+        <div class="top">
+          <div class="role-ic" style="background: var(--purple-soft); color: var(--purple);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <div>
+            <div class="role-name">Руководство</div>
+            <div class="role-count">1 человек</div>
+          </div>
+        </div>
+        <div class="role-desc">CEO/директор. Стратегия, тарифы, согласование крупных сделок (>500 тыс).</div>
+        <div class="role-tasks">
+          <div class="t">Утверждение глобальных тарифов</div>
+          <div class="t">Согласование сделок выше лимита</div>
+          <div class="t">Подписание договоров с партнёрами</div>
+        </div>
+        <a href="dashboard.html" class="role-link">Открыть Дашборд →</a>
+      </div>
+
+      <div class="org-cell">
+        <div class="top">
+          <div class="role-ic" style="background: var(--primary-soft); color: var(--primary);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+          <div>
+            <div class="role-name">Менеджеры по продажам</div>
+            <div class="role-count">8 человек</div>
+          </div>
+        </div>
+        <div class="role-desc">CRM, контакт с клиентом, расчёт условий, отправка договора, ведение лида от создания до договора.</div>
+        <div class="role-tasks">
+          <div class="t">Принимают заявки из калькулятора и планшета партнёра</div>
+          <div class="t">Звонят, уточняют, запрашивают паспорт</div>
+          <div class="t">Расчёт условий, создание заявки</div>
+          <div class="t">Отправка SMS / WhatsApp клиенту</div>
+        </div>
+        <a href="manager.html" class="role-link">Рабочее место менеджера →</a>
+      </div>
+
+      <div class="org-cell">
+        <div class="top">
+          <div class="role-ic" style="background: var(--warning-soft); color: var(--warning);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <div>
+            <div class="role-name">Служба безопасности</div>
+            <div class="role-count">3 человека</div>
+          </div>
+        </div>
+        <div class="role-desc">Скоринг (НБКИ, ФССП, чёрные списки), ручная проверка для крупных сумм, решение о выдаче.</div>
+        <div class="role-tasks">
+          <div class="t">Автоматическая проверка ≥80 баллов — авто-одобрение</div>
+          <div class="t">Ручная проверка для сумм >500 тыс</div>
+          <div class="t">Чёрные списки и поручители</div>
+        </div>
+        <a href="sb.html" class="role-link">Раздел СБ →</a>
+      </div>
+
+      <div class="org-cell">
+        <div class="top">
+          <div class="role-ic" style="background: var(--success-soft); color: var(--success-2);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+          <div>
+            <div class="role-name">Кассиры</div>
+            <div class="role-count">5 человек</div>
+          </div>
+        </div>
+        <div class="role-desc">Приём первоначальных взносов и ежемесячных платежей. Печать чеков. Касса смены.</div>
+        <div class="role-tasks">
+          <div class="t">Приём наличных / карта / СБП</div>
+          <div class="t">QR-сканер для быстрой идентификации клиента</div>
+          <div class="t">Z/X-отчёты, открытие/закрытие смены</div>
+          <div class="t">Приход / расход / инкассация</div>
+        </div>
+        <a href="kassir.html" class="role-link">Рабочее место кассира →</a>
+      </div>
+
+      <div class="org-cell">
+        <div class="top">
+          <div class="role-ic" style="background: #e0f2fe; color: #0369a1;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+          <div>
+            <div class="role-name">Инкассаторы</div>
+            <div class="role-count">2 человека</div>
+          </div>
+        </div>
+        <div class="role-desc">Маршруты по партнёрам. Доставка комиссий, забор выручки, инкассация в банк.</div>
+        <div class="role-tasks">
+          <div class="t">Ежедневный маршрут по 5–10 точкам</div>
+          <div class="t">Двусторонне подтверждение от партнёра</div>
+          <div class="t">Расходные/приходные ордера</div>
+          <div class="t">Авто и сумка с балансом</div>
+        </div>
+        <a href="inkassator.html" class="role-link">Маршрут инкассатора →</a>
+      </div>
+
+      <div class="org-cell">
+        <div class="top">
+          <div class="role-ic" style="background: var(--danger-soft); color: var(--danger);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+          <div>
+            <div class="role-name">Взыскание</div>
+            <div class="role-count">2 человека</div>
+          </div>
+        </div>
+        <div class="role-desc">Должники, просроченные платежи, реструктуризация, выкуп товара у клиента при возврате.</div>
+        <div class="role-tasks">
+          <div class="t">Контакт с просрочившими платёж</div>
+          <div class="t">Реструктуризация по согласию</div>
+          <div class="t">Выкуп товара у клиента</div>
+          <div class="t">Эскалация в суд (по необходимости)</div>
+        </div>
+        <a href="collector.html" class="role-link">Раздел взыскания →</a>
+      </div>
+
+      <div class="org-cell">
+        <div class="top">
+          <div class="role-ic" style="background: #fef3c7; color: #b45309;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div>
+            <div class="role-name">Бухгалтер · Финансист</div>
+            <div class="role-count">2 человека</div>
+          </div>
+        </div>
+        <div class="role-desc">Кассы, проводки, ДДС, статьи доходов и расходов, выплаты партнёрам, налоги.</div>
+        <div class="role-tasks">
+          <div class="t">Учёт всех проводок в кассах</div>
+          <div class="t">ДДС по статьям × месяцам</div>
+          <div class="t">Выплаты партнёрам с отсрочкой 1–3 дня</div>
+          <div class="t">Налоги, отчётность, 1С УНФ интеграция</div>
+        </div>
+        <a href="kassa.html" class="role-link">Кассы и проводки →</a>
+      </div>
+    </div>
+
+    <div style="margin-top: 14px; padding: 14px 18px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; line-height: 1.6;">
+      <b>Партнёры-агенты (внешние, 28 магазинов)</b> — не сотрудники, заключают агентский договор с Payd. Резервируют товар, продают компании, оформляют договор Мурабаха от имени Payd, выдают товар клиенту, принимают оплату от клиента (опционально). Получают комиссию 4–7% с отсрочкой 1–3 дня.
+      <a href="partners.html" style="color: var(--primary); margin-left: 8px;">Список партнёров →</a>
+    </div>
+  </div>
+
+  <!-- ===== FLOW ===== -->
+  <div class="section" id="flow">
+    <div class="sec-h">
+      <div class="ico" style="background: var(--purple-soft); color: var(--purple);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></div>
+      <div>
+        <h2>Цепочка сделки (Мурабаха · по шариату)</h2>
+        <div class="desc">Полный маршрут от заявки до закрытия · 11 этапов · с документами и ответственными</div>
+      </div>
+    </div>
+
+    <div class="flow-card">
+
+      <div class="flow-step role-mgr">
+        <div class="stp">1</div>
+        <div class="body">
+          <div class="title">Клиент оставляет заявку</div>
+          <span class="who">Клиент / Менеджер</span>
+          <div class="desc">Через калькулятор, планшет в магазине партнёра или менеджер вручную. Указывается товар, сумма, срок, ФИО, телефон, тип (стандартная/Мурабаха/иджара).</div>
+          <div class="docs">
+            <span class="doc-pill">Заявка</span>
+            <span class="doc-pill">Согласие 152-ФЗ</span>
+          </div>
+        </div>
+        <div class="links">
+          <a class="link-item" href="calculator.html"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/></svg>Калькулятор</a>
+          <a class="link-item" href="zayavka-new.html"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Новая заявка</a>
+          <a class="link-item" href="zhurnal.html"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>Журнал заявок</a>
+        </div>
+      </div>
+
+      <div class="flow-step role-sb">
+        <div class="stp">2</div>
+        <div class="body">
+          <div class="title">Проверка СБ (скоринг + ручная)</div>
+          <span class="who">Служба безопасности</span>
+          <div class="desc">Авто-проверка по НБКИ, ФССП, чёрному списку, верификация телефона. При скоринге ≥80 — авто-одобрение. Если меньше или сумма крупная — ручная.</div>
+          <div class="docs">
+            <span class="doc-pill">Скоринг-балл</span>
+            <span class="doc-pill">НБКИ-отчёт</span>
+            <span class="doc-pill">Решение СБ</span>
+          </div>
+        </div>
+        <div class="links">
+          <a class="link-item" href="zayavka.html?id=142"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>Карточка заявки</a>
+          <a class="link-item" href="sb.html"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Раздел СБ</a>
+        </div>
+      </div>
+
+      <div class="flow-step role-partner">
+        <div class="stp">3</div>
+        <div class="body">
+          <div class="title">Партнёр резервирует товар</div>
+          <span class="who">Партнёр-агент</span>
+          <div class="desc">Партнёр видит одобренную заявку в своём рабочем месте и резервирует товар на складе магазина за конкретной заявкой. Срок резерва 24–72 часа.</div>
+          <div class="docs">
+            <span class="doc-pill">Резерв-карточка</span>
+          </div>
+        </div>
+        <div class="links">
+          <a class="link-item" href="partner.html"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/></svg>Рабочее место партнёра</a>
+        </div>
+      </div>
+
+      <div class="flow-step role-partner">
+        <div class="stp">4</div>
+        <div class="body">
+          <div class="title">Закупка товара компанией Payd <span style="color: var(--purple); margin-left: 4px;">⚠ ключевой шаг шариата</span></div>
+          <span class="who">Партнёр + Бухгалтерия</span>
+          <div class="desc">Партнёр оформляет «продажу компании Payd». Создаётся внутренний акт/инвойс, проводка расхода в кассе. Товар становится <b>собственностью Payd</b> — это обязательное условие Мурабахи. Оплата партнёру с отсрочкой 1–3 дня.</div>
+          <div class="docs">
+            <span class="doc-pill">Внутренний акт</span>
+            <span class="doc-pill">Инвойс</span>
+            <span class="doc-pill">Проводка расхода</span>
+          </div>
+        </div>
+        <div class="links">
+          <a class="link-item" href="partner.html"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/></svg>Партнёр</a>
+          <a class="link-item" href="kassa.html"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="14" rx="2"/></svg>Касса проводок</a>
+        </div>
+      </div>
+
+      <div class="flow-step role-partner">
+        <div class="stp">5</div>
+        <div class="body">
+          <div class="title">Договор Мурабаха с клиентом</div>
+          <span class="who">Партнёр (от имени Payd)</span>
+          <div class="desc">Партнёр оформляет договор купли-продажи в рассрочку (Мурабаха) от имени ООО «Payd». Раскрывается цена закупки + наценка + цена продажи. Подпись клиента.</div>
+          <div class="docs">
+            <span class="doc-pill">Договор Мурабаха</span>
+            <span class="doc-pill">График платежей</span>
+            <span class="doc-pill">Согласие 152-ФЗ</span>
+          </div>
+        </div>
+        <div class="links">
+          <a class="link-item" href="partner.html"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>Печать договора</a>
+          <a class="link-item" href="contracts.html"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>Договоры</a>
+        </div>
+      </div>
+
+      <div class="flow-step role-cashier">
+        <div class="stp">6</div>
+        <div class="body">
+          <div class="title">Первоначальный взнос</div>
+          <span class="who">Кассир / Партнёр</span>
+          <div class="desc">Клиент вносит первый взнос (обычно 10–20%) в кассу или у партнёра. Создаётся проводка прихода со статьёй «Первоначальный взнос». Печатается чек.</div>
+          <div class="docs">
+            <span class="doc-pill">Кассовый чек</span>
+            <span class="doc-pill">Приходный ордер</span>
+          </div>
+        </div>
+        <div class="links">
+          <a class="link-item" href="kassir.html"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="14" rx="2"/></svg>Касса</a>
+          <a class="link-item" href="partner.html"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/></svg>Партнёр</a>
+        </div>
+      </div>
+
+      <div class="flow-step role-partner">
+        <div class="stp">7</div>
+        <div class="body">
+          <div class="title">Выдача товара клиенту</div>
+          <span class="who">Партнёр (агент по выдаче)</span>
+          <div class="desc">Партнёр сверяет паспорт клиента, передаёт товар (уже как собственность Payd). Подписывается акт приёма-передачи. SMS клиенту.</div>
+          <div class="docs">
+            <span class="doc-pill">Акт приёма-передачи</span>
+            <span class="doc-pill">SMS клиенту</span>
+            <span class="doc-pill">Гарантийный талон</span>
+          </div>
+        </div>
+        <div class="links">
+          <a class="link-item" href="partner.html"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/></svg>Партнёр</a>
+          <a class="link-item" href="warehouse.html"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Склад (если Payd)</a>
+        </div>
+      </div>
+
+      <div class="flow-step role-inkass">
+        <div class="stp">8</div>
+        <div class="body">
+          <div class="title">Инкассация комиссии партнёру</div>
+          <span class="who">Инкассатор</span>
+          <div class="desc">Через 1–3 дня после продажи компании инкассатор привозит партнёру наличные или переводит безналично (комиссия + стоимость закупки). Партнёр подтверждает получение.</div>
+          <div class="docs">
+            <span class="doc-pill">Расходный ордер</span>
+            <span class="doc-pill">Подтверждение партнёра</span>
+          </div>
+        </div>
+        <div class="links">
+          <a class="link-item" href="inkassator.html"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/></svg>Маршрут</a>
+          <a class="link-item" href="partner.html"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/></svg>Подтверждение</a>
+        </div>
+      </div>
+
+      <div class="flow-step role-cashier">
+        <div class="stp">9</div>
+        <div class="body">
+          <div class="title">Ежемесячные платежи клиента</div>
+          <span class="who">Кассир / Партнёр / Онлайн</span>
+          <div class="desc">Клиент платит по графику (чаще всего ежемесячно). Принимаются наличные, карта, СБП, автосписание. Каждый платёж — проводка прихода. Без процентов и штрафов (Мурабаха).</div>
+          <div class="docs">
+            <span class="doc-pill">Кассовый чек</span>
+            <span class="doc-pill">SMS-напоминание</span>
+            <span class="doc-pill">Обновлённый график</span>
+          </div>
+        </div>
+        <div class="links">
+          <a class="link-item" href="kassir.html"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="14" rx="2"/></svg>Касса</a>
+          <a class="link-item" href="lk-client.html"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/></svg>ЛК клиента</a>
+        </div>
+      </div>
+
+      <div class="flow-step role-collector">
+        <div class="stp">10</div>
+        <div class="body">
+          <div class="title">Просрочка / Взыскание <span style="font-size: 10px; color: var(--text-3);">опционально</span></div>
+          <span class="who">Отдел взыскания</span>
+          <div class="desc">При просрочке более 3 дней — звонок клиенту. При длительной просрочке — реструктуризация, выкуп товара у клиента или передача в суд. <b>Штрафные проценты не применяются</b> (Шариат).</div>
+          <div class="docs">
+            <span class="doc-pill">Реструктуризация</span>
+            <span class="doc-pill">Соглашение о выкупе</span>
+          </div>
+        </div>
+        <div class="links">
+          <a class="link-item" href="collector.html"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>Взыскание</a>
+        </div>
+      </div>
+
+      <div class="flow-step role-cashier">
+        <div class="stp">11</div>
+        <div class="body">
+          <div class="title">Закрытие сделки</div>
+          <span class="who">Бухгалтер / Система</span>
+          <div class="desc">После последнего платежа сделка автоматически переводится в «Закрыта». Клиент получает SMS, статус в карточке заявки = «Закрыта». Запись в аудит.</div>
+          <div class="docs">
+            <span class="doc-pill">Финальная справка</span>
+            <span class="doc-pill">Аудит-запись</span>
+          </div>
+        </div>
+        <div class="links">
+          <a class="link-item" href="zayavka.html?id=142"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>Карточка</a>
+          <a class="link-item" href="audit.html"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/></svg>Аудит</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== MODULES ===== -->
+  <div class="section" id="modules">
+    <div class="sec-h">
+      <div class="ico" style="background: #fef3c7; color: #b45309;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
+      <div>
+        <h2>Модули платформы</h2>
+        <div class="desc">26 страниц · кто использует и что отвечает</div>
+      </div>
+    </div>
+
+    <div class="card" style="padding: 0; overflow: hidden;">
+      <table class="modules-tbl">
+        <thead><tr><th>Файл</th><th>Назначение</th><th>Кто использует</th><th>Состояние</th></tr></thead>
+        <tbody>
+          <tr><td class="file"><a href="index.html">index.html</a></td><td>Экран входа</td><td>Все</td><td><span class="mod-status ok">✓ работает</span></td></tr>
+          <tr><td class="file"><a href="dashboard.html">dashboard.html</a></td><td>Главный дашборд: KPI, графики, активность</td><td>Руководство, менеджеры</td><td><span class="mod-status ok">✓ работает</span></td></tr>
+          <tr><td class="file"><a href="calculator.html">calculator.html</a></td><td>Калькулятор рассрочки + создание заявок + QR</td><td>Клиенты, менеджеры</td><td><span class="mod-status ok">✓ работает</span></td></tr>
+          <tr><td class="file"><a href="zayavka-new.html">zayavka-new.html</a></td><td>Создание заявки вручную (менеджером)</td><td>Менеджеры</td><td><span class="mod-status partial">≈ форма</span></td></tr>
+          <tr><td class="file"><a href="zayavka.html?id=142">zayavka.html</a></td><td>Карточка заявки: workflow, документы, СБ, скоринг, SMS, выкуп</td><td>Менеджеры, СБ</td><td><span class="mod-status ok">✓ полный workflow</span></td></tr>
+          <tr><td class="file"><a href="zhurnal.html">zhurnal.html</a></td><td>Журнал всех заявок · фильтры · поиск</td><td>Менеджеры, СБ</td><td><span class="mod-status ok">✓ работает</span></td></tr>
+          <tr><td class="file"><a href="manager.html">manager.html</a></td><td>CRM: канбан-воронка лидов, задачи, скрипты</td><td>Менеджеры</td><td><span class="mod-status ok">✓ работает</span></td></tr>
+          <tr><td class="file"><a href="kassir.html">kassir.html</a></td><td>Касса: приём платежей, QR-скан, чеки, приход/расход</td><td>Кассиры</td><td><span class="mod-status ok">✓ работает</span></td></tr>
+          <tr><td class="file"><a href="kassa.html">kassa.html</a></td><td>Управление кассами: проводки, статьи, ДДС</td><td>Бухгалтерия</td><td><span class="mod-status ok">✓ работает</span></td></tr>
+          <tr><td class="file"><a href="inkassator.html">inkassator.html</a></td><td>Маршрут инкассатора: точки, доставка/забор, авто</td><td>Инкассаторы</td><td><span class="mod-status ok">✓ работает</span></td></tr>
+          <tr><td class="file"><a href="partner.html">partner.html</a></td><td>Партнёр: Мурабаха-цепочка, мои заявки, приём оплаты</td><td>Партнёры</td><td><span class="mod-status ok">✓ работает</span></td></tr>
+          <tr><td class="file"><a href="partners.html">partners.html</a></td><td>Список партнёров · карточки · тарифы партнёра</td><td>Руководство, бухгалтерия</td><td><span class="mod-status ok">✓ работает</span></td></tr>
+          <tr><td class="file"><a href="products.html">products.html</a></td><td>Каталог товаров</td><td>Менеджеры</td><td><span class="mod-status ok">✓ работает</span></td></tr>
+          <tr><td class="file"><a href="clients.html">clients.html</a></td><td>База клиентов</td><td>Менеджеры, СБ</td><td><span class="mod-status partial">≈ список</span></td></tr>
+          <tr><td class="file"><a href="client.html">client.html</a></td><td>Карточка клиента</td><td>Менеджеры</td><td><span class="mod-status partial">≈ просмотр</span></td></tr>
+          <tr><td class="file"><a href="contracts.html">contracts.html</a></td><td>Список договоров</td><td>Менеджеры, бухгалтерия</td><td><span class="mod-status partial">≈ список</span></td></tr>
+          <tr><td class="file"><a href="contract.html">contract.html</a></td><td>Карточка договора</td><td>Менеджеры</td><td><span class="mod-status partial">≈ просмотр</span></td></tr>
+          <tr><td class="file"><a href="finance.html">finance.html</a></td><td>Финансы · ДДС</td><td>Бухгалтерия</td><td><span class="mod-status partial">≈ дублирует kassa.html</span></td></tr>
+          <tr><td class="file"><a href="sb.html">sb.html</a></td><td>Служба безопасности: проверки</td><td>СБ</td><td><span class="mod-status partial">≈ интерфейс</span></td></tr>
+          <tr><td class="file"><a href="collector.html">collector.html</a></td><td>Взыскание: должники</td><td>Отдел взыскания</td><td><span class="mod-status partial">≈ список</span></td></tr>
+          <tr><td class="file"><a href="warehouse.html">warehouse.html</a></td><td>Выдача товара со склада</td><td>Кассир склад</td><td><span class="mod-status partial">≈ список</span></td></tr>
+          <tr><td class="file"><a href="settings.html">settings.html</a></td><td>Настройки: тарифы, статьи, кассы, СБ-правила</td><td>Руководство</td><td><span class="mod-status ok">✓ работает</span></td></tr>
+          <tr><td class="file"><a href="audit.html">audit.html</a></td><td>Журнал аудита</td><td>Руководство</td><td><span class="mod-status partial">≈ список</span></td></tr>
+          <tr><td class="file"><a href="employees.html">employees.html</a></td><td>Сотрудники, роли</td><td>Руководство, HR</td><td><span class="mod-status partial">≈ список</span></td></tr>
+          <tr><td class="file"><a href="reports.html">reports.html</a></td><td>Отчёты</td><td>Руководство, бухгалтерия</td><td><span class="mod-status partial">≈ заглушка</span></td></tr>
+          <tr><td class="file"><a href="promo.html">promo.html</a></td><td>Промо · рефералы</td><td>Маркетинг</td><td><span class="mod-status partial">≈ интерфейс</span></td></tr>
+          <tr><td class="file"><a href="lk-client.html">lk-client.html</a></td><td>Личный кабинет клиента</td><td>Клиенты</td><td><span class="mod-status partial">≈ просмотр</span></td></tr>
+          <tr><td class="file"><a href="integration-1c.html">integration-1c.html</a></td><td>Интеграция 1С УНФ 3.0</td><td>Бухгалтерия</td><td><span class="mod-status partial">≈ интерфейс</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== STORAGE KEYS ===== -->
+  <div class="section" id="storage">
+    <div class="sec-h">
+      <div class="ico" style="background: var(--success-soft); color: var(--success-2);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div>
+      <div>
+        <h2>Хранилища данных (localStorage)</h2>
+        <div class="desc">Где что лежит и кто читает/пишет</div>
+      </div>
+    </div>
+    <div class="keys-grid">
+      <div class="key-row"><div><div class="k">payd.partners.v1</div><div class="d">Список партнёров с тарифами и комиссиями</div></div><span class="who">partners · partner</span></div>
+      <div class="key-row"><div><div class="k">payd.tariffs.v1</div><div class="d">Глобальные тарифы платформы</div></div><span class="who">settings · calculator</span></div>
+      <div class="key-row"><div><div class="k">payd.cashes.v1</div><div class="d">Список касс (с балансами)</div></div><span class="who">kassa</span></div>
+      <div class="key-row"><div><div class="k">payd.cash.ops.v1</div><div class="d">Все кассовые проводки (приход/расход)</div></div><span class="who">kassa · kassir · partner · zayavka</span></div>
+      <div class="key-row"><div><div class="k">payd.cash.articles.v1</div><div class="d">Каталог статей доходов/расходов</div></div><span class="who">kassa · settings</span></div>
+      <div class="key-row"><div><div class="k">payd.calc.applications</div><div class="d">Заявки, созданные через калькулятор</div></div><span class="who">calculator · zhurnal · manager</span></div>
+      <div class="key-row"><div><div class="k">payd.zayavka.wf.v1</div><div class="d">Состояние workflow по каждой заявке</div></div><span class="who">zayavka</span></div>
+      <div class="key-row"><div><div class="k">payd.kassir.shift.v1</div><div class="d">Текущая смена кассира (остаток, операции)</div></div><span class="who">kassir</span></div>
+      <div class="key-row"><div><div class="k">payd.inkassator.state.v1</div><div class="d">Маршрут инкассатора, статусы точек</div></div><span class="who">inkassator</span></div>
+      <div class="key-row"><div><div class="k">payd.partner.payouts.v1</div><div class="d">Выплаты от инкассатора партнёрам</div></div><span class="who">inkassator · partner</span></div>
+      <div class="key-row"><div><div class="k">payd.partner.reserv.stages.v1</div><div class="d">Этапы Мурабаха-цепочки на резервах</div></div><span class="who">partner</span></div>
+      <div class="key-row"><div><div class="k">payd.kanban.v1</div><div class="d">CRM канбан состояния лидов</div></div><span class="who">manager</span></div>
+      <div class="key-row"><div><div class="k">payd.tabs.v1</div><div class="d">Открытые вкладки в топбаре</div></div><span class="who">app.js (везде)</span></div>
+      <div class="key-row"><div><div class="k">payd.settings.section</div><div class="d">Активный раздел настроек</div></div><span class="who">settings</span></div>
+    </div>
+  </div>
+
+  <!-- ===== STATUS ===== -->
+  <div class="section" id="status">
+    <div class="sec-h">
+      <div class="ico" style="background: var(--success-soft); color: var(--success-2);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div>
+        <h2>Состояние ключевых функций</h2>
+        <div class="desc">Что точно работает end-to-end</div>
+      </div>
+    </div>
+    <div class="card" style="padding: 0; overflow: hidden;">
+      <div class="check-row ok">
+        <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="info"><div class="t">Калькулятор → Заявка → Журнал</div><div class="s">Создание заявки в калькуляторе автоматически попадает в zhurnal.html и manager.html</div></div>
+        <span class="mod-status ok">end-to-end</span>
+      </div>
+      <div class="check-row ok">
+        <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="info"><div class="t">Workflow заявки (5–8 этапов по типу сделки)</div><div class="s">СБ-проверка, договор, взнос, выдача — переходят и сохраняются в localStorage</div></div>
+        <span class="mod-status ok">сохраняется</span>
+      </div>
+      <div class="check-row ok">
+        <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="info"><div class="t">Мурабаха-цепочка партнёра (4 шага)</div><div class="s">Резерв → Продажа Payd → Договор → Выдача · правильно по шариату</div></div>
+        <span class="mod-status ok">шариат-ок</span>
+      </div>
+      <div class="check-row ok">
+        <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="info"><div class="t">Касса: приём платежей с чеками и графиком</div><div class="s">Платёж → проводка прихода → отправка SMS клиенту с графиком</div></div>
+        <span class="mod-status ok">с печатью</span>
+      </div>
+      <div class="check-row ok">
+        <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="info"><div class="t">Инкассатор ↔ Партнёр (двустороннее подтверждение)</div><div class="s">Инкассатор привозит → партнёр подтверждает получение → проводка</div></div>
+        <span class="mod-status ok">синхронизировано</span>
+      </div>
+      <div class="check-row ok">
+        <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="info"><div class="t">Партнёр принимает оплату от клиента</div><div class="s">Кнопка «Принять оплату» → проводка прихода в кассу + чек</div></div>
+        <span class="mod-status ok">с чеком</span>
+      </div>
+      <div class="check-row ok">
+        <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="info"><div class="t">ДДС с группировкой по статьям</div><div class="s">Все проводки автоматически попадают в kassa.html → ДДС × месяцы</div></div>
+        <span class="mod-status ok">сводный</span>
+      </div>
+      <div class="check-row ok">
+        <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="info"><div class="t">Тарифы партнёров и глобальные пресеты</div><div class="s">Свои тарифы можно настраивать у каждого партнёра, есть глобальные пресеты</div></div>
+        <span class="mod-status ok">CRUD</span>
+      </div>
+      <div class="check-row ok">
+        <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="info"><div class="t">Печать документов: договор, чек, ордер</div><div class="s">Договор Мурабаха на A4 + кассовый чек 80mm — всё готово к печати</div></div>
+        <span class="mod-status ok">A4 + 80mm</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TODO / ISSUES ===== -->
+  <div class="section" id="issues">
+    <div class="sec-h">
+      <div class="ico" style="background: var(--warning-soft); color: var(--warning);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+      <div>
+        <h2>Что ещё доделать</h2>
+        <div class="desc">Идеи и пробелы для следующих итераций</div>
+      </div>
+    </div>
+    <div class="card" style="padding: 0; overflow: hidden;">
+      <div class="check-row warn">
+        <div class="ic">!</div>
+        <div class="info"><div class="t">ЛК клиента (lk-client.html)</div><div class="s">Сейчас только просмотр. Нужно: история платежей, оплата онлайн, скачивание договора, чат с менеджером</div></div>
+        <span class="mod-status partial">UI</span>
+      </div>
+      <div class="check-row warn">
+        <div class="ic">!</div>
+        <div class="info"><div class="t">Реальная интеграция СБ (НБКИ, ФССП)</div><div class="s">Сейчас имитация скоринга. Нужно подключить API НБКИ + автопроверку чёрных списков</div></div>
+        <span class="mod-status partial">имитация</span>
+      </div>
+      <div class="check-row warn">
+        <div class="ic">!</div>
+        <div class="info"><div class="t">SMS-шлюз и WhatsApp Business</div><div class="s">Сейчас открывается WhatsApp в браузере. Нужно: серверная отправка SMS через шлюз и WhatsApp API</div></div>
+        <span class="mod-status partial">фронт</span>
+      </div>
+      <div class="check-row warn">
+        <div class="ic">!</div>
+        <div class="info"><div class="t">Реальная база (вместо localStorage)</div><div class="s">Сейчас всё в браузере. Нужно: PostgreSQL/Supabase, синхронизация между ролями в реальном времени</div></div>
+        <span class="mod-status partial">локально</span>
+      </div>
+      <div class="check-row warn">
+        <div class="ic">!</div>
+        <div class="info"><div class="t">Авторизация и права</div><div class="s">Сейчас все видят всё. Нужны JWT-токены, роли (manager/cashier/sb/admin) и фильтрация данных</div></div>
+        <span class="mod-status partial">нет</span>
+      </div>
+      <div class="check-row warn">
+        <div class="ic">!</div>
+        <div class="info"><div class="t">Финансы · ДДС vs Кассы и проводки</div><div class="s">Дублирующая функциональность. Объединить или чётко разделить (планирование vs учёт)</div></div>
+        <span class="mod-status partial">дубли</span>
+      </div>
+      <div class="check-row warn">
+        <div class="ic">!</div>
+        <div class="info"><div class="t">Отчёты — реальные данные</div><div class="s">reports.html — заглушка. Нужны: отчёт по продажам, рентабельности, должникам, эффективности менеджеров</div></div>
+        <span class="mod-status partial">заглушка</span>
+      </div>
+      <div class="check-row warn">
+        <div class="ic">!</div>
+        <div class="info"><div class="t">Мобильное приложение для партнёра и кассира</div><div class="s">PWA-обёртка над текущими страницами или нативное iOS/Android для офлайн-работы в магазине</div></div>
+        <span class="mod-status stub">не начато</span>
+      </div>
+    </div>
+  </div>
+
+  </div>
+
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="db.js"></script>
+<script src="app.js"></script>
+<script>
+  PaydApp.mountShell({
+    active: 'struktura',
+    title: 'Структура и цепочки',
+    breadcrumbs: [{ label: 'Главная', href: 'dashboard.html' }, { label: 'Структура и цепочки' }]
+  });
+
+  // Highlight active nav based on scroll position
+  const navLinks = document.querySelectorAll('.strk-nav a');
+  const sections = [...document.querySelectorAll('.section')];
+  function updateActive() {
+    const y = window.scrollY + 120;
+    let curr = sections[0];
+    sections.forEach(s => { if (s.offsetTop <= y) curr = s; });
+    navLinks.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + curr.id));
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  navLinks.forEach(l => l.addEventListener('click', e => {
+    e.preventDefault();
+    const id = l.getAttribute('href').slice(1);
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }));
+  updateActive();
+</script>
+</body>
+</html>

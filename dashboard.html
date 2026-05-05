@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Дашборд — Payd</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+  @media (max-width: 1100px) { .dashboard-grid { grid-template-columns: 1fr; } }
+
+  .chart-card { padding: 20px; }
+  .chart-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .chart-head .left { display: flex; align-items: center; gap: 12px; }
+  .chart-head .left .t { font-size: 15px; font-weight: 700; }
+  .chart-head .left .s { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+  .chart-tabs { display: flex; gap: 4px; background: var(--surface-2); padding: 3px; border-radius: 8px; }
+  .chart-tabs .ct { padding: 5px 10px; font-size: 11px; font-weight: 500; color: var(--text-2); cursor: pointer; border-radius: 6px; }
+  .chart-tabs .ct.active { background: white; color: var(--text); box-shadow: var(--shadow-sm); font-weight: 600; }
+
+  .chart-svg { width: 100%; height: 260px; }
+  .chart-legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+  .chart-legend .li { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2); }
+  .chart-legend .li .sw { width: 10px; height: 10px; border-radius: 3px; }
+
+  .donut-wrap { display: flex; align-items: center; gap: 24px; }
+  .donut-svg { width: 160px; height: 160px; flex-shrink: 0; }
+  .donut-stats { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .donut-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .donut-row .sw { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .donut-row .name { flex: 1; color: var(--text-2); }
+  .donut-row .val { font-weight: 700; }
+
+  .top-list { display: flex; flex-direction: column; }
+  .top-row { display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-bottom: 1px solid var(--border); transition: background .12s; cursor: pointer; }
+  .top-row:hover { background: var(--surface-2); }
+  .top-row:last-child { border-bottom: none; }
+  .top-row .info { flex: 1; min-width: 0; }
+  .top-row .n { font-size: 13px; font-weight: 600; }
+  .top-row .s { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+  .top-row .v { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  .activity-feed { display: flex; flex-direction: column; }
+  .activity-item { display: flex; gap: 10px; padding: 12px 18px; border-bottom: 1px solid var(--border); }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-item .ic { width: 32px; height: 32px; border-radius: 8px; background: var(--surface-2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text-2); }
+  .activity-item.success .ic { background: var(--success-soft); color: var(--success); }
+  .activity-item.warning .ic { background: var(--warning-soft); color: var(--warning); }
+  .activity-item.danger .ic { background: var(--danger-soft); color: var(--danger); }
+  .activity-item.primary .ic { background: var(--primary-soft); color: var(--primary); }
+  .activity-item .info { flex: 1; min-width: 0; }
+  .activity-item .a { font-size: 13px; }
+  .activity-item .a b { font-weight: 600; }
+  .activity-item .b { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+
+  .product-mini { display: flex; align-items: center; gap: 10px; }
+  .product-mini-img {
+    width: 40px; height: 40px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+    border: 1px solid var(--border);
+    color: #1a2332;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .product-mini-img svg { width: 22px; height: 22px; stroke-width: 1.4; }
+</style>
+</head>
+<body>
+
+<div id="app-root">
+
+<!-- ====================== KPI CARDS ====================== -->
+<div class="page-head">
+  <div>
+    <h1>Доброе утро, Ибрагим 👋</h1>
+    <div class="desc" id="dash-period-label">Загрузка...</div>
+  </div>
+  <div class="page-head-actions">
+    <button class="btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Текущий месяц
+      <span class="chev"></span>
+    </button>
+    <a href="zayavka-new.html" class="btn primary">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Новая заявка
+    </a>
+  </div>
+</div>
+
+<div class="stat-grid cols-4 mb-6">
+  <div class="stat">
+    <div class="stat-head">
+      <div class="stat-icon success">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      </div>
+    </div>
+    <div class="stat-label">Выручка за месяц</div>
+    <div class="stat-value" data-live="kpi:revenue:month">₽ 0</div>
+    <div class="stat-sub">по поступлениям из кассы</div>
+  </div>
+
+  <div class="stat">
+    <div class="stat-head">
+      <div class="stat-icon purple">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      </div>
+    </div>
+    <div class="stat-label">Чистая прибыль</div>
+    <div class="stat-value">—</div>
+    <div class="stat-sub">появится после первых сделок</div>
+  </div>
+
+  <div class="stat">
+    <div class="stat-head">
+      <div class="stat-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      </div>
+    </div>
+    <div class="stat-label">Активные рассрочки</div>
+    <div class="stat-value" data-live="kpi:active:count">0</div>
+    <div class="stat-sub" data-live="kpi:active:amount">На сумму 0 ₽</div>
+  </div>
+
+  <div class="stat">
+    <div class="stat-head">
+      <div class="stat-icon danger">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+    </div>
+    <div class="stat-label">Просрочка</div>
+    <div class="stat-value"><span data-live="kpi:overdue:count">0</span> <small style="font-size: 14px; color: var(--text-3); font-weight: 600;">сделки</small></div>
+    <div class="stat-sub" data-live="kpi:overdue:amount">0 ₽ · 0% портфеля</div>
+  </div>
+</div>
+
+<!-- ====================== EMPTY STATE NOTICE ====================== -->
+<div class="card mb-6" style="padding:32px;text-align:center;color:var(--text-3);font-size:13px;">
+  Графики и аналитика появятся автоматически после первых сделок и платежей.<br>
+  <a href="zayavka-new.html" style="color:var(--primary);font-weight:600;">Создать первую заявку →</a>
+</div>
+
+<!-- ====================== TODAY OPERATIONS ====================== -->
+<div class="stat-grid cols-3 mb-6">
+  <div class="stat">
+    <div class="stat-head">
+      <div class="stat-icon success">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+    </div>
+    <div class="stat-label">Поступления сегодня</div>
+    <div class="stat-value" data-live="kpi:today:income">₽ 0</div>
+    <div class="stat-sub" data-live="kpi:today:income_count">Платежей не было</div>
+  </div>
+
+  <div class="stat">
+    <div class="stat-head">
+      <div class="stat-icon primary">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </div>
+    </div>
+    <div class="stat-label">Новых заявок сегодня</div>
+    <div class="stat-value"><span data-live="kpi:today:new_apps">0</span></div>
+    <div class="stat-sub">из калькулятора и форм</div>
+  </div>
+
+  <div class="stat">
+    <div class="stat-head">
+      <div class="stat-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+    </div>
+    <div class="stat-label">Партнёров</div>
+    <div class="stat-value" data-live="kpi:partners:count">0</div>
+    <div class="stat-sub">в системе</div>
+  </div>
+</div>
+
+<!-- ====================== TOP / ACTIVITY ====================== -->
+<div class="dashboard-grid">
+  <div style="display: flex; flex-direction: column; gap: 16px;">
+    <div class="card">
+      <div class="card-hd">
+        <h3>Топ партнёров</h3>
+        <span class="h-sub">по сумме сделок</span>
+      </div>
+      <div class="top-list" data-live="list:partners:top">
+        <div style="padding:24px;text-align:center;color:var(--text-3);font-size:13px;">Загрузка...</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd">
+        <h3>Топ товаров</h3>
+      </div>
+      <div class="top-list" data-live="list:products:top">
+        <div style="padding:24px;text-align:center;color:var(--text-3);font-size:13px;">Появится после первых сделок</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="display: flex; flex-direction: column;">
+    <div class="card-hd">
+      <h3>Лента событий</h3>
+      <span class="status-dot success">Live</span>
+    </div>
+    <div class="activity-feed" style="flex: 1; overflow-y: auto; max-height: 720px;" data-live="list:activity:feed">
+      <div style="padding:24px;text-align:center;color:var(--text-3);font-size:13px;">Загрузка...</div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="db.js"></script>
+<script src="app.js"></script>
+<script src="reports-data.js"></script>
+<script>
+  PaydApp.mountShell({
+    active: 'dashboard',
+    title: 'Дашборд',
+    breadcrumbs: [{ label: 'Главная', href: 'dashboard.html' }, { label: 'Дашборд' }]
+  });
+</script>
+</body>
+</html>

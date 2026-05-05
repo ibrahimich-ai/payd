@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Журнал заявок — Payd</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .stat-grid.cols-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+  @media (max-width: 1400px) { .stat-grid.cols-5 { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 1000px) { .stat-grid.cols-5 { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .stat-grid.cols-5 { grid-template-columns: 1fr; } }
+
+  /* Table wrapper: horizontal scroll on narrow screens */
+  .card > table.tbl { display: block; overflow-x: auto; }
+  .card > table.tbl > tbody { display: table; width: 100%; }
+  .card > table.tbl > thead { display: table; width: 100%; }
+  @media (min-width: 1280px) {
+    .card > table.tbl { display: table; }
+    .card > table.tbl > tbody, .card > table.tbl > thead { display: table-row-group; }
+    .card > table.tbl > thead { display: table-header-group; }
+  }
+
+  .filter-extras { display: flex; gap: 8px; flex-wrap: wrap; }
+  .filter-extras select { padding: 8px 28px 8px 10px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); font-size: 12px; font-family: inherit; background: var(--surface) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%238993a6" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>') no-repeat right 8px center; appearance: none; outline: none; cursor: pointer; }
+  .filter-extras select:focus { border-color: var(--primary); }
+
+  .row-client { display: flex; align-items: center; gap: 10px; }
+  .row-client .info { min-width: 0; }
+  .row-client .name { font-weight: 600; }
+  .row-client .phone { font-size: 11px; color: var(--text-3); }
+
+  .row-product { display: flex; align-items: center; gap: 8px; }
+  .row-product .ico {
+    width: 32px; height: 32px;
+    border-radius: 7px;
+    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    color: #1a2332;
+  }
+  .row-product .ico svg { width: 18px; height: 18px; stroke-width: 1.4; }
+  .row-product .pname { font-size: 12px; color: var(--text); }
+
+  .progress-cell { width: 100px; }
+  .progress-cell .pf { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-3); margin-bottom: 2px; }
+  .progress-cell .progress-bar { height: 4px; }
+
+  .row-actions { display: flex; gap: 4px; opacity: 0; transition: opacity .15s; }
+  tr:hover .row-actions { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div id="app-root">
+
+<div class="page-head">
+  <div>
+    <h1>Журнал заявок</h1>
+    <div class="desc">Все заявки рассрочки в одном месте · обновлено 2 минуты назад</div>
+  </div>
+  <div class="page-head-actions">
+    <button class="btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Экспорт
+    </button>
+    <button class="btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Печать реестра
+    </button>
+    <a href="zayavka-new.html" class="btn primary">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Новая заявка
+    </a>
+  </div>
+</div>
+
+<!-- ====================== STATS ====================== -->
+<div class="stat-grid cols-5 mb-5">
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label">Всего заявок</div>
+    <div class="stat-value" style="font-size: 22px;">147</div>
+    <div class="stat-sub" style="color: var(--success);">+18 за месяц</div>
+  </div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label" style="color: var(--success);">Одобрено</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--success);">98</div>
+    <div class="stat-sub">66,7% от всех</div>
+  </div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label" style="color: var(--primary);">В работе</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--primary);">14</div>
+    <div class="stat-sub">На обработке</div>
+  </div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label" style="color: var(--warning);">На проверке СБ</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--warning);">7</div>
+    <div class="stat-sub">Ожидают решения</div>
+  </div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label" style="color: var(--danger);">Отклонено</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--danger);">28</div>
+    <div class="stat-sub">19% отказов</div>
+  </div>
+</div>
+
+<!-- ====================== FILTERS / CHIPS ====================== -->
+<div class="chip-row mb-4" id="zh-status-chips">
+  <div class="chip active" data-status="all">Все <span class="count">147</span></div>
+  <div class="chip" data-status="Новая">Новые <span class="count">8</span></div>
+  <div class="chip" data-status="проверке">На проверке <span class="count">7</span></div>
+  <div class="chip" data-status="Одобрена">Одобрены <span class="count">98</span></div>
+  <div class="chip" data-status="Договор">Договор <span class="count">5</span></div>
+  <div class="chip" data-status="Активная">Активные <span class="count">14</span></div>
+  <div class="chip" data-status="Закрыта">Закрыты <span class="count">42</span></div>
+  <div class="chip" data-status="Просрочка">Просрочка <span class="count">23</span></div>
+  <div class="chip" data-status="Отклонена">Отклонены <span class="count">28</span></div>
+</div>
+
+<div class="filter-bar">
+  <div class="filter-search">
+    <span class="si"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+    <input type="text" placeholder="Поиск по номеру, ФИО, телефону, ИНН..." />
+  </div>
+  <div class="filter-extras">
+    <select id="zh-period">
+      <option value="all">Период: всё время</option>
+      <option value="today">Сегодня</option>
+      <option value="week">За неделю</option>
+      <option value="month" selected>Апрель 2026</option>
+      <option value="march">Март 2026</option>
+    </select>
+    <select id="zh-manager">
+      <option value="all">Все менеджеры</option>
+      <option>Бекуев М.</option>
+      <option>Алиев С.</option>
+      <option>Исаев И.</option>
+      <option>Мусаева А.</option>
+      <option>Хасанов А.</option>
+    </select>
+    <select id="zh-type">
+      <option value="all">Все типы сделок</option>
+      <option>Стандартная</option>
+      <option>Исламская</option>
+      <option>Под заказ</option>
+    </select>
+    <select id="zh-amount">
+      <option value="all">Все суммы</option>
+      <option value="lt50">До 50 000 ₽</option>
+      <option value="50_100">50–100 000 ₽</option>
+      <option value="100_200">100–200 000 ₽</option>
+      <option value="gt200">Более 200 000 ₽</option>
+    </select>
+    <button class="btn sm" id="btn-clear-filters">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      Сбросить
+    </button>
+  </div>
+</div>
+
+<!-- ====================== TABLE ====================== -->
+<div class="card">
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th style="width: 32px;"><input type="checkbox" id="zh-select-all" /></th>
+        <th class="sortable" data-sort="num" style="cursor: pointer;">№ ⇅</th>
+        <th class="sortable" data-sort="date" style="cursor: pointer;">Дата ⇅</th>
+        <th>Клиент</th>
+        <th>Товар</th>
+        <th class="t-right sortable" data-sort="amount" style="cursor: pointer;">Сумма ⇅</th>
+        <th class="t-center">Срок</th>
+        <th>Прогресс</th>
+        <th>Тип</th>
+        <th>Менеджер</th>
+        <th>Статус</th>
+        <th class="t-right" style="width: 60px;"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="clickable" onclick="window.location='zayavka.html?id=147&back=zhurnal.html'">
+        <td><input type="checkbox" onclick="event.stopPropagation()"/></td>
+        <td class="t-mono t-strong">#147</td>
+        <td>
+          <div class="t-strong">30.04.2026</div>
+          <div class="text-xs text-muted">14:23</div>
+        </td>
+        <td>
+          <div class="row-client">
+            <div class="avatar c1 sm">ТР</div>
+            <div class="info">
+              <div class="name">Тазуев Р. С.</div>
+              <div class="phone">+7 928 891-23-45</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="row-product">
+            <div class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
+            <div class="pname">iPhone 16 Pro 256GB · Натуральный титан</div>
+          </div>
+        </td>
+        <td class="t-right t-mono t-strong">84 200 ₽</td>
+        <td class="t-center">12 мес</td>
+        <td>
+          <div class="progress-cell">
+            <div class="pf"><span>1/6</span><span>17%</span></div>
+            <div class="progress-bar"><div class="fill" style="width: 17%"></div></div>
+          </div>
+        </td>
+        <td><span class="badge primary">Стандартная</span></td>
+        <td>
+          <div class="row-client">
+            <div class="avatar c2 sm">БМ</div>
+            <span style="font-size: 12px;">Бекуев М.</span>
+          </div>
+        </td>
+        <td><span class="badge primary dot">Новая</span></td>
+        <td class="t-right">
+          <div class="row-actions">
+            <button class="icon-btn" style="width: 28px; height: 28px;" onclick="event.stopPropagation()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
+          </div>
+        </td>
+      </tr>
+
+      <tr class="clickable" onclick="window.location='zayavka.html?id=146&back=zhurnal.html'">
+        <td><input type="checkbox" onclick="event.stopPropagation()"/></td>
+        <td class="t-mono t-strong">#146</td>
+        <td>
+          <div class="t-strong">30.04.2026</div>
+          <div class="text-xs text-muted">12:08</div>
+        </td>
+        <td>
+          <div class="row-client">
+            <div class="avatar c5 sm">ЭП</div>
+            <div class="info">
+              <div class="name">Эльмурзаева П. А.</div>
+              <div class="phone">+7 963 712-44-89</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="row-product">
+            <div class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="1.5"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>
+            <div class="pname">MacBook Air M3 13" · Серебристый</div>
+          </div>
+        </td>
+        <td class="t-right t-mono t-strong">145 000 ₽</td>
+        <td class="t-center">18 мес</td>
+        <td>
+          <div class="progress-cell">
+            <div class="pf"><span>—</span><span>0%</span></div>
+            <div class="progress-bar"><div class="fill" style="width: 0%; background: var(--danger);"></div></div>
+          </div>
+        </td>
+        <td><span class="badge primary">Стандартная</span></td>
+        <td>
+          <div class="row-client">
+            <div class="avatar c3 sm">АС</div>
+            <span style="font-size: 12px;">Алиев С.</span>
+          </div>
+        </td>
+        <td><span class="badge danger dot">Отклонена</span></td>
+        <td></td>
+      </tr>
+
+      <tr class="clickable" onclick="window.location='zayavka.html?id=145&back=zhurnal.html'">
+        <td><input type="checkbox" onclick="event.stopPropagation()"/></td>
+        <td class="t-mono t-strong">#145</td>
+        <td>
+          <div class="t-strong">30.04.2026</div>
+          <div class="text-xs text-muted">11:42</div>
+        </td>
+        <td>
+          <div class="row-client">
+            <div class="avatar c6 sm">ГИ</div>
+            <div class="info">
+              <div class="name">Гайтаев И. М.</div>
+              <div class="phone">+7 938 022-87-13</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="row-product">
+            <div class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
+            <div class="pname">iPhone 15 Plus 128GB · Голубой</div>
+          </div>
+        </td>
+        <td class="t-right t-mono t-strong">68 400 ₽</td>
+        <td class="t-center">6 мес</td>
+        <td>
+          <div class="progress-cell">
+            <div class="pf"><span>2/6</span><span>33%</span></div>
+            <div class="progress-bar warning"><div class="fill" style="width: 33%"></div></div>
+          </div>
+        </td>
+        <td><span class="badge success">Исламская</span></td>
+        <td>
+          <div class="row-client">
+            <div class="avatar c4 sm">ИИ</div>
+            <span style="font-size: 12px;">Исаев И.</span>
+          </div>
+        </td>
+        <td><span class="badge warning dot">На проверке</span></td>
+        <td></td>
+      </tr>
+
+      <tr class="clickable" onclick="window.location='zayavka.html?id=144&back=zhurnal.html'">
+        <td><input type="checkbox" onclick="event.stopPropagation()"/></td>
+        <td class="t-mono t-strong">#144</td>
+        <td>
+          <div class="t-strong">29.04.2026</div>
+          <div class="text-xs text-muted">17:54</div>
+        </td>
+        <td>
+          <div class="row-client">
+            <div class="avatar c2 sm">ХА</div>
+            <div class="info">
+              <div class="name">Хасиев А. Х.</div>
+              <div class="phone">+7 928 449-12-08</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="row-product">
+            <div class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="6"/><polyline points="12 9 12 12 13 13"/></svg></div>
+            <div class="pname">Apple Watch Series 10 · Серебристый</div>
+          </div>
+        </td>
+        <td class="t-right t-mono t-strong">42 000 ₽</td>
+        <td class="t-center">4 мес</td>
+        <td>
+          <div class="progress-cell">
+            <div class="pf"><span>5/6</span><span>83%</span></div>
+            <div class="progress-bar"><div class="fill" style="width: 83%"></div></div>
+          </div>
+        </td>
+        <td><span class="badge success">Исламская</span></td>
+        <td>
+          <div class="row-client">
+            <div class="avatar c2 sm">БМ</div>
+            <span style="font-size: 12px;">Бекуев М.</span>
+          </div>
+        </td>
+        <td><span class="badge success dot">Активная</span></td>
+        <td></td>
+      </tr>
+
+      <tr class="clickable" onclick="window.location='zayavka.html?id=143&back=zhurnal.html'">
+        <td><input type="checkbox" onclick="event.stopPropagation()"/></td>
+        <td class="t-mono t-strong">#143</td>
+        <td>
+          <div class="t-strong">29.04.2026</div>
+          <div class="text-xs text-muted">15:21</div>
+        </td>
+        <td>
+          <div class="row-client">
+            <div class="avatar c7 sm">МА</div>
+            <div class="info">
+              <div class="name">Магомедов А. С.</div>
+              <div class="phone">+7 989 156-22-44</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="row-product">
+            <div class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1v-7h3v5z"/><path d="M3 19a2 2 0 0 0 2 2h1v-7H3v5z"/></svg></div>
+            <div class="pname">Airpods 4 ANC · Белый</div>
+          </div>
+        </td>
+        <td class="t-right t-mono t-strong">12 800 ₽</td>
+        <td class="t-center">3 мес</td>
+        <td>
+          <div class="progress-cell">
+            <div class="pf"><span>3/6</span><span>50%</span></div>
+            <div class="progress-bar"><div class="fill" style="width: 50%"></div></div>
+          </div>
+        </td>
+        <td><span class="badge primary">Стандартная</span></td>
+        <td>
+          <div class="row-client">
+            <div class="avatar c5 sm">МА</div>
+            <span style="font-size: 12px;">Мусаева А.</span>
+          </div>
+        </td>
+        <td><span class="badge primary dot">Договор</span></td>
+        <td></td>
+      </tr>
+
+      <tr class="clickable" onclick="window.location='zayavka.html?id=142&back=zhurnal.html'">
+        <td><input type="checkbox" onclick="event.stopPropagation()"/></td>
+        <td class="t-mono t-strong">#142</td>
+        <td>
+          <div class="t-strong">29.04.2026</div>
+          <div class="text-xs text-muted">14:08</div>
+        </td>
+        <td>
+          <div class="row-client">
+            <div class="avatar c1 sm">ДЛ</div>
+            <div class="info">
+              <div class="name">Даурбекова Л. С.</div>
+              <div class="phone">+7 989 918-51-58</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="row-product">
+            <div class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1v-7h3v5z"/><path d="M3 19a2 2 0 0 0 2 2h1v-7H3v5z"/></svg></div>
+            <div class="pname">Airpods 4 CASE MXP93 · Белый</div>
+          </div>
+        </td>
+        <td class="t-right t-mono t-strong">12 800 ₽</td>
+        <td class="t-center">3 мес</td>
+        <td>
+          <div class="progress-cell">
+            <div class="pf"><span>3/6</span><span>50%</span></div>
+            <div class="progress-bar"><div class="fill" style="width: 50%"></div></div>
+          </div>
+        </td>
+        <td><span class="badge primary">Стандартная</span></td>
+        <td>
+          <div class="row-client">
+            <div class="avatar c2 sm">БМ</div>
+            <span style="font-size: 12px;">Бекуев М.</span>
+          </div>
+        </td>
+        <td><span class="badge success dot">Одобрена</span></td>
+        <td></td>
+      </tr>
+
+      <tr class="clickable" onclick="window.location='zayavka.html?id=141&back=zhurnal.html'">
+        <td><input type="checkbox" onclick="event.stopPropagation()"/></td>
+        <td class="t-mono t-strong">#141</td>
+        <td>
+          <div class="t-strong">29.04.2026</div>
+          <div class="text-xs text-muted">11:35</div>
+        </td>
+        <td>
+          <div class="row-client">
+            <div class="avatar c3 sm">УМ</div>
+            <div class="info">
+              <div class="name">Усманов М. И.</div>
+              <div class="phone">+7 928 778-04-12</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="row-product">
+            <div class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8 21 12 17 16 21"/></svg></div>
+            <div class="pname">Samsung QLED 65" · Чёрный</div>
+          </div>
+        </td>
+        <td class="t-right t-mono t-strong">128 500 ₽</td>
+        <td class="t-center">12 мес</td>
+        <td>
+          <div class="progress-cell">
+            <div class="pf"><span>6/6</span><span>100%</span></div>
+            <div class="progress-bar success"><div class="fill" style="width: 100%"></div></div>
+          </div>
+        </td>
+        <td><span class="badge purple">Под заказ</span></td>
+        <td>
+          <div class="row-client">
+            <div class="avatar c3 sm">АС</div>
+            <span style="font-size: 12px;">Алиев С.</span>
+          </div>
+        </td>
+        <td><span class="badge gray dot">Закрыта</span></td>
+        <td></td>
+      </tr>
+
+      <tr class="clickable" onclick="window.location='zayavka.html?id=140&back=zhurnal.html'">
+        <td><input type="checkbox" onclick="event.stopPropagation()"/></td>
+        <td class="t-mono t-strong">#140</td>
+        <td>
+          <div class="t-strong">28.04.2026</div>
+          <div class="text-xs text-muted">19:02</div>
+        </td>
+        <td>
+          <div class="row-client">
+            <div class="avatar c4 sm">ИЯ</div>
+            <div class="info">
+              <div class="name">Исраилов Я. А.</div>
+              <div class="phone">+7 963 311-45-78</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="row-product">
+            <div class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
+            <div class="pname">Samsung Galaxy S25</div>
+          </div>
+        </td>
+        <td class="t-right t-mono t-strong">94 600 ₽</td>
+        <td class="t-center">9 мес</td>
+        <td>
+          <div class="progress-cell">
+            <div class="pf"><span>4/6</span><span>67%</span></div>
+            <div class="progress-bar danger"><div class="fill" style="width: 67%"></div></div>
+          </div>
+        </td>
+        <td><span class="badge primary">Стандартная</span></td>
+        <td>
+          <div class="row-client">
+            <div class="avatar c4 sm">ИИ</div>
+            <span style="font-size: 12px;">Исаев И.</span>
+          </div>
+        </td>
+        <td><span class="badge danger dot">Просрочка 5 дн</span></td>
+        <td></td>
+      </tr>
+
+      <tr class="clickable" onclick="window.location='zayavka.html?id=139&back=zhurnal.html'">
+        <td><input type="checkbox" onclick="event.stopPropagation()"/></td>
+        <td class="t-mono t-strong">#139</td>
+        <td>
+          <div class="t-strong">28.04.2026</div>
+          <div class="text-xs text-muted">16:48</div>
+        </td>
+        <td>
+          <div class="row-client">
+            <div class="avatar c5 sm">АЗ</div>
+            <div class="info">
+              <div class="name">Абдулаева З. М.</div>
+              <div class="phone">+7 928 005-67-21</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="row-product">
+            <div class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="1.5"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>
+            <div class="pname">Lenovo IdeaPad Slim 5 · Серый</div>
+          </div>
+        </td>
+        <td class="t-right t-mono t-strong">58 200 ₽</td>
+        <td class="t-center">6 мес</td>
+        <td>
+          <div class="progress-cell">
+            <div class="pf"><span>4/6</span><span>67%</span></div>
+            <div class="progress-bar"><div class="fill" style="width: 67%"></div></div>
+          </div>
+        </td>
+        <td><span class="badge success">Исламская</span></td>
+        <td>
+          <div class="row-client">
+            <div class="avatar c5 sm">МА</div>
+            <span style="font-size: 12px;">Мусаева А.</span>
+          </div>
+        </td>
+        <td><span class="badge success dot">Активная</span></td>
+        <td></td>
+      </tr>
+
+      <tr class="clickable" onclick="window.location='zayavka.html?id=138&back=zhurnal.html'">
+        <td><input type="checkbox" onclick="event.stopPropagation()"/></td>
+        <td class="t-mono t-strong">#138</td>
+        <td>
+          <div class="t-strong">28.04.2026</div>
+          <div class="text-xs text-muted">10:15</div>
+        </td>
+        <td>
+          <div class="row-client">
+            <div class="avatar c6 sm">ВА</div>
+            <div class="info">
+              <div class="name">Вагапов А. Р.</div>
+              <div class="phone">+7 989 220-11-09</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="row-product">
+            <div class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="11" x2="10" y2="11"/><line x1="8" y1="9" x2="8" y2="13"/><line x1="15" y1="12" x2="15.01" y2="12"/><line x1="18" y1="10" x2="18.01" y2="10"/><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258A4 4 0 0 0 17.32 5z"/></svg></div>
+            <div class="pname">PS5 Slim Digital · Белый</div>
+          </div>
+        </td>
+        <td class="t-right t-mono t-strong">52 000 ₽</td>
+        <td class="t-center">6 мес</td>
+        <td>
+          <div class="progress-cell">
+            <div class="pf"><span>6/6</span><span>100%</span></div>
+            <div class="progress-bar success"><div class="fill" style="width: 100%"></div></div>
+          </div>
+        </td>
+        <td><span class="badge primary">Стандартная</span></td>
+        <td>
+          <div class="row-client">
+            <div class="avatar c6 sm">ХА</div>
+            <span style="font-size: 12px;">Хасанов А.</span>
+          </div>
+        </td>
+        <td><span class="badge gray dot">Закрыта</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="pagination">
+    <div class="pagination-info">Показано 1–10 из 147 заявок</div>
+    <div class="pagination-controls">
+      <button class="page-btn" disabled><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <button class="page-btn active">1</button>
+      <button class="page-btn">2</button>
+      <button class="page-btn">3</button>
+      <button class="page-btn">...</button>
+      <button class="page-btn">15</button>
+      <button class="page-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="db.js"></script>
+<script src="app.js"></script>
+<script>
+  PaydApp.mountShell({
+    active: 'zhurnal',
+    title: 'Журнал заявок',
+    breadcrumbs: [{ label: 'Главная', href: 'dashboard.html' }, { label: 'Журнал заявок' }]
+  });
+
+  // ============================================================
+  // INJECT CALCULATOR-CREATED APPLICATIONS (from localStorage)
+  // ============================================================
+  (function injectCalcApps() {
+    const tbody = document.querySelector('table.tbl tbody');
+    if (!tbody) return;
+    let apps = [];
+    try { apps = JSON.parse(localStorage.getItem('payd.calc.applications') || '[]'); }
+    catch (_) { return; }
+    if (!apps.length) return;
+
+    const fmt = n => Math.round(n).toLocaleString('ru-RU');
+    const COLORS = ['c1','c2','c3','c4','c5','c6','c7','c8'];
+    const initials = name => {
+      const parts = (name || '').trim().split(/\s+/);
+      const last = parts[0]?.[0] || '?';
+      const first = parts[1]?.[0] || '';
+      return (last + first).toUpperCase();
+    };
+    const shortName = name => {
+      const parts = (name || '').trim().split(/\s+/);
+      if (parts.length < 2) return name;
+      return `${parts[0]} ${parts[1][0]}.${parts[2] ? ' ' + parts[2][0] + '.' : ''}`;
+    };
+    const fmtDate = iso => {
+      const d = new Date(iso);
+      const pad = n => String(n).padStart(2, '0');
+      return {
+        date: `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`,
+        time: `${pad(d.getHours())}:${pad(d.getMinutes())}`
+      };
+    };
+
+    apps.slice().reverse().forEach((app, i) => {
+      const num = app.number || String(200 + i).padStart(10, '0');
+      const shortNum = '#' + parseInt(num, 10);
+      const c = app.calc || {};
+      const dt = fmtDate(app.ts || new Date().toISOString());
+      const color = COLORS[Math.abs((app.client?.name || '').length) % COLORS.length];
+      const isMurabaha = c.type === 'murabaha';
+      const tr = document.createElement('tr');
+      tr.className = 'clickable';
+      tr.dataset.calcApp = '1';
+      tr.innerHTML = `
+        <td><input type="checkbox" onclick="event.stopPropagation()"/></td>
+        <td class="t-mono t-strong">${shortNum}</td>
+        <td>
+          <div class="t-strong">${dt.date}</div>
+          <div class="text-xs text-muted">${dt.time}</div>
+        </td>
+        <td>
+          <div class="row-client">
+            <div class="avatar ${color} sm">${initials(app.client?.name)}</div>
+            <div class="info">
+              <div class="name">${shortName(app.client?.name) || '—'}</div>
+              <div class="phone">${app.client?.phone || ''}</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="row-product">
+            <div class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="11" x2="10" y2="11"/><line x1="14" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="10" y2="15"/></svg></div>
+            <div class="pname">${app.partner ? 'Расчёт · ' + app.partner : 'Расчёт калькулятора'}</div>
+          </div>
+        </td>
+        <td class="t-right t-mono t-strong">${fmt(c.price || 0)} ₽</td>
+        <td class="t-center">${c.term || '—'} мес</td>
+        <td>
+          <div class="progress-cell">
+            <div class="pf"><span>0/${c.term || 0}</span><span>0%</span></div>
+            <div class="progress-bar"><div class="fill" style="width: 0%"></div></div>
+          </div>
+        </td>
+        <td><span class="badge ${isMurabaha ? 'success' : 'primary'}">${c.typeLabel || (isMurabaha ? 'Мурабаха' : 'Стандартная')}</span></td>
+        <td>
+          <div class="row-client">
+            <div class="avatar c0 sm" style="background: var(--surface-3); color: var(--text-3);">—</div>
+            <span style="font-size: 12px; color: var(--text-3);">не назначен</span>
+          </div>
+        </td>
+        <td><span class="badge primary dot">Новая</span></td>
+        <td class="t-right">
+          <div class="row-actions">
+            <button class="icon-btn" style="width: 28px; height: 28px;" onclick="event.stopPropagation()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
+          </div>
+        </td>
+      `;
+      tr.addEventListener('click', e => {
+        if (e.target.closest('input, button')) return;
+        window.location = `zayavka.html?id=${encodeURIComponent(app.id)}&back=zhurnal.html`;
+      });
+      tbody.prepend(tr);
+    });
+
+    // Update "Все" counter and "Новые" counter chips
+    const allChip = document.querySelector('#zh-status-chips .chip[data-status="all"] .count');
+    if (allChip) allChip.textContent = parseInt(allChip.textContent, 10) + apps.length;
+    const newChip = document.querySelector('#zh-status-chips .chip[data-status="Новая"] .count');
+    if (newChip) newChip.textContent = parseInt(newChip.textContent, 10) + apps.length;
+
+    // Update "showing 1–10 of N" line
+    const info = document.querySelector('.pagination-info');
+    if (info) info.textContent = info.textContent.replace(/из \d+/, 'из ' + (147 + apps.length));
+  })();
+
+  // ============================================================
+  // JOURNAL FULL FUNCTIONALITY
+  // ============================================================
+  (function () {
+    const tbody = document.querySelector('table.tbl tbody');
+    if (!tbody) return;
+    const rows = [...tbody.querySelectorAll('tr')];
+    let activeStatus = 'all';
+
+    // Master filter that applies all conditions
+    function applyAllFilters() {
+      const statusFilter = activeStatus;
+      const period = document.getElementById('zh-period')?.value || 'all';
+      const manager = document.getElementById('zh-manager')?.value || 'all';
+      const type = document.getElementById('zh-type')?.value || 'all';
+      const amount = document.getElementById('zh-amount')?.value || 'all';
+      const search = document.querySelector('.filter-search input')?.value.trim().toLowerCase() || '';
+
+      let visible = 0;
+      rows.forEach(r => {
+        let show = true;
+        const text = r.textContent.toLowerCase();
+
+        // Status filter
+        if (statusFilter !== 'all' && !text.includes(statusFilter.toLowerCase())) show = false;
+
+        // Search
+        if (search && !text.includes(search)) show = false;
+
+        // Manager
+        if (manager !== 'all' && !text.includes(manager.toLowerCase())) show = false;
+
+        // Type
+        if (type !== 'all' && !text.includes(type.toLowerCase())) show = false;
+
+        // Amount range
+        const amountText = r.querySelector('td.t-right.t-mono.t-strong')?.textContent || '';
+        const amt = parseInt(amountText.replace(/\D/g, ''), 10) || 0;
+        if (amount === 'lt50' && amt >= 50000) show = false;
+        else if (amount === '50_100' && (amt < 50000 || amt > 100000)) show = false;
+        else if (amount === '100_200' && (amt < 100000 || amt > 200000)) show = false;
+        else if (amount === 'gt200' && amt < 200000) show = false;
+
+        // Period (rough — based on date prefix)
+        if (period === 'today') {
+          if (!text.includes('30.04.2026')) show = false;
+        } else if (period === 'week') {
+          // last 7 days from 30 apr
+          const m = text.match(/(\d{2})\.04\.2026/);
+          if (!m || parseInt(m[1], 10) < 24) show = false;
+        } else if (period === 'march') {
+          if (!/03\.2026/.test(text)) show = false;
+        }
+
+        r.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+
+      // Update pagination info
+      const info = document.querySelector('.pagination-info');
+      if (info) info.textContent = `Показано ${visible} из 147 заявок`;
+
+      // Update Bulk action bar visibility
+      updateBulkBar();
+    }
+
+    // ===== STATUS CHIPS =====
+    document.querySelectorAll('#zh-status-chips .chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('#zh-status-chips .chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        activeStatus = chip.dataset.status || 'all';
+        applyAllFilters();
+      });
+    });
+
+    // ===== FILTER DROPDOWNS =====
+    ['zh-period', 'zh-manager', 'zh-type', 'zh-amount'].forEach(id => {
+      document.getElementById(id)?.addEventListener('change', applyAllFilters);
+    });
+
+    // Search live (already wired by autoWireSearchBars but let's hook our applyAll instead)
+    document.querySelector('.filter-search input')?.addEventListener('input', applyAllFilters);
+
+    // ===== CLEAR FILTERS =====
+    document.getElementById('btn-clear-filters')?.addEventListener('click', e => {
+      e.preventDefault(); e.stopImmediatePropagation();
+      document.getElementById('zh-period').value = 'all';
+      document.getElementById('zh-manager').value = 'all';
+      document.getElementById('zh-type').value = 'all';
+      document.getElementById('zh-amount').value = 'all';
+      document.querySelector('.filter-search input').value = '';
+      document.querySelectorAll('#zh-status-chips .chip').forEach(c => c.classList.remove('active'));
+      document.querySelector('#zh-status-chips .chip[data-status="all"]')?.classList.add('active');
+      activeStatus = 'all';
+      applyAllFilters();
+      PaydApp.toast('Все фильтры сброшены', 'info');
+    }, true);
+
+    // ===== SORTABLE COLUMNS =====
+    const sortState = { key: null, dir: 1 };
+    document.querySelectorAll('th.sortable').forEach(th => {
+      th.addEventListener('click', () => {
+        const key = th.dataset.sort;
+        if (sortState.key === key) sortState.dir *= -1;
+        else { sortState.key = key; sortState.dir = 1; }
+
+        const visible = rows.filter(r => r.style.display !== 'none');
+        const getter = {
+          num: r => parseInt(r.querySelectorAll('td')[1].textContent.replace(/\D/g, ''), 10),
+          date: r => {
+            const t = r.querySelectorAll('td')[2].textContent;
+            const m = t.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+            if (!m) return 0;
+            return new Date(`${m[3]}-${m[2]}-${m[1]}`).getTime();
+          },
+          amount: r => {
+            const t = r.querySelector('td.t-right.t-mono.t-strong')?.textContent || '';
+            return parseInt(t.replace(/\D/g, ''), 10) || 0;
+          }
+        }[key];
+        if (!getter) return;
+
+        visible.sort((a, b) => {
+          const va = getter(a), vb = getter(b);
+          return (va < vb ? -1 : va > vb ? 1 : 0) * sortState.dir;
+        });
+
+        visible.forEach(r => tbody.appendChild(r));
+
+        // Update header arrow
+        document.querySelectorAll('th.sortable').forEach(h => {
+          h.textContent = h.textContent.replace(/[↑↓⇅] *$/, '⇅');
+        });
+        th.textContent = th.textContent.replace(/[↑↓⇅] *$/, '') + (sortState.dir === 1 ? '↑' : '↓');
+        PaydApp.toast(`Сортировка: ${th.textContent}`, 'info');
+      });
+    });
+
+    // ===== BULK SELECT =====
+    const selectAll = document.getElementById('zh-select-all');
+    function getRowCheckboxes() {
+      return [...tbody.querySelectorAll('tr')].map(r => r.querySelector('input[type="checkbox"]')).filter(Boolean);
+    }
+    selectAll?.addEventListener('change', () => {
+      const visible = rows.filter(r => r.style.display !== 'none');
+      visible.forEach(r => {
+        const cb = r.querySelector('input[type="checkbox"]');
+        if (cb) cb.checked = selectAll.checked;
+      });
+      updateBulkBar();
+    });
+    getRowCheckboxes().forEach(cb => cb.addEventListener('change', updateBulkBar));
+
+    // Bulk action bar
+    let bulkBar = document.getElementById('zh-bulk-bar');
+    if (!bulkBar) {
+      bulkBar = document.createElement('div');
+      bulkBar.id = 'zh-bulk-bar';
+      bulkBar.style.cssText = `
+        position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+        background: #1a2332; color: white; padding: 12px 18px; border-radius: 12px;
+        box-shadow: 0 12px 40px rgba(0,0,0,.25); z-index: 100;
+        display: flex; align-items: center; gap: 14px; font-size: 13px;
+        transition: transform .2s; pointer-events: none;
+      `;
+      bulkBar.innerHTML = `
+        <span><b id="zh-bulk-count">0</b> выбрано</span>
+        <button class="btn sm" data-bulk="export" style="background: rgba(255,255,255,.15); color: white; border-color: rgba(255,255,255,.2);">Экспорт</button>
+        <button class="btn sm" data-bulk="print" style="background: rgba(255,255,255,.15); color: white; border-color: rgba(255,255,255,.2);">Печать</button>
+        <button class="btn sm" data-bulk="archive" style="background: rgba(255,255,255,.15); color: white; border-color: rgba(255,255,255,.2);">Архивировать</button>
+        <button class="btn sm" data-bulk="delete" style="background: #ef4444; color: white; border-color: #ef4444;">Удалить</button>
+        <button class="btn sm" data-bulk="cancel" style="background: transparent; color: rgba(255,255,255,.7); border-color: transparent;">×</button>
+      `;
+      document.body.appendChild(bulkBar);
+
+      bulkBar.querySelectorAll('[data-bulk]').forEach(b => {
+        b.addEventListener('click', e => {
+          e.stopImmediatePropagation();
+          const action = b.dataset.bulk;
+          const count = getRowCheckboxes().filter(c => c.checked).length;
+          if (action === 'cancel') {
+            getRowCheckboxes().forEach(c => c.checked = false);
+            if (selectAll) selectAll.checked = false;
+            updateBulkBar();
+          } else if (action === 'export') {
+            PaydApp.toast(`Экспорт ${count} заявок в Excel`, 'success');
+          } else if (action === 'print') {
+            PaydApp.toast(`Печать реестра ${count} заявок`, 'info');
+            setTimeout(() => window.print(), 300);
+          } else if (action === 'archive') {
+            PaydApp.toast(`${count} заявок перемещены в архив`, 'info');
+          } else if (action === 'delete') {
+            PaydApp.confirmDialog({
+              title: `Удалить ${count} заявок?`,
+              message: 'Это действие нельзя отменить. Связанные документы тоже будут удалены.',
+              okText: 'Удалить',
+              onOk: () => {
+                getRowCheckboxes().forEach(cb => {
+                  if (cb.checked) cb.closest('tr')?.remove();
+                });
+                updateBulkBar();
+                PaydApp.toast(`${count} заявок удалены`, 'error');
+              }
+            });
+          }
+        });
+      });
+    }
+
+    function updateBulkBar() {
+      const count = getRowCheckboxes().filter(c => c.checked && c.closest('tr').style.display !== 'none').length;
+      const countEl = document.getElementById('zh-bulk-count');
+      if (countEl) countEl.textContent = String(count);
+      if (count > 0) {
+        bulkBar.style.transform = 'translateX(-50%) translateY(0)';
+        bulkBar.style.pointerEvents = 'auto';
+      } else {
+        bulkBar.style.transform = 'translateX(-50%) translateY(80px)';
+        bulkBar.style.pointerEvents = 'none';
+      }
+    }
+
+    // ===== EXPORT / PRINT REGISTER (header buttons) =====
+    [...document.querySelectorAll('button.btn')].forEach(b => {
+      const t = b.textContent.trim();
+      if (t === 'Экспорт') {
+        b.addEventListener('click', e => {
+          e.preventDefault(); e.stopImmediatePropagation();
+          const visible = rows.filter(r => r.style.display !== 'none').length;
+          PaydApp.toast(`Экспорт ${visible} заявок в Excel`, { type: 'success', subtitle: 'Файл сохранён в Загрузки' });
+        }, true);
+      } else if (t === 'Печать реестра') {
+        b.addEventListener('click', e => {
+          e.preventDefault(); e.stopImmediatePropagation();
+          PaydApp.toast('Реестр заявок отправлен на печать', 'info');
+          setTimeout(() => window.print(), 300);
+        }, true);
+      }
+    });
+  })();
+</script>
+</body>
+</html>

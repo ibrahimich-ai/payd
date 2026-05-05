@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(open \"/Users/ibra/Desktop/Payd/zayavka.html\")",
+      "Bash(open \"/Users/ibra/Desktop/Payd/index.html\")",
+      "Bash(open \"/Users/ibra/Desktop/Payd/dashboard.html\")",
+      "Bash(open \"/Users/ibra/Desktop/Payd/collector.html\")",
+      "Bash(open \"/Users/ibra/Desktop/Payd/manager.html\")",
+      "Bash(python3 -)",
+      "Bash(open \"/Users/ibra/Desktop/Payd/contract.html\")",
+      "Bash(open \"/Users/ibra/Desktop/Payd/kassir.html\")",
+      "Bash(open \"/Users/ibra/Desktop/Payd/integration-1c.html\")",
+      "Bash(open \"/Users/ibra/Desktop/Payd/partner.html\")",
+      "Bash(open \"/Users/ibra/Desktop/Payd/tablet-client.html\")",
+      "Bash(open \"/Users/ibra/Desktop/Payd/partners.html\")",
+      "Bash(open \"/Users/ibra/Desktop/Payd/employees.html\")",
+      "Bash(open \"/Users/ibra/Desktop/Payd/calculator.html\")",
+      "Bash(grep -n \"</body>\\\\|</script>\\\\|recalc\\(\\);$\" /Users/ibra/Desktop/Payd/calculator.html)",
+      "Bash(open \"/Users/ibra/Desktop/Payd/settings.html\")"
+    ]
+  }
+}

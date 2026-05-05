@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Выдача товара — Payd</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .wh-grid { display: grid; grid-template-columns: 360px 1fr; gap: 16px; }
+  @media (max-width: 1200px) { .wh-grid { grid-template-columns: 1fr; } }
+
+  .queue-row { display: flex; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .12s; }
+  .queue-row:hover { background: var(--surface-2); }
+  .queue-row.selected { background: var(--primary-soft); border-left: 3px solid var(--primary); padding-left: 15px; }
+  .queue-row .info { flex: 1; min-width: 0; }
+  .queue-row .name { font-size: 13px; font-weight: 700; }
+  .queue-row .doc { font-size: 11px; color: var(--text-3); }
+  .queue-row .product { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+
+  .scan-area {
+    background: linear-gradient(135deg, #1a2332 0%, #2563eb 100%);
+    border-radius: var(--radius);
+    padding: 28px;
+    color: white;
+    text-align: center;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .scan-area::after {
+    content: '';
+    position: absolute;
+    top: -50px; right: -50px;
+    width: 200px; height: 200px;
+    background: rgba(255,255,255,.06);
+    border-radius: 50%;
+  }
+  .scan-icon {
+    width: 80px; height: 80px;
+    margin: 0 auto 14px;
+    background: rgba(255,255,255,.15);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid rgba(255,255,255,.2);
+  }
+  .scan-area .ttl { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .scan-area .sub { font-size: 13px; opacity: .8; margin-bottom: 18px; }
+  .scan-input { background: rgba(255,255,255,.95); border-radius: 10px; padding: 14px; display: flex; align-items: center; gap: 10px; font-family: 'Courier New', monospace; }
+  .scan-input input { flex: 1; border: none; outline: none; background: transparent; font-size: 15px; color: var(--text); font-family: inherit; }
+
+  .checklist-item {
+    display: flex; gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+  }
+  .checklist-item:last-child { border-bottom: none; }
+  .checklist-item .check { width: 24px; height: 24px; border-radius: 50%; background: var(--surface-2); border: 2px solid var(--border-strong); display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; }
+  .checklist-item.done .check { background: var(--success); border-color: var(--success); color: white; }
+  .checklist-item .info { flex: 1; min-width: 0; }
+  .checklist-item .a { font-size: 13px; font-weight: 600; }
+  .checklist-item.done .a { color: var(--text-3); text-decoration: line-through; }
+  .checklist-item .b { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+
+  .photo-upload {
+    border: 2px dashed var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 28px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .photo-upload:hover { border-color: var(--primary); background: var(--primary-soft); }
+  .photo-upload .ic { width: 48px; height: 48px; margin: 0 auto 10px; background: var(--surface-2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--text-3); }
+  .photo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; }
+  .photo-thumb {
+    aspect-ratio: 1;
+    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    position: relative;
+  }
+  .photo-thumb .x { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; background: rgba(0,0,0,.5); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div id="app-root">
+
+<div class="page-head">
+  <div>
+    <h1>Выдача товара</h1>
+    <div class="desc">Очередь на выдачу · 4 заявки готовы</div>
+  </div>
+  <div class="page-head-actions">
+    <button class="btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+      Журнал выдач
+    </button>
+    <button class="btn primary">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Печать акта
+    </button>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stat-grid cols-4 mb-5">
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label">Готовы к выдаче</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--primary);">4</div>
+    <div class="stat-sub">Подписаны договоры · оплачен 1-й взнос</div>
+  </div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label">Выдано сегодня</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--success);">7</div>
+    <div class="stat-sub">На сумму 412 000 ₽</div>
+  </div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label">Под заказ</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--warning);">3</div>
+    <div class="stat-sub">Ожидают поступления</div>
+  </div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label">На складе</div>
+    <div class="stat-value" style="font-size: 22px;">312</div>
+    <div class="stat-sub">единиц товара</div>
+  </div>
+</div>
+
+<div class="wh-grid">
+
+  <!-- QUEUE -->
+  <div class="card">
+    <div class="card-hd">
+      <h3>Очередь на выдачу</h3>
+      <span class="badge primary">4</span>
+    </div>
+    <div>
+      <div class="queue-row selected">
+        <div class="avatar c1 sm">ДЛ</div>
+        <div class="info">
+          <div class="name">Даурбекова Л. С.</div>
+          <div class="doc">Заявка #142 · договор подписан</div>
+          <div class="product">🎧 Airpods 4 ANC · Белый USB-C · Белый · 1 шт</div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 13px; font-weight: 700;">12 800 ₽</div>
+          <div style="font-size: 10px; color: var(--success); font-weight: 600; margin-top: 2px;">✓ Готов</div>
+        </div>
+      </div>
+      <div class="queue-row">
+        <div class="avatar c3 sm">ХА</div>
+        <div class="info">
+          <div class="name">Хасиев А. Х.</div>
+          <div class="doc">Заявка #144 · договор подписан</div>
+          <div class="product">⌚ Apple Watch Series 10 · Серебристый · 1 шт</div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 13px; font-weight: 700;">42 000 ₽</div>
+          <div style="font-size: 10px; color: var(--success); font-weight: 600; margin-top: 2px;">✓ Готов</div>
+        </div>
+      </div>
+      <div class="queue-row">
+        <div class="avatar c7 sm">МА</div>
+        <div class="info">
+          <div class="name">Магомедов А. С.</div>
+          <div class="doc">Заявка #143 · договор подписан</div>
+          <div class="product">🎧 Airpods 4 ANC · Белый · 1 шт</div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 13px; font-weight: 700;">12 800 ₽</div>
+          <div style="font-size: 10px; color: var(--success); font-weight: 600; margin-top: 2px;">✓ Готов</div>
+        </div>
+      </div>
+      <div class="queue-row">
+        <div class="avatar c2 sm">ТР</div>
+        <div class="info">
+          <div class="name">Тазуев Р. С.</div>
+          <div class="doc">Заявка #147 · договор подписан</div>
+          <div class="product">📱 iPhone 16 Pro 256GB · Натуральный титан · 1 шт</div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 13px; font-weight: 700;">84 200 ₽</div>
+          <div style="font-size: 10px; color: var(--success); font-weight: 600; margin-top: 2px;">✓ Готов</div>
+        </div>
+      </div>
+      <div style="padding: 14px 18px; background: var(--warning-soft);">
+        <div style="font-size: 11px; color: #92400e; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;">Ожидают поступления</div>
+      </div>
+      <div class="queue-row" style="opacity: .7;">
+        <div class="avatar c2 sm">УМ</div>
+        <div class="info">
+          <div class="name">Усманов М. И.</div>
+          <div class="doc">Заявка #141 · под заказ</div>
+          <div class="product">📺 Samsung QLED 65" · Чёрный · ETA 5 мая</div>
+        </div>
+        <div style="text-align: right;">
+          <span class="badge warning" style="font-size: 10px;">5 дн</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ISSUE FORM -->
+  <div style="display: flex; flex-direction: column; gap: 16px;">
+
+    <!-- CLIENT INFO -->
+    <div class="card">
+      <div style="padding: 18px; background: linear-gradient(135deg, var(--primary-soft), white); border-bottom: 1px solid var(--border); display: flex; gap: 14px; align-items: center;">
+        <div class="avatar c1 lg">ДЛ</div>
+        <div style="flex: 1;">
+          <div style="font-size: 12px; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em;">Клиент к выдаче</div>
+          <div style="font-size: 17px; font-weight: 700;">Даурбекова Луиза Саид-Усмановна</div>
+          <div style="font-size: 12px; color: var(--text-2); margin-top: 2px;">Заявка #142 · 19.04.2026 · паспорт 96 03 №451287</div>
+        </div>
+        <a href="zayavka.html?back=warehouse.html" class="btn sm">Открыть заявку →</a>
+      </div>
+
+      <!-- BARCODE SCAN -->
+      <div style="padding: 18px;">
+        <div class="scan-area">
+          <div class="scan-icon" style="position: relative; z-index: 1;">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h2v12H3z"/><path d="M7 6h1v12H7z"/><path d="M10 6h2v12h-2z"/><path d="M14 6h1v12h-1z"/><path d="M17 6h1v12h-1z"/><path d="M20 6h1v12h-1z"/></svg>
+          </div>
+          <div class="ttl" style="position: relative; z-index: 1;">Отсканируйте штрих-код товара</div>
+          <div class="sub" style="position: relative; z-index: 1;">Используйте сканер или введите код вручную</div>
+          <div class="scan-input" style="position: relative; z-index: 1;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5a6478" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <input placeholder="Сканируйте или введите код" value="000001234" />
+            <span style="font-size: 11px; color: var(--success); font-weight: 700;">✓ НАЙДЕНО</span>
+          </div>
+        </div>
+
+        <!-- MATCHED PRODUCT -->
+        <div style="background: var(--success-soft); border: 1px solid #a7f3d0; border-radius: var(--radius-sm); padding: 14px; display: flex; gap: 12px; align-items: center;">
+          <div style="width: 56px; height: 56px; background: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0;">🎧</div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 700; color: #047857;">Airpods 4 CASE MXP93 · Белый USB-C CHARGING ANC (eu)</div>
+            <div style="font-size: 12px; color: #065f46;">Артикул 000001234 · S/N: H4G7L9F8X2K · в наличии 5 шт</div>
+            <div style="font-size: 11px; color: #065f46; margin-top: 4px;">Совпадает с товаром в заявке ✓</div>
+          </div>
+          <span class="badge success" style="font-size: 10px;">Совпадение</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHECKLIST -->
+    <div class="card">
+      <div class="card-hd">
+        <h3>Чек-лист выдачи</h3>
+        <span class="text-sm text-muted">3 из 5</span>
+      </div>
+      <div>
+        <div class="checklist-item done">
+          <div class="check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="info">
+            <div class="a">Договор подписан</div>
+            <div class="b">19.04.2026 16:09 · e-sign по SMS</div>
+          </div>
+        </div>
+        <div class="checklist-item done">
+          <div class="check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="info">
+            <div class="a">Первоначальный взнос оплачен</div>
+            <div class="b">2 300 ₽ · 19.04.2026 · карта</div>
+          </div>
+        </div>
+        <div class="checklist-item done">
+          <div class="check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="info">
+            <div class="a">Товар отсканирован и совпадает</div>
+            <div class="b">Артикул 000001234 ✓</div>
+          </div>
+        </div>
+        <div class="checklist-item">
+          <div class="check"></div>
+          <div class="info">
+            <div class="a">Загрузить фото товара при выдаче</div>
+            <div class="b">Минимум 2 фото — внешний вид и серийный номер</div>
+          </div>
+        </div>
+        <div class="checklist-item">
+          <div class="check"></div>
+          <div class="info">
+            <div class="a">Подпись клиента в акте приёма-передачи</div>
+            <div class="b">Распечатать или подписать на планшете</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHOTO UPLOAD -->
+    <div class="card">
+      <div class="card-hd">
+        <h3>Фото товара при выдаче</h3>
+        <span class="text-sm text-muted">2 из 4</span>
+      </div>
+      <div class="card-bd">
+        <div class="photo-upload">
+          <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+          <div style="font-size: 13px; font-weight: 600; color: var(--text-2);">Перетащите фото или нажмите для выбора</div>
+          <div style="font-size: 11px; color: var(--text-3); margin-top: 4px;">JPG, PNG до 10МБ · можно сделать с камеры</div>
+        </div>
+
+        <div class="photo-grid">
+          <div class="photo-thumb">📦<div class="x">×</div></div>
+          <div class="photo-thumb">🏷️<div class="x">×</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 8px;">
+      <button class="btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/></svg>
+        Печать акта
+      </button>
+      <button class="btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        SMS клиенту
+      </button>
+      <button class="btn primary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>
+        Подтвердить выдачу
+      </button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="db.js"></script>
+<script src="app.js"></script>
+<script>
+  PaydApp.mountShell({
+    active: 'warehouse',
+    title: 'Выдача товара',
+    breadcrumbs: [{ label: 'Главная', href: 'dashboard.html' }, { label: 'Выдача товара' }]
+  });
+
+  // ============= WAREHOUSE WORKFLOW =============
+  (function () {
+    // Click queue item → switch detail
+    document.querySelectorAll('.queue-row').forEach(item => {
+      item.addEventListener('click', () => {
+        if (item.style.opacity === '.7') return; // skip waiting items
+        document.querySelectorAll('.queue-row').forEach(q => q.classList.remove('selected'));
+        item.classList.add('selected');
+        const name = item.querySelector('.name')?.textContent || '';
+        PaydApp.toast(`Открыто: ${name}`, 'info');
+      });
+    });
+
+    // Scan input — pressing Enter triggers a "found" toast
+    const scanInput = document.querySelector('.scan-input input');
+    if (scanInput) {
+      scanInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const code = scanInput.value.trim();
+          if (code) PaydApp.toast(`Штрих-код ${code} найден в каталоге`, 'success');
+        }
+      });
+    }
+
+    // Photo upload simulation — click adds a thumbnail
+    const photoUpload = document.querySelector('.photo-upload');
+    const photoGrid = document.querySelector('.photo-grid');
+    if (photoUpload && photoGrid) {
+      photoUpload.addEventListener('click', () => {
+        if (photoGrid.children.length >= 4) {
+          PaydApp.toast('Максимум 4 фото', 'warning');
+          return;
+        }
+        const icons = ['📦', '🏷️', '📸', '🔍'];
+        const ic = icons[photoGrid.children.length] || '📷';
+        const thumb = document.createElement('div');
+        thumb.className = 'photo-thumb';
+        thumb.innerHTML = `${ic}<div class="x">×</div>`;
+        thumb.querySelector('.x').addEventListener('click', e => {
+          e.stopPropagation();
+          thumb.remove();
+          updateChecklistPhotos();
+        });
+        photoGrid.appendChild(thumb);
+        updateChecklistPhotos();
+        PaydApp.toast('Фото добавлено', 'success');
+      });
+    }
+
+    function updateChecklistPhotos() {
+      // Update photo count in checklist
+      const photoItem = [...document.querySelectorAll('.checklist-item')].find(i =>
+        /Загрузить фото товара/.test(i.textContent)
+      );
+      if (photoItem) {
+        const count = photoGrid.children.length;
+        const isDone = count >= 2;
+        photoItem.classList.toggle('done', isDone);
+        const check = photoItem.querySelector('.check');
+        if (check) {
+          check.innerHTML = isDone
+            ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>'
+            : '';
+        }
+      }
+      // Update "X из 5" counter
+      const checklistHeader = document.querySelectorAll('.card-hd .text-sm.text-muted');
+      checklistHeader.forEach(h => {
+        if (/из 5/.test(h.textContent)) {
+          const done = document.querySelectorAll('.checklist-item.done').length;
+          h.textContent = `${done} из 5`;
+        }
+        if (/из 4/.test(h.textContent)) {
+          const c = photoGrid.children.length;
+          h.textContent = `${c} из 4`;
+        }
+      });
+    }
+
+    // "Подтвердить выдачу" — completes the case
+    const confirmBtn = [...document.querySelectorAll('button.btn.primary')]
+      .find(b => /Подтвердить выдачу/i.test(b.textContent));
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', e => {
+        e.preventDefault(); e.stopImmediatePropagation();
+
+        const sel = document.querySelector('.queue-row.selected');
+        const name = sel?.querySelector('.name')?.textContent || 'Клиент';
+
+        PaydApp.confirmDialog({
+          title: 'Подтвердить выдачу?',
+          message: `Товар будет выдан клиенту «${name}». Подписан акт приёма-передачи. Действие нельзя отменить.`,
+          okText: 'Выдать товар',
+          danger: false,
+          onOk: () => {
+            if (sel) {
+              sel.style.transition = 'opacity .3s';
+              sel.style.opacity = '0';
+              setTimeout(() => sel.remove(), 300);
+            }
+            // Update stats
+            const ready = document.querySelectorAll('.stat .stat-value')[0];
+            if (ready) {
+              const c = parseInt(ready.textContent.match(/\d+/)?.[0] || '0', 10);
+              ready.textContent = String(Math.max(0, c - 1));
+            }
+            const issued = document.querySelectorAll('.stat .stat-value')[1];
+            if (issued) {
+              const c = parseInt(issued.textContent.match(/\d+/)?.[0] || '0', 10);
+              issued.textContent = String(c + 1);
+            }
+            PaydApp.toast(`Товар выдан: ${name}`, { type: 'success', subtitle: 'Акт подписан · клиент уведомлён' });
+
+            setTimeout(() => {
+              const next = document.querySelector('.queue-row:not(.selected)');
+              if (next && next.style.opacity !== '.7') next.click();
+            }, 350);
+          }
+        });
+      }, true);
+    }
+  })();
+</script>
+</body>
+</html>

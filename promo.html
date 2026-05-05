@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Промо и рефералы — Payd</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .promo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .promo-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: all .15s;
+  }
+  .promo-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+  .promo-head {
+    padding: 16px 18px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+  .promo-head::after {
+    content: '';
+    position: absolute;
+    top: -50px; right: -50px;
+    width: 150px; height: 150px;
+    background: rgba(255,255,255,.1);
+    border-radius: 50%;
+  }
+  .promo-head .code {
+    font-family: 'Courier New', monospace;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: .04em;
+    margin-bottom: 6px;
+    position: relative;
+    z-index: 1;
+  }
+  .promo-head .desc { font-size: 12px; opacity: .9; position: relative; z-index: 1; }
+  .promo-body { padding: 14px 18px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .promo-body .item .l { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; }
+  .promo-body .item .v { font-size: 14px; font-weight: 700; margin-top: 2px; }
+  .promo-foot { padding: 12px 18px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+
+  .ref-list { padding: 0; }
+  .ref-row { display: grid; grid-template-columns: 36px 1fr 130px 130px 110px 80px; gap: 12px; align-items: center; padding: 12px 18px; border-bottom: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<div id="app-root">
+
+<div class="page-head">
+  <div>
+    <h1>Промо и рефералы</h1>
+    <div class="desc">Скидки, промокоды и реферальная программа</div>
+  </div>
+  <div class="page-head-actions">
+    <button class="btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Аналитика акций
+    </button>
+    <button class="btn primary">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Создать акцию
+    </button>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stat-grid cols-4 mb-5">
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label">Активных акций</div>
+    <div class="stat-value" style="font-size: 22px;">6</div>
+    <div class="stat-sub">из 14 за всё время</div>
+  </div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label">Применено в апреле</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--primary);">42</div>
+    <div class="stat-sub">28% всех заявок</div>
+  </div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label">Рефералы</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--success);">68</div>
+    <div class="stat-sub">пришло клиентов по ссылкам</div>
+  </div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label">Бонусы выплачены</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--purple);">₽ 84 600</div>
+    <div class="stat-sub">за рефералов в апреле</div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="chip-row mb-4">
+  <div class="chip active">Промокоды <span class="count">6</span></div>
+  <div class="chip">Реферальная программа</div>
+  <div class="chip">Спецусловия партнёрам</div>
+  <div class="chip">VIP бонусы</div>
+  <div class="chip">Архив</div>
+</div>
+
+<!-- PROMO CARDS -->
+<div class="promo-grid mb-6">
+
+  <div class="promo-card">
+    <div class="promo-head" style="background: linear-gradient(135deg, #2563eb, #1d4ed8);">
+      <div class="code">SPRING2026</div>
+      <div class="desc">— 50% от первоначального взноса</div>
+    </div>
+    <div class="promo-body">
+      <div class="item">
+        <div class="l">Использовано</div>
+        <div class="v">14 / ∞</div>
+      </div>
+      <div class="item">
+        <div class="l">Оборот</div>
+        <div class="v">684 К</div>
+      </div>
+      <div class="item">
+        <div class="l">До конца</div>
+        <div class="v">15 дн</div>
+      </div>
+    </div>
+    <div class="promo-foot">
+      <span class="badge success dot">Активна</span>
+      <button class="btn sm">Редактировать</button>
+    </div>
+  </div>
+
+  <div class="promo-card">
+    <div class="promo-head" style="background: linear-gradient(135deg, #10b981, #059669);">
+      <div class="code">RAMADAN</div>
+      <div class="desc">Исламская рассрочка без надбавки</div>
+    </div>
+    <div class="promo-body">
+      <div class="item">
+        <div class="l">Использовано</div>
+        <div class="v">22</div>
+      </div>
+      <div class="item">
+        <div class="l">Оборот</div>
+        <div class="v">1.24 млн</div>
+      </div>
+      <div class="item">
+        <div class="l">До конца</div>
+        <div class="v">бессрочно</div>
+      </div>
+    </div>
+    <div class="promo-foot">
+      <span class="badge success dot">Активна</span>
+      <button class="btn sm">Редактировать</button>
+    </div>
+  </div>
+
+  <div class="promo-card">
+    <div class="promo-head" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+      <div class="code">VIP15</div>
+      <div class="desc">— 15% для VIP клиентов (5+ сделок)</div>
+    </div>
+    <div class="promo-body">
+      <div class="item">
+        <div class="l">Использовано</div>
+        <div class="v">8 / ∞</div>
+      </div>
+      <div class="item">
+        <div class="l">Оборот</div>
+        <div class="v">412 К</div>
+      </div>
+      <div class="item">
+        <div class="l">До конца</div>
+        <div class="v">бессрочно</div>
+      </div>
+    </div>
+    <div class="promo-foot">
+      <span class="badge success dot">Активна</span>
+      <button class="btn sm">Редактировать</button>
+    </div>
+  </div>
+
+  <div class="promo-card">
+    <div class="promo-head" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+      <div class="code">FRIEND2000</div>
+      <div class="desc">2 000 ₽ за приведённого друга</div>
+    </div>
+    <div class="promo-body">
+      <div class="item">
+        <div class="l">Использовано</div>
+        <div class="v">42</div>
+      </div>
+      <div class="item">
+        <div class="l">Выплачено</div>
+        <div class="v">84 К</div>
+      </div>
+      <div class="item">
+        <div class="l">До конца</div>
+        <div class="v">бессрочно</div>
+      </div>
+    </div>
+    <div class="promo-foot">
+      <span class="badge success dot">Активна</span>
+      <button class="btn sm">Редактировать</button>
+    </div>
+  </div>
+
+  <div class="promo-card">
+    <div class="promo-head" style="background: linear-gradient(135deg, #ec4899, #db2777);">
+      <div class="code">FIRST500</div>
+      <div class="desc">500 ₽ скидка на первую сделку</div>
+    </div>
+    <div class="promo-body">
+      <div class="item">
+        <div class="l">Использовано</div>
+        <div class="v">28</div>
+      </div>
+      <div class="item">
+        <div class="l">Скидка дана</div>
+        <div class="v">14 К</div>
+      </div>
+      <div class="item">
+        <div class="l">Конверсия</div>
+        <div class="v" style="color: var(--success);">62%</div>
+      </div>
+    </div>
+    <div class="promo-foot">
+      <span class="badge success dot">Активна</span>
+      <button class="btn sm">Редактировать</button>
+    </div>
+  </div>
+
+  <div class="promo-card">
+    <div class="promo-head" style="background: linear-gradient(135deg, #14b8a6, #0d9488);">
+      <div class="code">MVIDEO10</div>
+      <div class="desc">Скидка 10% для ТехноМир клиентов</div>
+    </div>
+    <div class="promo-body">
+      <div class="item">
+        <div class="l">Использовано</div>
+        <div class="v">18</div>
+      </div>
+      <div class="item">
+        <div class="l">Оборот</div>
+        <div class="v">986 К</div>
+      </div>
+      <div class="item">
+        <div class="l">До конца</div>
+        <div class="v">31 мая</div>
+      </div>
+    </div>
+    <div class="promo-foot">
+      <span class="badge warning dot">31 день</span>
+      <button class="btn sm">Редактировать</button>
+    </div>
+  </div>
+
+  <div class="promo-card" style="opacity: .55;">
+    <div class="promo-head" style="background: linear-gradient(135deg, #94a3b8, #64748b);">
+      <div class="code">NEWYEAR2026</div>
+      <div class="desc">Новогодняя распродажа</div>
+    </div>
+    <div class="promo-body">
+      <div class="item">
+        <div class="l">Использовано</div>
+        <div class="v">38</div>
+      </div>
+      <div class="item">
+        <div class="l">Оборот</div>
+        <div class="v">2.1 млн</div>
+      </div>
+      <div class="item">
+        <div class="l">Завершена</div>
+        <div class="v">15 янв</div>
+      </div>
+    </div>
+    <div class="promo-foot">
+      <span class="badge gray dot">Архив</span>
+      <button class="btn sm">Дублировать</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- REFERRAL LEADERBOARD -->
+<div class="card mb-4">
+  <div class="card-hd">
+    <h3>Топ рефереров (клиенты, кто привёл друзей)</h3>
+    <span class="text-sm text-muted">апрель 2026</span>
+  </div>
+  <div>
+    <div style="background: var(--surface-2); padding: 10px 18px; font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .04em; display: grid; grid-template-columns: 36px 1fr 130px 130px 110px 80px; gap: 12px; border-bottom: 1px solid var(--border);">
+      <div>#</div>
+      <div>Клиент</div>
+      <div>Приглашено</div>
+      <div>Сделок</div>
+      <div>Бонусы</div>
+      <div></div>
+    </div>
+
+    <div class="ref-row">
+      <div style="font-size: 16px; font-weight: 800; color: var(--warning);">🥇</div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div class="avatar c3 sm">ХА</div>
+        <div>
+          <div style="font-size: 13px; font-weight: 700;">Хасиев А. Х.</div>
+          <div style="font-size: 11px; color: var(--text-3);">+7 928 449-12-08 · VIP</div>
+        </div>
+      </div>
+      <div style="font-size: 13px; font-weight: 700;">12 человек</div>
+      <div style="font-size: 13px;">8 сделок · <b>684 К ₽</b></div>
+      <div style="font-size: 13px; font-weight: 700; color: var(--success);">+ 24 000 ₽</div>
+      <div style="text-align: right;"><button class="btn sm">→</button></div>
+    </div>
+
+    <div class="ref-row">
+      <div style="font-size: 14px; font-weight: 800; color: #94a3b8;">🥈</div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div class="avatar c1 sm">ДЛ</div>
+        <div>
+          <div style="font-size: 13px; font-weight: 700;">Даурбекова Л. С.</div>
+          <div style="font-size: 11px; color: var(--text-3);">+7 989 918-51-58 · постоянный</div>
+        </div>
+      </div>
+      <div style="font-size: 13px; font-weight: 700;">8 человек</div>
+      <div style="font-size: 13px;">6 сделок · <b>328 К ₽</b></div>
+      <div style="font-size: 13px; font-weight: 700; color: var(--success);">+ 16 000 ₽</div>
+      <div style="text-align: right;"><button class="btn sm">→</button></div>
+    </div>
+
+    <div class="ref-row">
+      <div style="font-size: 14px; font-weight: 800; color: #f97316;">🥉</div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div class="avatar c7 sm">МА</div>
+        <div>
+          <div style="font-size: 13px; font-weight: 700;">Магомедов А. С.</div>
+          <div style="font-size: 11px; color: var(--text-3);">+7 989 156-22-44 · постоянный</div>
+        </div>
+      </div>
+      <div style="font-size: 13px; font-weight: 700;">6 человек</div>
+      <div style="font-size: 13px;">4 сделки · <b>248 К ₽</b></div>
+      <div style="font-size: 13px; font-weight: 700; color: var(--success);">+ 12 000 ₽</div>
+      <div style="text-align: right;"><button class="btn sm">→</button></div>
+    </div>
+
+    <div class="ref-row">
+      <div style="font-weight: 700; color: var(--text-3);">4</div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div class="avatar c2 sm">УМ</div>
+        <div>
+          <div style="font-size: 13px; font-weight: 700;">Усманов М. И.</div>
+          <div style="font-size: 11px; color: var(--text-3);">+7 928 778-04-12</div>
+        </div>
+      </div>
+      <div style="font-size: 13px;">5 человек</div>
+      <div style="font-size: 13px;">3 сделки · <b>184 К ₽</b></div>
+      <div style="font-size: 13px; font-weight: 700; color: var(--success);">+ 9 000 ₽</div>
+      <div style="text-align: right;"><button class="btn sm">→</button></div>
+    </div>
+
+    <div class="ref-row">
+      <div style="font-weight: 700; color: var(--text-3);">5</div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div class="avatar c5 sm">АЗ</div>
+        <div>
+          <div style="font-size: 13px; font-weight: 700;">Абдулаева З. М.</div>
+          <div style="font-size: 11px; color: var(--text-3);">+7 928 005-67-21</div>
+        </div>
+      </div>
+      <div style="font-size: 13px;">3 человека</div>
+      <div style="font-size: 13px;">2 сделки · <b>96 К ₽</b></div>
+      <div style="font-size: 13px; font-weight: 700; color: var(--success);">+ 6 000 ₽</div>
+      <div style="text-align: right;"><button class="btn sm">→</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- REFERRAL PROGRAM CONFIG -->
+<div class="card">
+  <div class="card-hd">
+    <h3>Условия реферальной программы</h3>
+    <button class="btn sm">Изменить</button>
+  </div>
+  <div style="padding: 18px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+    <div style="background: var(--primary-soft); padding: 16px; border-radius: var(--radius-sm); border: 1px solid #bfdbfe;">
+      <div style="font-size: 11px; color: var(--primary); text-transform: uppercase; letter-spacing: .04em; font-weight: 600;">За приглашение</div>
+      <div style="font-size: 22px; font-weight: 800; color: var(--primary-2); margin-top: 4px;">2 000 ₽</div>
+      <div style="font-size: 11px; color: var(--text-3); margin-top: 4px;">когда у друга появилась 1-я сделка</div>
+    </div>
+    <div style="background: var(--success-soft); padding: 16px; border-radius: var(--radius-sm); border: 1px solid #a7f3d0;">
+      <div style="font-size: 11px; color: var(--success); text-transform: uppercase; letter-spacing: .04em; font-weight: 600;">Другу скидка</div>
+      <div style="font-size: 22px; font-weight: 800; color: #047857; margin-top: 4px;">500 ₽</div>
+      <div style="font-size: 11px; color: var(--text-3); margin-top: 4px;">на первую рассрочку</div>
+    </div>
+    <div style="background: var(--purple-soft); padding: 16px; border-radius: var(--radius-sm); border: 1px solid #ddd6fe;">
+      <div style="font-size: 11px; color: var(--purple); text-transform: uppercase; letter-spacing: .04em; font-weight: 600;">VIP с 5 рефералов</div>
+      <div style="font-size: 22px; font-weight: 800; color: var(--purple); margin-top: 4px;">+ 15%</div>
+      <div style="font-size: 11px; color: var(--text-3); margin-top: 4px;">бонус за следующих</div>
+    </div>
+    <div style="background: var(--warning-soft); padding: 16px; border-radius: var(--radius-sm); border: 1px solid #fde68a;">
+      <div style="font-size: 11px; color: var(--warning); text-transform: uppercase; letter-spacing: .04em; font-weight: 600;">Бюджет программы</div>
+      <div style="font-size: 22px; font-weight: 800; color: #92400e; margin-top: 4px;">200 000 ₽</div>
+      <div style="font-size: 11px; color: var(--text-3); margin-top: 4px;">потрачено 84К из 200К</div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="db.js"></script>
+<script src="app.js"></script>
+<script>
+  PaydApp.mountShell({
+    active: 'promo',
+    title: 'Промо и рефералы',
+    breadcrumbs: [{ label: 'Главная', href: 'dashboard.html' }, { label: 'Промо' }]
+  });
+</script>
+</body>
+</html>

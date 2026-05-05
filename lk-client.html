@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Личный кабинет — Payd</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  body { background: #f4f6fb; }
+
+  .lk-topbar {
+    background: white;
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .lk-brand { display: flex; align-items: center; gap: 10px; }
+  .lk-logo { width: 34px; height: 34px; background: linear-gradient(135deg, #2563eb, #8b5cf6); border-radius: 9px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; box-shadow: 0 2px 6px rgba(37,99,235,.25); }
+  .lk-brand-name { font-weight: 800; font-size: 16px; }
+  .lk-brand-sub { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; }
+
+  .lk-container { max-width: 760px; margin: 0 auto; padding: 16px; padding-bottom: 100px; }
+
+  .hero-card {
+    background: linear-gradient(135deg, #1d4ed8 0%, #8b5cf6 100%);
+    color: white;
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 12px 32px rgba(37, 99, 235, .25);
+  }
+  .hero-card::after {
+    content: '';
+    position: absolute;
+    top: -100px; right: -100px;
+    width: 280px; height: 280px;
+    background: rgba(255,255,255,.08);
+    border-radius: 50%;
+  }
+  .hero-greet { font-size: 13px; opacity: .8; }
+  .hero-name { font-size: 20px; font-weight: 700; margin-top: 2px; }
+  .hero-debt-label { font-size: 12px; opacity: .8; margin-top: 18px; text-transform: uppercase; letter-spacing: .04em; }
+  .hero-debt { font-size: 38px; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; margin-top: 4px; }
+  .hero-due { font-size: 13px; opacity: .9; margin-top: 8px; display: flex; align-items: center; gap: 6px; position: relative; z-index: 1; }
+  .hero-actions { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; margin-top: 18px; position: relative; z-index: 1; }
+  .hero-btn { padding: 14px; background: white; color: var(--primary-2); border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: transform .15s; font-family: inherit; }
+  .hero-btn:active { transform: scale(.98); }
+  .hero-btn.secondary { background: rgba(255,255,255,.15); color: white; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,.2); }
+
+  .next-pay-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .next-pay-icon { width: 44px; height: 44px; background: var(--success-soft); color: var(--success); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .next-pay-info { flex: 1; }
+  .next-pay-info .l { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; }
+  .next-pay-info .v { font-size: 18px; font-weight: 700; margin-top: 2px; }
+  .next-pay-info .s { font-size: 12px; color: var(--text-2); }
+
+  .lk-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-3); margin: 22px 4px 10px; display: flex; justify-content: space-between; align-items: center; }
+  .lk-section-title a { color: var(--primary); font-weight: 600; font-size: 12px; text-transform: none; letter-spacing: 0; }
+
+  .deal-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .deal-card:hover { border-color: var(--primary); box-shadow: var(--shadow-md); }
+  .deal-card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .deal-img { width: 44px; height: 44px; background: linear-gradient(135deg, #f1f5f9, #e2e8f0); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+  .deal-name { font-size: 14px; font-weight: 700; }
+  .deal-num { font-size: 11px; color: var(--text-3); }
+  .deal-progress { margin-bottom: 10px; }
+  .deal-progress-info { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
+  .deal-progress-info .l { color: var(--text-2); }
+  .deal-progress-info .v { font-weight: 700; }
+  .deal-meta { display: flex; justify-content: space-between; padding-top: 12px; border-top: 1px solid var(--border); font-size: 12px; }
+  .deal-meta .l { color: var(--text-3); }
+  .deal-meta .v { font-weight: 600; }
+
+  .schedule-list { background: white; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+  .sch-row { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+  .sch-row:last-child { border-bottom: none; }
+  .sch-circle { width: 28px; height: 28px; border-radius: 50%; background: var(--surface-2); border: 2px solid var(--border-strong); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--text-3); flex-shrink: 0; }
+  .sch-circle.paid { background: var(--success); border-color: var(--success); color: white; }
+  .sch-circle.next { background: var(--primary); border-color: var(--primary); color: white; box-shadow: 0 0 0 4px rgba(37,99,235,.12); }
+  .sch-info { flex: 1; min-width: 0; }
+  .sch-info .a { font-size: 13px; font-weight: 600; }
+  .sch-info .b { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+  .sch-amount { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .sch-amount.paid { color: var(--success); }
+  .sch-amount.muted { color: var(--text-3); }
+
+  .quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px; }
+  .qa-tile { background: white; border: 1px solid var(--border); border-radius: 14px; padding: 14px 8px; text-align: center; cursor: pointer; transition: all .15s; }
+  .qa-tile:hover { border-color: var(--primary); transform: translateY(-2px); }
+  .qa-tile .ico { width: 36px; height: 36px; margin: 0 auto 6px; background: var(--primary-soft); color: var(--primary); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+  .qa-tile .t { font-size: 11px; font-weight: 600; }
+
+  .news-card { background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 16px; padding: 16px; display: flex; gap: 12px; align-items: flex-start; margin-bottom: 16px; }
+  .news-card .ic { width: 36px; height: 36px; background: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--warning); flex-shrink: 0; }
+  .news-card .t { font-size: 13px; font-weight: 700; color: #78350f; }
+  .news-card .s { font-size: 12px; color: #92400e; margin-top: 2px; line-height: 1.4; }
+
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid var(--border);
+    padding: 8px 16px;
+    display: flex;
+    justify-content: space-around;
+    z-index: 20;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+  .bn-item { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 8px; color: var(--text-3); cursor: pointer; transition: color .12s; min-width: 60px; }
+  .bn-item.active { color: var(--primary); }
+  .bn-item .ic { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
+  .bn-item .l { font-size: 10px; font-weight: 600; }
+
+  @media (min-width: 800px) { .lk-container { padding: 24px; } }
+</style>
+</head>
+<body>
+
+<div class="lk-topbar">
+  <div class="lk-brand">
+    <div class="lk-logo">P</div>
+    <div>
+      <div class="lk-brand-name">Payd</div>
+      <div class="lk-brand-sub">Личный кабинет</div>
+    </div>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <button class="icon-btn" title="Уведомления">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span class="dot"></span>
+    </button>
+    <div class="avatar c1 sm">ДЛ</div>
+  </div>
+</div>
+
+<div class="lk-container">
+
+  <!-- HERO -->
+  <div class="hero-card">
+    <div style="position: relative; z-index: 1;">
+      <div class="hero-greet">Здравствуйте,</div>
+      <div class="hero-name">Луиза Саид-Усмановна 👋</div>
+
+      <div class="hero-debt-label">Общая задолженность</div>
+      <div class="hero-debt">8 700 ₽</div>
+      <div class="hero-due">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Ближайший платёж <b>3 500 ₽</b> до 19 мая
+      </div>
+
+      <div class="hero-actions">
+        <button class="hero-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Оплатить 3 500 ₽
+        </button>
+        <button class="hero-btn secondary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          График
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALERT -->
+  <div class="news-card">
+    <div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+    <div>
+      <div class="t">Платите досрочно — экономьте</div>
+      <div class="s">Если погасите рассрочку до 19 мая, сэкономите 420 ₽ переплаты. Можно оплатить любую сумму онлайн.</div>
+    </div>
+  </div>
+
+  <!-- QUICK ACTIONS -->
+  <div class="quick-actions">
+    <div class="qa-tile">
+      <div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+      <div class="t">Оплатить</div>
+    </div>
+    <div class="qa-tile">
+      <div class="ico" style="background: var(--success-soft); color: var(--success);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <div class="t">Договоры</div>
+    </div>
+    <div class="qa-tile">
+      <div class="ico" style="background: var(--warning-soft); color: var(--warning);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+      <div class="t">Поддержка</div>
+    </div>
+    <div class="qa-tile">
+      <div class="ico" style="background: var(--purple-soft); color: var(--purple);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+      <div class="t">Бонусы</div>
+    </div>
+  </div>
+
+  <!-- ACTIVE DEAL -->
+  <div class="lk-section-title">
+    <span>Активная рассрочка</span>
+    <a href="#">Все сделки →</a>
+  </div>
+
+  <div class="deal-card">
+    <div class="deal-card-head">
+      <div class="deal-img">🎧</div>
+      <div style="flex: 1; min-width: 0;">
+        <div class="deal-name">Airpods 4 ANC · Белый USB-C · Белый</div>
+        <div class="deal-num">Заявка №0000000142 · 19.04.2026</div>
+      </div>
+      <span class="badge success dot">Активная</span>
+    </div>
+    <div class="deal-progress">
+      <div class="deal-progress-info">
+        <span class="l">Прогресс рассрочки</span>
+        <span class="v">1 из 3 платежей</span>
+      </div>
+      <div class="progress-bar"><div class="fill" style="width: 33%"></div></div>
+    </div>
+    <div class="deal-meta">
+      <div><span class="l">Платёж в месяц</span><br/><span class="v">3 500 ₽</span></div>
+      <div><span class="l">Остаток долга</span><br/><span class="v">8 700 ₽</span></div>
+      <div><span class="l">Закрытие</span><br/><span class="v">19.07.2026</span></div>
+    </div>
+  </div>
+
+  <!-- SCHEDULE -->
+  <div class="lk-section-title">
+    <span>График платежей</span>
+    <a href="#">Скачать PDF</a>
+  </div>
+
+  <div class="schedule-list">
+    <div class="sch-row">
+      <div class="sch-circle paid"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div class="sch-info">
+        <div class="a">Первоначальный взнос</div>
+        <div class="b">Оплачено · 19.04.2026</div>
+      </div>
+      <div class="sch-amount paid">2 300 ₽</div>
+    </div>
+    <div class="sch-row">
+      <div class="sch-circle paid"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div class="sch-info">
+        <div class="a">Платёж 1</div>
+        <div class="b">Оплачено · 19.04.2026 · наличные</div>
+      </div>
+      <div class="sch-amount paid">3 500 ₽</div>
+    </div>
+    <div class="sch-row">
+      <div class="sch-circle next">2</div>
+      <div class="sch-info">
+        <div class="a">Платёж 2 · 19 мая 2026</div>
+        <div class="b" style="color: var(--primary); font-weight: 600;">Через 18 дней</div>
+      </div>
+      <div class="sch-amount">3 500 ₽</div>
+    </div>
+    <div class="sch-row">
+      <div class="sch-circle">3</div>
+      <div class="sch-info">
+        <div class="a">Платёж 3 · 19 июня 2026</div>
+        <div class="b">Финальный платёж</div>
+      </div>
+      <div class="sch-amount muted">3 500 ₽</div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="lk-section-title">
+    <span>История платежей</span>
+    <a href="#">Все платежи →</a>
+  </div>
+
+  <div class="schedule-list">
+    <div class="sch-row">
+      <div class="sch-circle paid" style="background: var(--success-soft); border-color: var(--success); color: var(--success);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div class="sch-info">
+        <div class="a">Платёж 1 по заявке #142</div>
+        <div class="b">19.04.2026 · оплата наличные · кассир Бекуев М.</div>
+      </div>
+      <div class="sch-amount paid">+ 3 500 ₽</div>
+    </div>
+    <div class="sch-row">
+      <div class="sch-circle paid" style="background: var(--success-soft); border-color: var(--success); color: var(--success);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div class="sch-info">
+        <div class="a">Первоначальный взнос #142</div>
+        <div class="b">19.04.2026 · оплата картой · кассир Бекуев М.</div>
+      </div>
+      <div class="sch-amount paid">+ 2 300 ₽</div>
+    </div>
+    <div class="sch-row">
+      <div class="sch-circle paid" style="background: var(--success-soft); border-color: var(--success); color: var(--success);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div class="sch-info">
+        <div class="a">Закрыта заявка #089</div>
+        <div class="b">12.11.2025 · iPhone 15 Pro · полностью</div>
+      </div>
+      <div class="sch-amount paid">128 000 ₽</div>
+    </div>
+  </div>
+
+  <!-- BONUS -->
+  <div class="lk-section-title"><span>Бонусная программа</span></div>
+  <div style="background: linear-gradient(135deg, #f5f3ff, #ede9fe); border-radius: 16px; padding: 18px; border: 1px solid #ddd6fe;">
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+      <div style="width: 44px; height: 44px; background: var(--purple); color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center;">⭐</div>
+      <div>
+        <div style="font-size: 14px; font-weight: 700; color: var(--purple);">Постоянный клиент</div>
+        <div style="font-size: 12px; color: var(--purple);">3 закрытые сделки · следующий уровень — VIP</div>
+      </div>
+    </div>
+    <div class="progress-bar"><div class="fill" style="width: 60%; background: var(--purple);"></div></div>
+    <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--purple); margin-top: 4px; font-weight: 600;">
+      <span>3 / 5 сделок</span>
+      <span>VIP — скидка 15% на первый взнос</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- BOTTOM NAV (mobile-style) -->
+<div class="bottom-nav">
+  <div class="bn-item active">
+    <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9"/><path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10"/></svg></div>
+    <div class="l">Главная</div>
+  </div>
+  <div class="bn-item">
+    <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+    <div class="l">Оплата</div>
+  </div>
+  <div class="bn-item">
+    <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg></div>
+    <div class="l">График</div>
+  </div>
+  <div class="bn-item">
+    <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+    <div class="l">Чат</div>
+  </div>
+  <div class="bn-item">
+    <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+    <div class="l">Профиль</div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="db.js"></script>
+<script src="app.js"></script>
+<script>
+  // Hero "Оплатить" button → toast simulating payment
+  document.querySelector('.hero-btn').addEventListener('click', () => {
+    PaydApp.toast('Оплата 3 500 ₽ принята', { type: 'success', subtitle: 'Чек отправлен на email' });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<title>Калькулятор рассрочки — Payd</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #8b5cf6 100%);
+    min-height: 100vh;
+    color: #1a2332;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    top: -200px; right: -200px;
+    width: 500px; height: 500px;
+    background: rgba(255,255,255,.08);
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+  }
+
+  /* Top bar */
+  .tab-top {
+    padding: 18px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+  }
+  .tab-brand { display: flex; align-items: center; gap: 10px; }
+  .tab-logo { width: 38px; height: 38px; background: rgba(255,255,255,.2); backdrop-filter: blur(10px); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; border: 1px solid rgba(255,255,255,.2); }
+  .tab-name { font-weight: 800; font-size: 18px; }
+  .tab-sub { font-size: 11px; opacity: .8; }
+  .tab-partner { background: rgba(255,255,255,.15); padding: 8px 14px; border-radius: 999px; font-size: 13px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,.15); }
+
+  /* Main container */
+  .tab-wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 16px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .tab-screen {
+    background: white;
+    border-radius: 24px;
+    padding: 28px;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, .25);
+  }
+
+  .tab-h1 {
+    font-size: 26px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    letter-spacing: -.02em;
+  }
+  .tab-sub-text {
+    font-size: 14px;
+    color: #5a6478;
+    margin-bottom: 22px;
+  }
+
+  /* Amount input — big */
+  .amount-block {
+    background: linear-gradient(135deg, #eff4ff, #ddd6fe);
+    border: 1px solid #bfdbfe;
+    border-radius: 18px;
+    padding: 22px;
+    margin-bottom: 18px;
+    text-align: center;
+  }
+  .amount-block .label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: #2563eb;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .amount-input-row { display: flex; align-items: baseline; justify-content: center; gap: 6px; }
+  .amount-input {
+    font-size: 56px;
+    font-weight: 800;
+    color: #1a2332;
+    border: none;
+    outline: none;
+    text-align: center;
+    background: transparent;
+    width: 100%;
+    max-width: 340px;
+    font-family: inherit;
+    letter-spacing: -.03em;
+    font-variant-numeric: tabular-nums;
+  }
+  .amount-currency { font-size: 28px; font-weight: 700; color: #5a6478; }
+
+  /* Quick presets */
+  .presets {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .preset-btn {
+    padding: 14px 0;
+    background: white;
+    border: 2px solid #e5e9f2;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a2332;
+    cursor: pointer;
+    transition: all .15s;
+    font-family: inherit;
+  }
+  .preset-btn:hover, .preset-btn.active {
+    border-color: #2563eb;
+    background: #eff4ff;
+    color: #2563eb;
+  }
+
+  /* Term selector */
+  .section-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a2332;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .section-label small { font-size: 12px; color: #8993a6; font-weight: 500; }
+
+  .term-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin-bottom: 22px;
+  }
+  .term-btn {
+    padding: 16px 0;
+    background: white;
+    border: 2px solid #e5e9f2;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 800;
+    color: #1a2332;
+    cursor: pointer;
+    transition: all .15s;
+    font-family: inherit;
+  }
+  .term-btn small { display: block; font-size: 10px; font-weight: 600; color: #8993a6; margin-top: 2px; }
+  .term-btn:hover { border-color: #8b5cf6; }
+  .term-btn.active {
+    border-color: #8b5cf6;
+    background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+    color: #6d28d9;
+  }
+
+  /* Result */
+  .result-block {
+    background: linear-gradient(135deg, #064e3b 0%, #047857 100%);
+    color: white;
+    border-radius: 18px;
+    padding: 22px;
+    margin-bottom: 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  .result-block::after {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 200px; height: 200px;
+    background: rgba(255,255,255,.08);
+    border-radius: 50%;
+  }
+  .result-block .label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    opacity: .8;
+    margin-bottom: 6px;
+    position: relative; z-index: 1;
+  }
+  .result-block .monthly {
+    font-size: 38px;
+    font-weight: 800;
+    letter-spacing: -.02em;
+    margin-bottom: 4px;
+    position: relative; z-index: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .result-block .monthly small { font-size: 16px; opacity: .8; font-weight: 600; }
+  .result-block .row {
+    display: flex; justify-content: space-between;
+    padding: 8px 0; font-size: 14px;
+    border-top: 1px solid rgba(255,255,255,.15);
+    margin-top: 10px;
+    position: relative; z-index: 1;
+  }
+  .result-block .row .v { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  /* CTA */
+  .cta-btn {
+    width: 100%;
+    padding: 20px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: white;
+    border: none;
+    border-radius: 16px;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(37,99,235,.35);
+    transition: all .15s;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(37,99,235,.45); }
+  .cta-btn:active { transform: translateY(0); }
+
+  /* Trust badges */
+  .trust {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 16px;
+    font-size: 12px;
+    color: #5a6478;
+    flex-wrap: wrap;
+  }
+  .trust span { display: inline-flex; align-items: center; gap: 4px; }
+
+  /* Form screen */
+  .form-field { margin-bottom: 16px; }
+  .form-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: #5a6478;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-bottom: 8px;
+  }
+  .form-input {
+    width: 100%;
+    padding: 16px 18px;
+    border: 2px solid #e5e9f2;
+    border-radius: 12px;
+    font-size: 18px;
+    font-family: inherit;
+    color: #1a2332;
+    outline: none;
+    transition: border-color .15s;
+  }
+  .form-input:focus { border-color: #2563eb; }
+
+  .checkbox-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px;
+    background: #fafbfd;
+    border: 1px solid #e5e9f2;
+    border-radius: 12px;
+    margin-bottom: 18px;
+    cursor: pointer;
+  }
+  .checkbox-row input { margin-top: 2px; flex-shrink: 0; transform: scale(1.3); }
+  .checkbox-row .text { font-size: 12px; color: #5a6478; line-height: 1.5; }
+
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: white;
+    border: 1px solid #e5e9f2;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #5a6478;
+    font-family: inherit;
+    margin-bottom: 20px;
+  }
+  .back-btn:hover { color: #1a2332; }
+
+  /* Success screen */
+  .success-icon {
+    width: 90px; height: 90px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 18px;
+    color: white;
+    box-shadow: 0 12px 32px rgba(16,185,129,.35);
+    animation: pop .4s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes pop {
+    0% { transform: scale(.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .success-num {
+    background: #fef3c7;
+    border: 1px solid #fcd34d;
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+    margin-bottom: 18px;
+  }
+  .success-num .l { font-size: 11px; color: #92400e; text-transform: uppercase; letter-spacing: .04em; }
+  .success-num .v { font-size: 24px; font-weight: 800; color: #1a2332; font-family: monospace; margin-top: 2px; }
+
+  .info-step {
+    display: flex;
+    gap: 12px;
+    padding: 14px;
+    background: #fafbfd;
+    border-radius: 12px;
+    margin-bottom: 10px;
+  }
+  .info-step .num {
+    width: 28px; height: 28px;
+    background: #2563eb;
+    color: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 800;
+    flex-shrink: 0;
+  }
+  .info-step .txt { font-size: 13px; color: #1a2332; line-height: 1.5; }
+  .info-step .txt b { color: #2563eb; }
+
+  /* Hide screens not active */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  @media (max-width: 480px) {
+    .tab-h1 { font-size: 22px; }
+    .amount-input { font-size: 42px; }
+    .result-block .monthly { font-size: 30px; }
+    .term-grid { grid-template-columns: repeat(3, 1fr); }
+    .presets { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="tab-top">
+  <div class="tab-brand">
+    <div class="tab-logo">P</div>
+    <div>
+      <div class="tab-name">Payd</div>
+      <div class="tab-sub">Рассрочка без процентов</div>
+    </div>
+  </div>
+  <div class="tab-partner">📍 ТехноМир — Грозный</div>
+</div>
+
+<div class="tab-wrap">
+
+<!-- ========== SCREEN 1: CALCULATOR ========== -->
+<div class="screen active" id="screen-calc">
+  <div class="tab-screen">
+    <h1 class="tab-h1">Калькулятор рассрочки</h1>
+    <p class="tab-sub-text">Узнайте свой ежемесячный платёж за минуту. Без процентов и скрытых платежей.</p>
+
+    <!-- AMOUNT -->
+    <div class="amount-block">
+      <div class="label">Стоимость товара</div>
+      <div class="amount-input-row">
+        <input class="amount-input" id="calc-amount" value="84 200" inputmode="numeric" />
+        <span class="amount-currency">₽</span>
+      </div>
+    </div>
+
+    <!-- PRESETS -->
+    <div class="presets">
+      <button class="preset-btn" data-amount="20000">20 000 ₽</button>
+      <button class="preset-btn" data-amount="50000">50 000 ₽</button>
+      <button class="preset-btn" data-amount="100000">100 000 ₽</button>
+      <button class="preset-btn" data-amount="150000">150 000 ₽</button>
+    </div>
+
+    <!-- TERM -->
+    <div class="section-label">Срок рассрочки <small>выберите удобный</small></div>
+    <div class="term-grid">
+      <button class="term-btn" data-term="3">3<small>мес</small></button>
+      <button class="term-btn active" data-term="6">6<small>мес</small></button>
+      <button class="term-btn" data-term="9">9<small>мес</small></button>
+      <button class="term-btn" data-term="12">12<small>мес</small></button>
+      <button class="term-btn" data-term="18">18<small>мес</small></button>
+    </div>
+
+    <!-- RESULT -->
+    <div class="result-block">
+      <div class="label">Платёж в месяц</div>
+      <div class="monthly"><span id="r-monthly">14 033</span> <small>₽/мес</small></div>
+      <div class="row"><span>Цена товара</span><span class="v" id="r-price">84 200 ₽</span></div>
+      <div class="row"><span>Первоначальный взнос (10%)</span><span class="v" id="r-down">8 420 ₽</span></div>
+      <div class="row"><span>Срок</span><span class="v" id="r-term">6 месяцев</span></div>
+      <div class="row" style="border-top: 1px solid rgba(255,255,255,.3); margin-top: 12px; padding-top: 10px; font-size: 16px;"><span>Итого к оплате</span><span class="v" id="r-total">84 200 ₽</span></div>
+    </div>
+
+    <!-- CTA -->
+    <button class="cta-btn" onclick="goToForm()">
+      Оставить заявку
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </button>
+
+    <!-- TRUST -->
+    <div class="trust">
+      <span>✅ Без процентов</span>
+      <span>⚡ Решение за 5 минут</span>
+      <span>🛡 Сумма не растёт</span>
+      <span>🤝 По нормам Мурабаха</span>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SCREEN 2: FORM ========== -->
+<div class="screen" id="screen-form">
+  <div class="tab-screen">
+    <button class="back-btn" onclick="goToCalc()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Назад
+    </button>
+
+    <h1 class="tab-h1">Оставьте контакты</h1>
+    <p class="tab-sub-text">Мы пришлём Вам в WhatsApp ссылку для проверки данных. Это займёт 2–3 минуты.</p>
+
+    <!-- Summary -->
+    <div style="background: #fafbfd; border: 1px solid #e5e9f2; border-radius: 12px; padding: 14px; margin-bottom: 22px;">
+      <div style="font-size: 11px; color: #8993a6; text-transform: uppercase; letter-spacing: .04em; font-weight: 700; margin-bottom: 8px;">Условия рассрочки</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px;">
+        <div><span style="color: #8993a6;">Сумма:</span> <b id="s-amount">84 200 ₽</b></div>
+        <div><span style="color: #8993a6;">Срок:</span> <b id="s-term">6 мес</b></div>
+        <div><span style="color: #8993a6;">Первый взнос:</span> <b id="s-down">8 420 ₽</b></div>
+        <div><span style="color: #8993a6;">Платёж:</span> <b id="s-monthly">14 033 ₽/мес</b></div>
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label class="form-label">ФИО полностью *</label>
+      <input class="form-input" id="f-name" placeholder="Иванов Иван Иванович" autocomplete="name" />
+    </div>
+
+    <div class="form-field">
+      <label class="form-label">WhatsApp *</label>
+      <input class="form-input" id="f-phone" placeholder="+7 928 ___ __ __" inputmode="tel" autocomplete="tel" value="+7 928 " />
+    </div>
+
+    <label class="checkbox-row">
+      <input type="checkbox" id="f-agree" checked />
+      <div class="text">Согласен с обработкой персональных данных и получением сообщений в WhatsApp от Payd для проверки и оформления заявки</div>
+    </label>
+
+    <button class="cta-btn" onclick="submitForm()">
+      Отправить заявку →
+    </button>
+  </div>
+</div>
+
+<!-- ========== SCREEN 3: SUCCESS ========== -->
+<div class="screen" id="screen-success">
+  <div class="tab-screen" style="text-align: center;">
+    <div class="success-icon">
+      <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <h1 class="tab-h1">Заявка принята!</h1>
+    <p class="tab-sub-text">Вашему телефону присвоен номер заявки</p>
+
+    <div class="success-num">
+      <div class="l">Номер заявки</div>
+      <div class="v" id="success-num">№ 0000000148</div>
+    </div>
+
+    <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; text-align: left;">Что дальше?</h3>
+
+    <div class="info-step">
+      <div class="num">1</div>
+      <div class="txt">В течение <b>1–2 минут</b> Вам придёт сообщение в <b>WhatsApp</b> с просьбой прислать фото паспорта</div>
+    </div>
+    <div class="info-step">
+      <div class="num">2</div>
+      <div class="txt">Сделайте <b>фото 1-й страницы паспорта</b> и пришлите в WhatsApp. Никуда заходить не нужно — всё в чате</div>
+    </div>
+    <div class="info-step">
+      <div class="num">3</div>
+      <div class="txt">Наша система проверит данные за <b>2–3 минуты</b> и пришлёт решение в WhatsApp</div>
+    </div>
+    <div class="info-step">
+      <div class="num">4</div>
+      <div class="txt">При одобрении товар будет <b>зарезервирован</b> в магазине, и Вы сможете забрать его сразу</div>
+    </div>
+
+    <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 14px; border-radius: 12px; margin: 18px 0; text-align: left; display: flex; gap: 10px;">
+      <div style="font-size: 22px;">📱</div>
+      <div style="font-size: 12px; color: #065f46; line-height: 1.5;">
+        <b>Не закрывайте WhatsApp.</b> Сообщение придёт в течение 2 минут от номера +7 8712 22-44-66.
+      </div>
+    </div>
+
+    <button class="cta-btn" onclick="resetTablet()">Готово</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+let amount = 84200;
+let term = 6;
+let downPct = 0.10;
+
+const fmt = n => Math.round(n).toLocaleString('ru-RU').replace(/,/g, ' ');
+const parse = s => parseInt(String(s).replace(/\D/g, ''), 10) || 0;
+
+function calc() {
+  const down = amount * downPct;
+  const remaining = amount - down;
+  const monthly = remaining / term;
+  document.getElementById('r-monthly').textContent = fmt(monthly);
+  document.getElementById('r-price').textContent = fmt(amount) + ' ₽';
+  document.getElementById('r-down').textContent = fmt(down) + ' ₽';
+  document.getElementById('r-term').textContent = term + ' месяцев';
+  document.getElementById('r-total').textContent = fmt(amount) + ' ₽';
+  // Sync to summary
+  document.getElementById('s-amount').textContent = fmt(amount) + ' ₽';
+  document.getElementById('s-term').textContent = term + ' мес';
+  document.getElementById('s-down').textContent = fmt(down) + ' ₽';
+  document.getElementById('s-monthly').textContent = fmt(monthly) + ' ₽/мес';
+}
+
+// Amount input
+const amountInput = document.getElementById('calc-amount');
+amountInput.addEventListener('input', e => {
+  amount = parse(e.target.value);
+  amountInput.value = fmt(amount);
+  // Reposition cursor at end
+  setTimeout(() => amountInput.setSelectionRange(amountInput.value.length, amountInput.value.length), 0);
+  calc();
+});
+
+// Presets
+document.querySelectorAll('.preset-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    amount = parseInt(b.dataset.amount, 10);
+    amountInput.value = fmt(amount);
+    document.querySelectorAll('.preset-btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    calc();
+  });
+});
+
+// Term selector
+document.querySelectorAll('.term-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    term = parseInt(b.dataset.term, 10);
+    document.querySelectorAll('.term-btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    calc();
+  });
+});
+
+// Phone input — keep +7 prefix
+document.getElementById('f-phone').addEventListener('input', e => {
+  let v = e.target.value;
+  if (!v.startsWith('+7')) v = '+7 ' + v.replace(/\D/g, '');
+  // Format: +7 928 123 45 67
+  const digits = v.replace(/\D/g, '').slice(1, 11);
+  let formatted = '+7';
+  if (digits.length > 0) formatted += ' ' + digits.slice(0, 3);
+  if (digits.length > 3) formatted += ' ' + digits.slice(3, 6);
+  if (digits.length > 6) formatted += ' ' + digits.slice(6, 8);
+  if (digits.length > 8) formatted += ' ' + digits.slice(8, 10);
+  e.target.value = formatted;
+});
+
+// Screen navigation
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function goToForm() {
+  if (amount < 5000) { alert('Минимальная сумма рассрочки: 5 000 ₽'); return; }
+  if (amount > 500000) { alert('Максимальная сумма рассрочки: 500 000 ₽'); return; }
+  showScreen('screen-form');
+  setTimeout(() => document.getElementById('f-name').focus(), 100);
+}
+
+function goToCalc() {
+  showScreen('screen-calc');
+}
+
+function submitForm() {
+  const name = document.getElementById('f-name').value.trim();
+  const phone = document.getElementById('f-phone').value.trim();
+  const agree = document.getElementById('f-agree').checked;
+
+  if (!name || name.split(' ').length < 2) {
+    alert('Введите ФИО полностью (Фамилия Имя Отчество)');
+    return;
+  }
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length !== 11) {
+    alert('Введите корректный номер WhatsApp');
+    return;
+  }
+  if (!agree) {
+    alert('Необходимо согласие на обработку данных');
+    return;
+  }
+
+  // Generate application number
+  const num = String(Math.floor(Math.random() * 1000) + 200).padStart(7, '0');
+  document.getElementById('success-num').textContent = '№ ' + num;
+  showScreen('screen-success');
+
+  // Simulate WhatsApp message after 2 seconds
+  setTimeout(() => {
+    if (document.getElementById('screen-success').classList.contains('active')) {
+      // Could show a notification animation here
+    }
+  }, 2000);
+}
+
+function resetTablet() {
+  // Reset form
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-phone').value = '+7 928 ';
+  showScreen('screen-calc');
+  amount = 84200;
+  amountInput.value = fmt(amount);
+  document.querySelectorAll('.preset-btn').forEach(x => x.classList.remove('active'));
+  calc();
+}
+
+// Initial calc
+calc();
+</script>
+</body>
+</html>

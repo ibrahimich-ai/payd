@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Клиент — Payd</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .client-grid { display: grid; grid-template-columns: 320px 1fr; gap: 16px; }
+  @media (max-width: 1100px) { .client-grid { grid-template-columns: 1fr; } }
+
+  .client-hero {
+    background: linear-gradient(135deg, #2563eb, #8b5cf6);
+    color: white;
+    padding: 28px 24px;
+    border-radius: var(--radius);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .client-hero::after {
+    content: '';
+    position: absolute;
+    top: -50%; right: -20%;
+    width: 200px; height: 200px;
+    background: rgba(255,255,255,.08);
+    border-radius: 50%;
+  }
+  .client-hero .avatar { width: 80px; height: 80px; font-size: 26px; margin: 0 auto 14px; background: rgba(255,255,255,.15); backdrop-filter: blur(10px); border: 2px solid rgba(255,255,255,.2); }
+  .client-hero .name { font-size: 18px; font-weight: 700; line-height: 1.3; }
+  .client-hero .sub { font-size: 12px; opacity: .8; margin-top: 4px; }
+  .client-hero .badges { display: flex; gap: 6px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
+
+  .info-row { padding: 12px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+  .info-row:last-child { border-bottom: none; }
+  .info-row .ic { width: 32px; height: 32px; border-radius: 8px; background: var(--surface-2); display: flex; align-items: center; justify-content: center; color: var(--text-2); flex-shrink: 0; }
+  .info-row .info { flex: 1; min-width: 0; }
+  .info-row .l { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; }
+  .info-row .v { font-size: 13px; font-weight: 600; margin-top: 2px; }
+
+  .deal-row { display: grid; grid-template-columns: 60px 1fr 100px 100px 110px 80px; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--border); align-items: center; cursor: pointer; }
+  .deal-row:hover { background: var(--surface-2); }
+  .deal-row .num { font-weight: 700; color: var(--text-3); font-variant-numeric: tabular-nums; }
+  .deal-row .product { display: flex; align-items: center; gap: 10px; }
+  .deal-row .product-img { width: 32px; height: 32px; border-radius: 6px; background: var(--surface-2); display: flex; align-items: center; justify-content: center; }
+  .deal-row .product .pname { font-size: 13px; font-weight: 600; }
+  .deal-row .product .pmeta { font-size: 11px; color: var(--text-3); }
+  .deal-row .v { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  .timeline { padding: 0; }
+  .timeline-event { display: flex; gap: 14px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+  .timeline-event:last-child { border-bottom: none; }
+  .timeline-event .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--primary); margin-top: 6px; flex-shrink: 0; box-shadow: 0 0 0 3px rgba(37,99,235,.15); }
+  .timeline-event.success .dot { background: var(--success); box-shadow: 0 0 0 3px rgba(16,185,129,.15); }
+  .timeline-event.danger .dot { background: var(--danger); box-shadow: 0 0 0 3px rgba(239,68,68,.15); }
+  .timeline-event .info { flex: 1; min-width: 0; }
+  .timeline-event .a { font-size: 13px; font-weight: 600; }
+  .timeline-event .b { font-size: 11px; color: var(--text-3); }
+  .timeline-event .when { font-size: 11px; color: var(--text-3); white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<div id="app-root">
+
+<div class="page-head">
+  <div>
+    <h1>Карточка клиента</h1>
+    <div class="desc">Полная информация и история операций</div>
+  </div>
+  <div class="page-head-actions">
+    <button class="btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      Редактировать
+    </button>
+    <button class="btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      SMS
+    </button>
+    <button class="btn primary">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Новая заявка
+    </button>
+  </div>
+</div>
+
+<div class="client-grid">
+
+  <div style="display: flex; flex-direction: column; gap: 16px;">
+    <div class="client-hero">
+      <div class="avatar">ХА</div>
+      <div class="name">Хасиев Ахмед Хамзатович</div>
+      <div class="sub">Клиент с 14.06.2023</div>
+      <div class="badges">
+        <span class="badge warning" style="background: rgba(255,255,255,.2); color: white; border-color: rgba(255,255,255,.3);">⭐ VIP</span>
+        <span class="badge success" style="background: rgba(255,255,255,.2); color: white; border-color: rgba(255,255,255,.3);">7 сделок</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd">
+        <h3>Контактная информация</h3>
+      </div>
+      <div>
+        <div class="info-row">
+          <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+          <div class="info">
+            <div class="l">Телефон</div>
+            <div class="v">+7 928 449-12-08</div>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+          <div class="info">
+            <div class="l">Email</div>
+            <div class="v">a.khasiev@mail.ru</div>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg></div>
+          <div class="info">
+            <div class="l">Дата рождения</div>
+            <div class="v">12.04.1989 (35 лет)</div>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/></svg></div>
+          <div class="info">
+            <div class="l">Адрес</div>
+            <div class="v">Грозный, ул. Ахмат-Хаджи Кадырова 14, кв 88</div>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/></svg></div>
+          <div class="info">
+            <div class="l">Паспорт</div>
+            <div class="v">96 14 № 728401</div>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg></div>
+          <div class="info">
+            <div class="l">ИНН</div>
+            <div class="v">200148273912</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd">
+        <h3>Финансовый профиль</h3>
+      </div>
+      <div>
+        <div class="info-row">
+          <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+          <div class="info">
+            <div class="l">Место работы</div>
+            <div class="v">ООО «АТЭК-Сервис»</div>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+          <div class="info">
+            <div class="l">Доход в месяц</div>
+            <div class="v" style="color: var(--success);">120 000 ₽</div>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>
+          <div class="info">
+            <div class="l">Скоринг</div>
+            <div class="v" style="color: var(--success);">92 / 100 · Отличный</div>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <div class="info">
+            <div class="l">Кредитная история</div>
+            <div class="v" style="color: var(--success);">Безупречная</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 16px;">
+
+    <div class="stat-grid cols-3">
+      <div class="stat" style="padding: 16px;">
+        <div class="stat-label">Всего сделок</div>
+        <div class="stat-value">7</div>
+        <div class="stat-sub">с июня 2023</div>
+      </div>
+      <div class="stat" style="padding: 16px;">
+        <div class="stat-label">Общая сумма</div>
+        <div class="stat-value" style="font-size: 22px;">412 000 ₽</div>
+        <div class="stat-sub">Прибыль 64 800 ₽</div>
+      </div>
+      <div class="stat" style="padding: 16px;">
+        <div class="stat-label">Закрыто без просрочек</div>
+        <div class="stat-value" style="font-size: 22px; color: var(--success);">100%</div>
+        <div class="stat-sub">6 из 6 завершённых</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd">
+        <h3>История сделок</h3>
+        <a href="#" class="text-sm" style="color: var(--primary); font-weight: 600;">Все сделки →</a>
+      </div>
+      <div>
+        <div class="deal-row" onclick="window.location='zayavka.html?back=client.html'">
+          <span class="num">#144</span>
+          <div class="product">
+            <div class="product-img">⌚</div>
+            <div>
+              <div class="pname">Apple Watch Series 10 · Серебристый</div>
+              <div class="pmeta">29.04.2026 · 4 мес</div>
+            </div>
+          </div>
+          <div class="v">42 000 ₽</div>
+          <div><span class="badge success dot">Активная</span></div>
+          <div>
+            <div style="font-size: 11px; color: var(--text-3);">Прогресс</div>
+            <div class="progress-bar" style="margin-top: 4px; width: 80px;"><div class="fill" style="width: 83%"></div></div>
+          </div>
+          <div style="text-align: right;">
+            <button class="btn sm">→</button>
+          </div>
+        </div>
+
+        <div class="deal-row" onclick="window.location='zayavka.html?back=client.html'">
+          <span class="num">#089</span>
+          <div class="product">
+            <div class="product-img">📱</div>
+            <div>
+              <div class="pname">iPhone 15 Pro 256GB</div>
+              <div class="pmeta">12.11.2025 · 12 мес</div>
+            </div>
+          </div>
+          <div class="v">128 000 ₽</div>
+          <div><span class="badge gray dot">Закрыта</span></div>
+          <div>
+            <div style="font-size: 11px; color: var(--text-3);">Без просрочек</div>
+            <div class="progress-bar success" style="margin-top: 4px; width: 80px;"><div class="fill" style="width: 100%"></div></div>
+          </div>
+          <div style="text-align: right;"><button class="btn sm">→</button></div>
+        </div>
+
+        <div class="deal-row" onclick="window.location='zayavka.html?back=client.html'">
+          <span class="num">#067</span>
+          <div class="product">
+            <div class="product-img">💻</div>
+            <div>
+              <div class="pname">MacBook Air M2 13"</div>
+              <div class="pmeta">04.07.2025 · 18 мес</div>
+            </div>
+          </div>
+          <div class="v">98 000 ₽</div>
+          <div><span class="badge gray dot">Закрыта</span></div>
+          <div>
+            <div style="font-size: 11px; color: var(--text-3);">Досрочно</div>
+            <div class="progress-bar success" style="margin-top: 4px; width: 80px;"><div class="fill" style="width: 100%"></div></div>
+          </div>
+          <div style="text-align: right;"><button class="btn sm">→</button></div>
+        </div>
+
+        <div class="deal-row" onclick="window.location='zayavka.html?back=client.html'">
+          <span class="num">#048</span>
+          <div class="product">
+            <div class="product-img">📺</div>
+            <div>
+              <div class="pname">Samsung QLED 55"</div>
+              <div class="pmeta">14.02.2025 · 9 мес</div>
+            </div>
+          </div>
+          <div class="v">68 500 ₽</div>
+          <div><span class="badge gray dot">Закрыта</span></div>
+          <div>
+            <div style="font-size: 11px; color: var(--text-3);">Без просрочек</div>
+            <div class="progress-bar success" style="margin-top: 4px; width: 80px;"><div class="fill" style="width: 100%"></div></div>
+          </div>
+          <div style="text-align: right;"><button class="btn sm">→</button></div>
+        </div>
+
+        <div class="deal-row" onclick="window.location='zayavka.html?back=client.html'">
+          <span class="num">#031</span>
+          <div class="product">
+            <div class="product-img">🎧</div>
+            <div>
+              <div class="pname">Airpods 3</div>
+              <div class="pmeta">22.10.2024 · 3 мес</div>
+            </div>
+          </div>
+          <div class="v">12 800 ₽</div>
+          <div><span class="badge gray dot">Закрыта</span></div>
+          <div>
+            <div style="font-size: 11px; color: var(--text-3);">Без просрочек</div>
+            <div class="progress-bar success" style="margin-top: 4px; width: 80px;"><div class="fill" style="width: 100%"></div></div>
+          </div>
+          <div style="text-align: right;"><button class="btn sm">→</button></div>
+        </div>
+
+        <div class="deal-row" onclick="window.location='zayavka.html?back=client.html'">
+          <span class="num">#019</span>
+          <div class="product">
+            <div class="product-img">🎮</div>
+            <div>
+              <div class="pname">PS5</div>
+              <div class="pmeta">15.05.2024 · 6 мес</div>
+            </div>
+          </div>
+          <div class="v">52 000 ₽</div>
+          <div><span class="badge gray dot">Закрыта</span></div>
+          <div>
+            <div style="font-size: 11px; color: var(--text-3);">Без просрочек</div>
+            <div class="progress-bar success" style="margin-top: 4px; width: 80px;"><div class="fill" style="width: 100%"></div></div>
+          </div>
+          <div style="text-align: right;"><button class="btn sm">→</button></div>
+        </div>
+
+        <div class="deal-row" onclick="window.location='zayavka.html?back=client.html'">
+          <span class="num">#008</span>
+          <div class="product">
+            <div class="product-img">📱</div>
+            <div>
+              <div class="pname">iPhone 14</div>
+              <div class="pmeta">14.06.2023 · 12 мес · первая</div>
+            </div>
+          </div>
+          <div class="v">12 700 ₽</div>
+          <div><span class="badge gray dot">Закрыта</span></div>
+          <div>
+            <div style="font-size: 11px; color: var(--text-3);">Без просрочек</div>
+            <div class="progress-bar success" style="margin-top: 4px; width: 80px;"><div class="fill" style="width: 100%"></div></div>
+          </div>
+          <div style="text-align: right;"><button class="btn sm">→</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd">
+        <h3>Хронология взаимодействий</h3>
+      </div>
+      <div class="timeline">
+        <div class="timeline-event success">
+          <div class="dot"></div>
+          <div class="info">
+            <div class="a">Платёж получен по заявке #144</div>
+            <div class="b">10 500 ₽ · карта · кассир Бекуев М.</div>
+          </div>
+          <div class="when">сегодня · 13:42</div>
+        </div>
+        <div class="timeline-event">
+          <div class="dot"></div>
+          <div class="info">
+            <div class="a">Создана заявка #144</div>
+            <div class="b">Apple Watch Series 10 · Серебристый · 42 000 ₽</div>
+          </div>
+          <div class="when">29.04.2026</div>
+        </div>
+        <div class="timeline-event success">
+          <div class="dot"></div>
+          <div class="info">
+            <div class="a">Заявка #089 закрыта</div>
+            <div class="b">iPhone 15 Pro · полный расчёт</div>
+          </div>
+          <div class="when">12.11.2025</div>
+        </div>
+        <div class="timeline-event">
+          <div class="dot"></div>
+          <div class="info">
+            <div class="a">Создана заявка #089</div>
+            <div class="b">iPhone 15 Pro 256GB · 128 000 ₽</div>
+          </div>
+          <div class="when">14.10.2025</div>
+        </div>
+        <div class="timeline-event success">
+          <div class="dot"></div>
+          <div class="info">
+            <div class="a">Досрочное закрытие заявки #067</div>
+            <div class="b">MacBook Air · оплата за 14 мес из 18</div>
+          </div>
+          <div class="when">04.07.2025</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="db.js"></script>
+<script src="app.js"></script>
+<script>
+  PaydApp.mountShell({
+    active: 'clients',
+    title: 'Хасиев А. Х.',
+    breadcrumbs: [
+      { label: 'Главная', href: 'dashboard.html' },
+      { label: 'Клиенты', href: 'clients.html' },
+      { label: 'Хасиев А. Х.' }
+    ]
+  });
+</script>
+</body>
+</html>

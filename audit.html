@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Журнал аудита — Payd</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .audit-row { display: grid; grid-template-columns: 110px 36px 1fr 200px 130px 120px 80px; gap: 12px; align-items: center; padding: 12px 18px; border-bottom: 1px solid var(--border); transition: background .12s; cursor: pointer; }
+  .audit-row:hover { background: var(--surface-2); }
+  .audit-row.sensitive { background: linear-gradient(90deg, var(--danger-soft) 0%, transparent 60%); border-left: 3px solid var(--danger); padding-left: 15px; }
+  .audit-row .ico { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+  .audit-row.create .ico { background: var(--success-soft); color: var(--success); }
+  .audit-row.update .ico { background: var(--primary-soft); color: var(--primary); }
+  .audit-row.delete .ico { background: var(--danger-soft); color: var(--danger); }
+  .audit-row.access .ico { background: var(--purple-soft); color: var(--purple); }
+  .audit-row.payment .ico { background: var(--warning-soft); color: var(--warning); }
+
+  .audit-row .desc { font-size: 13px; font-weight: 600; }
+  .audit-row .desc b { color: var(--primary); }
+  .audit-row .meta { font-size: 11px; color: var(--text-3); margin-top: 2px; font-family: 'Courier New', monospace; }
+
+  .audit-row .time { font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+  .audit-row .time-rel { font-size: 11px; color: var(--text-3); }
+
+  .ip-tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 4px; background: var(--surface-2); font-family: 'Courier New', monospace; font-size: 11px; }
+  .ip-tag.local { color: var(--success); background: var(--success-soft); }
+  .ip-tag.remote { color: var(--primary); background: var(--primary-soft); }
+
+  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .summary-card .l { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; }
+  .summary-card .v { font-size: 22px; font-weight: 800; margin-top: 4px; letter-spacing: -.02em; }
+  .summary-card .s { font-size: 11px; color: var(--text-2); margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<div id="app-root">
+
+<div class="page-head">
+  <div>
+    <h1>Журнал аудита</h1>
+    <div class="desc">Полный лог действий пользователей и системы · хранение 5 лет</div>
+  </div>
+  <div class="page-head-actions">
+    <button class="btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Live режим
+    </button>
+    <button class="btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/></svg>
+      Экспорт CSV
+    </button>
+    <button class="btn primary">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+      Отчёт для проверки ЦБ
+    </button>
+  </div>
+</div>
+
+<!-- SUMMARY -->
+<div class="summary-grid">
+  <div class="summary-card">
+    <div class="l">Событий всего</div>
+    <div class="v" data-live="kpi:audit:total">0</div>
+    <div class="s">за весь период</div>
+  </div>
+  <div class="summary-card">
+    <div class="l">Чувствительные</div>
+    <div class="v">—</div>
+    <div class="s">включается RLS-политиками</div>
+  </div>
+  <div class="summary-card">
+    <div class="l">Активных пользователей</div>
+    <div class="v">—</div>
+    <div class="s">данные о сессиях</div>
+  </div>
+  <div class="summary-card">
+    <div class="l">Подозрительных</div>
+    <div class="v">0</div>
+    <div class="s">правил безопасности нет</div>
+  </div>
+</div>
+
+<!-- FILTERS -->
+<div class="filter-bar">
+  <div class="filter-search">
+    <span class="si"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+    <input type="text" placeholder="Поиск по пользователю, объекту, IP, описанию..." />
+  </div>
+  <div class="filter-extras">
+    <select><option>Все события</option><option>Создание</option><option>Изменение</option><option>Удаление</option><option>Доступ</option></select>
+    <select><option>Все пользователи</option></select>
+    <select><option>Сегодня</option><option>За неделю</option><option>За месяц</option></select>
+    <select><option>Все объекты</option><option>Заявки</option><option>Клиенты</option><option>Платежи</option><option>Договоры</option><option>Настройки</option></select>
+    <button class="btn sm" style="border-color: var(--danger); color: var(--danger);">Только чувствительные</button>
+  </div>
+</div>
+
+<!-- AUDIT LOG -->
+<div class="card">
+  <div data-live="list:audit:events" style="min-height:200px;">
+    <div style="padding:32px;text-align:center;color:var(--text-3);font-size:13px;">Загрузка журнала событий...</div>
+  </div>
+</div>
+
+<!-- LEGACY MOCK ROWS — оставлены как справочные примеры (будут скрыты после миграции) -->
+<div style="display:none;">
+  <div style="background: var(--surface-2); padding: 10px 18px; font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .04em; display: grid; grid-template-columns: 110px 36px 1fr 200px 130px 120px 80px; gap: 12px; border-bottom: 1px solid var(--border);">
+    <div>Время</div>
+    <div></div>
+    <div>Действие</div>
+    <div>Пользователь</div>
+    <div>Объект</div>
+    <div>IP / Устройство</div>
+    <div></div>
+  </div>
+
+  <div class="audit-row sensitive payment">
+    <div>
+      <div class="time">15:24:18</div>
+      <div class="time-rel">2 мин назад</div>
+    </div>
+    <div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+    <div>
+      <div class="desc">Принят платёж <b>3 500 ₽</b> по заявке <b>#0000000142</b></div>
+      <div class="meta">payment.created · payment_id=PMT-2026-04-30-1248 · method=cash</div>
+    </div>
+    <div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="avatar c2 sm">БМ</div>
+        <div>
+          <div style="font-size: 12px; font-weight: 600;">Бекуев М.</div>
+          <div style="font-size: 10px; color: var(--text-3);">Кассир · смена #042</div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size: 12px;">Заявка #142</div>
+    <div><span class="ip-tag local">192.168.1.42</span></div>
+    <div style="text-align: right;"><button class="btn sm">→</button></div>
+  </div>
+
+  <div class="audit-row update">
+    <div>
+      <div class="time">15:23:08</div>
+      <div class="time-rel">3 мин назад</div>
+    </div>
+    <div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+    <div>
+      <div class="desc">Изменён статус заявки <b>#0000000147</b>: <span style="color: var(--text-3);">Новая</span> → <span style="color: var(--success);">На проверке СБ</span></div>
+      <div class="meta">application.update · field=status · old=new · new=sb_check</div>
+    </div>
+    <div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="avatar c2 sm">БМ</div>
+        <div>
+          <div style="font-size: 12px; font-weight: 600;">Бекуев М.</div>
+          <div style="font-size: 10px; color: var(--text-3);">Менеджер</div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size: 12px;">Заявка #147</div>
+    <div><span class="ip-tag local">192.168.1.42</span></div>
+    <div style="text-align: right;"><button class="btn sm">→</button></div>
+  </div>
+
+  <div class="audit-row create">
+    <div>
+      <div class="time">14:51:32</div>
+      <div class="time-rel">35 мин назад</div>
+    </div>
+    <div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+    <div>
+      <div class="desc">Создана заявка <b>#0000000148</b> · MacBook Air M3 · 145 000 ₽</div>
+      <div class="meta">application.create · application_id=APP-2026-04-30-148</div>
+    </div>
+    <div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="avatar c3 sm">АС</div>
+        <div>
+          <div style="font-size: 12px; font-weight: 600;">Алиев С.</div>
+          <div style="font-size: 10px; color: var(--text-3);">Менеджер</div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size: 12px;">Заявка #148</div>
+    <div><span class="ip-tag local">192.168.1.18</span></div>
+    <div style="text-align: right;"><button class="btn sm">→</button></div>
+  </div>
+
+  <div class="audit-row sensitive update">
+    <div>
+      <div class="time">14:42:51</div>
+      <div class="time-rel">42 мин назад</div>
+    </div>
+    <div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+    <div>
+      <div class="desc">Изменена <b>сумма заявки</b> #0000000146: <span style="color: var(--text-3);">98 600 ₽</span> → <span style="color: var(--danger);">102 000 ₽</span></div>
+      <div class="meta">application.update · field=amount · sensitive=true · reason="Уточнение цены товара"</div>
+    </div>
+    <div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="avatar c2 sm">БМ</div>
+        <div>
+          <div style="font-size: 12px; font-weight: 600;">Бекуев М.</div>
+          <div style="font-size: 10px; color: var(--text-3);">Администратор</div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size: 12px;">Заявка #146</div>
+    <div><span class="ip-tag local">192.168.1.42</span></div>
+    <div style="text-align: right;"><button class="btn sm">→</button></div>
+  </div>
+
+  <div class="audit-row access">
+    <div>
+      <div class="time">14:08:15</div>
+      <div class="time-rel">1 час назад</div>
+    </div>
+    <div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+    <div>
+      <div class="desc">Просмотр карточки клиента <b>Хасиев А. Х.</b> (ID 1872)</div>
+      <div class="meta">client.view · client_id=1872 · personal_data_accessed=true</div>
+    </div>
+    <div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="avatar c1 sm">МУ</div>
+        <div>
+          <div style="font-size: 12px; font-weight: 600;">Мусаев У.</div>
+          <div style="font-size: 10px; color: var(--text-3);">СБ</div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size: 12px;">Клиент #1872</div>
+    <div><span class="ip-tag local">192.168.1.65</span></div>
+    <div style="text-align: right;"><button class="btn sm">→</button></div>
+  </div>
+
+  <div class="audit-row sensitive update">
+    <div>
+      <div class="time">12:30:42</div>
+      <div class="time-rel">3 часа назад</div>
+    </div>
+    <div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+    <div>
+      <div class="desc">Изменены <b>настройки скоринга</b>: пороговое значение 75 → 80</div>
+      <div class="meta">settings.update · path=scoring.threshold · sensitive=true · approval_required=true</div>
+    </div>
+    <div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="avatar c2 sm">БМ</div>
+        <div>
+          <div style="font-size: 12px; font-weight: 600;">Бекуев М.</div>
+          <div style="font-size: 10px; color: var(--text-3);">Администратор</div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size: 12px;">Настройки</div>
+    <div><span class="ip-tag local">192.168.1.42</span></div>
+    <div style="text-align: right;"><button class="btn sm">→</button></div>
+  </div>
+
+  <div class="audit-row create">
+    <div>
+      <div class="time">10:45:12</div>
+      <div class="time-rel">5 часов назад</div>
+    </div>
+    <div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg></div>
+    <div>
+      <div class="desc">Подписан договор <b>№ДР-0142/2026</b> e-sign по SMS</div>
+      <div class="meta">contract.signed · contract_id=DR-0142-2026 · method=sms · sms_code_used=true</div>
+    </div>
+    <div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="avatar c1 sm">ДЛ</div>
+        <div>
+          <div style="font-size: 12px; font-weight: 600;">Даурбекова Л.</div>
+          <div style="font-size: 10px; color: var(--text-3);">Клиент</div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size: 12px;">Договор #ДР-0142</div>
+    <div><span class="ip-tag remote">95.108.142.18</span></div>
+    <div style="text-align: right;"><button class="btn sm">→</button></div>
+  </div>
+
+  <div class="audit-row access">
+    <div>
+      <div class="time">09:00:00</div>
+      <div class="time-rel">сегодня</div>
+    </div>
+    <div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg></div>
+    <div>
+      <div class="desc">Вход в систему · открыта смена кассы #042</div>
+      <div class="meta">auth.login · 2fa_passed=true · session_id=SES-A82D31</div>
+    </div>
+    <div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="avatar c2 sm">БМ</div>
+        <div>
+          <div style="font-size: 12px; font-weight: 600;">Бекуев М.</div>
+          <div style="font-size: 10px; color: var(--text-3);">Администратор</div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size: 12px;">Сессия</div>
+    <div><span class="ip-tag local">192.168.1.42</span></div>
+    <div style="text-align: right;"><button class="btn sm">→</button></div>
+  </div>
+
+  <div class="audit-row sensitive access">
+    <div>
+      <div class="time">03:42:18</div>
+      <div class="time-rel">12 часов назад</div>
+    </div>
+    <div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></div>
+    <div>
+      <div class="desc"><b style="color: var(--danger);">⚠ Подозрительный вход</b> — новый IP, нерабочее время</div>
+      <div class="meta">auth.login_suspicious · new_device=true · risk_score=78</div>
+    </div>
+    <div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="avatar c7 sm">ТР</div>
+        <div>
+          <div style="font-size: 12px; font-weight: 600;">Тагаев Р.</div>
+          <div style="font-size: 10px; color: var(--text-3);">Кассир</div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size: 12px;">Сессия</div>
+    <div><span class="ip-tag" style="background: var(--danger-soft); color: var(--danger);">87.241.12.5</span></div>
+    <div style="text-align: right;"><button class="btn sm danger">Расследовать</button></div>
+  </div>
+
+  <div class="audit-row sensitive delete">
+    <div>
+      <div class="time">22:18:42</div>
+      <div class="time-rel">вчера</div>
+    </div>
+    <div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>
+    <div>
+      <div class="desc"><b style="color: var(--danger);">⚠ Массовый экспорт клиентов (1248 записей)</b></div>
+      <div class="meta">data.export · entity=clients · count=1248 · sensitive=true</div>
+    </div>
+    <div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="avatar c2 sm">БМ</div>
+        <div>
+          <div style="font-size: 12px; font-weight: 600;">Бекуев М.</div>
+          <div style="font-size: 10px; color: var(--text-3);">Администратор</div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size: 12px;">Клиенты (все)</div>
+    <div><span class="ip-tag local">192.168.1.42</span></div>
+    <div style="text-align: right;"><button class="btn sm">→</button></div>
+  </div>
+
+  <div class="pagination">
+    <div class="pagination-info">—</div>
+  </div>
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="db.js"></script>
+<script src="app.js"></script>
+<script src="reports-data.js"></script>
+<script>
+  PaydApp.mountShell({
+    active: 'audit',
+    title: 'Журнал аудита',
+    breadcrumbs: [{ label: 'Главная', href: 'dashboard.html' }, { label: 'Аудит' }]
+  });
+</script>
+</body>
+</html>

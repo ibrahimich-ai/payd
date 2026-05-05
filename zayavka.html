@@ -1,0 +1,2173 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Заявка рассрочки 0000000005 — Payd</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  /* ====================== ACTION BAR ====================== */
+  .actionbar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .actions-left { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* ====================== ZAYAVKA LAYOUT ====================== */
+  .zayavka-grid {
+    display: grid;
+    grid-template-columns: 300px 1fr 320px;
+    gap: 16px;
+  }
+  @media (max-width: 1400px) { .zayavka-grid { grid-template-columns: 280px 1fr 300px; } }
+  @media (max-width: 1200px) { .zayavka-grid { grid-template-columns: 1fr; } }
+
+  .col { display: flex; flex-direction: column; gap: 16px; }
+
+  /* ====================== CLIENT BLOCK ====================== */
+  .client-card { padding: 20px; }
+  .client-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+  .client-head .avatar { width: 44px; height: 44px; font-size: 16px; }
+  .client-meta .label { font-size: 11px; text-transform: uppercase; color: var(--text-3); letter-spacing: .06em; margin-bottom: 2px; }
+  .client-meta .name { font-size: 15px; font-weight: 600; color: var(--text); line-height: 1.3; }
+  .client-rows { display: flex; flex-direction: column; gap: 10px; }
+  .client-row { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-2); }
+  .client-row .ico { width: 28px; height: 28px; background: var(--surface-2); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text-3); flex-shrink: 0; }
+  .client-row .v { color: var(--text); font-weight: 500; }
+  .client-row a.v { color: var(--primary); text-decoration: none; }
+  .client-row a.v:hover { text-decoration: underline; }
+  .quick-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .qstat { background: var(--surface-2); border-radius: var(--radius-sm); padding: 8px 10px; }
+  .qstat .l { font-size: 10px; text-transform: uppercase; color: var(--text-3); letter-spacing: .05em; }
+  .qstat .v { font-size: 13px; font-weight: 600; color: var(--text); margin-top: 2px; }
+
+  /* ====================== SECURITY CHECK ====================== */
+  .sb-card { padding: 18px; }
+  .sb-title { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 14px; }
+  .sb-status { display: flex; gap: 12px; align-items: flex-start; padding: 12px; background: var(--success-soft); border: 1px solid #a7f3d0; border-radius: var(--radius-sm); margin-bottom: 14px; }
+  .sb-shield { width: 44px; height: 44px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 6px rgba(16, 185, 129, .2); }
+  .sb-status-text .ttl { font-size: 14px; font-weight: 700; color: #047857; }
+  .sb-status-text .sub { font-size: 12px; color: #065f46; margin-top: 2px; }
+  .sb-status-text .ts { font-size: 11px; color: var(--text-3); margin-top: 6px; display: flex; align-items: center; gap: 4px; }
+  .sb-list { display: flex; flex-direction: column; gap: 8px; }
+  .sb-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--surface-2); border-radius: var(--radius-sm); border: 1px solid var(--border); }
+  .sb-item .i { width: 32px; height: 32px; border-radius: 8px; background: white; display: flex; align-items: center; justify-content: center; color: var(--text-2); flex-shrink: 0; }
+  .sb-item .info { flex: 1; min-width: 0; }
+  .sb-item .info .n { font-size: 12px; color: var(--text-2); }
+  .sb-item .info .v { font-size: 13px; font-weight: 600; color: var(--text); }
+  .sb-item .badge-ok { width: 24px; height: 24px; background: var(--success); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+  /* ====================== RISK SCORE ====================== */
+  .risk-card { padding: 16px 18px; }
+  .risk-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .risk-head .t { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .05em; }
+  .risk-bar { height: 8px; background: var(--surface-2); border-radius: 999px; overflow: hidden; position: relative; }
+  .risk-fill { height: 100%; width: 82%; background: linear-gradient(90deg, var(--success), #34d399); border-radius: 999px; }
+  .risk-meta { display: flex; justify-content: space-between; margin-top: 8px; font-size: 11px; color: var(--text-3); }
+  .risk-score { font-size: 22px; font-weight: 800; color: var(--text); margin-top: 4px; letter-spacing: -.02em; }
+  .risk-score small { font-size: 13px; color: var(--text-3); font-weight: 500; }
+
+  /* ====================== GUARANTORS ====================== */
+  .guar-empty { border: 2px dashed var(--border-strong); border-radius: var(--radius-sm); padding: 20px; text-align: center; cursor: pointer; transition: all .15s; }
+  .guar-empty:hover { border-color: var(--primary); background: var(--primary-soft); }
+  .guar-empty .plus { width: 32px; height: 32px; background: var(--surface-2); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: var(--text-2); margin-bottom: 8px; }
+  .guar-empty:hover .plus { background: var(--primary); color: white; }
+  .guar-empty .t { font-size: 13px; color: var(--text-2); }
+
+  /* ====================== MAIN FORM TABS ====================== */
+  .main-tabs { padding: 0 18px; border-radius: var(--radius) var(--radius) 0 0; }
+
+  .meta-grid { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 16px; padding: 18px; border-bottom: 1px solid var(--border); }
+  @media (max-width: 800px) { .meta-grid { grid-template-columns: 1fr; } }
+
+  .field-input-wrap { position: relative; }
+  .field-input-wrap .ico { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; }
+
+  .badge-islam { background: linear-gradient(135deg, #ecfdf5, #d1fae5); color: #047857; border: 1px solid #a7f3d0; }
+
+  /* ====================== PRODUCTS TABLE ====================== */
+  .section { padding: 18px; }
+  .section + .section { border-top: 1px solid var(--border); }
+  .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .section-title { font-size: 14px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .section-title .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); }
+  .section-actions { display: flex; gap: 6px; }
+  .section-actions .btn { padding: 6px 10px; font-size: 12px; }
+
+  .product-cell { display: flex; align-items: center; gap: 12px; }
+  .product-img { width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #f1f5f9, #e2e8f0); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px; }
+  .product-info .pname { font-weight: 600; color: var(--text); }
+  .product-info .pcode { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+
+  /* ====================== INSTALLMENT TERMS ====================== */
+  .terms-grid { display: grid; grid-template-columns: repeat(3, 1fr) 1.2fr; gap: 12px; }
+  @media (max-width: 1100px) { .terms-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .terms-grid { grid-template-columns: 1fr; } }
+
+  .term { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; display: flex; flex-direction: column; gap: 4px; position: relative; transition: all .15s; }
+  .term:hover { border-color: var(--primary); box-shadow: var(--shadow); }
+  .term .ti { width: 32px; height: 32px; border-radius: 8px; background: white; display: flex; align-items: center; justify-content: center; color: var(--primary); margin-bottom: 8px; border: 1px solid var(--border); }
+  .term.markup .ti { color: var(--purple); background: var(--purple-soft); border-color: #ddd6fe; }
+  .term.markup .v { color: var(--purple); }
+  .term .l { font-size: 12px; color: var(--text-2); font-weight: 500; }
+  .term .v { font-size: 18px; font-weight: 800; color: var(--text); letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+  .term .s { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+
+  .term-summary { background: linear-gradient(135deg, #ecfdf5, #d1fae5); border: 1px solid #a7f3d0; border-radius: var(--radius-sm); padding: 14px; }
+  .term-summary .ts-head { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #047857; margin-bottom: 10px; }
+  .term-summary .ts-row { display: flex; justify-content: space-between; align-items: baseline; padding: 5px 0; font-size: 12px; color: #065f46; }
+  .term-summary .ts-row .v { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .term-summary .ts-divider { border-top: 1px dashed #6ee7b7; margin: 8px 0; }
+  .term-summary .ts-total { font-size: 15px; font-weight: 800; color: #064e3b; }
+
+  /* ====================== SCHEDULE ====================== */
+  .sched-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+  .sched-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .sched-empty { text-align: center; padding: 40px 20px; background: var(--surface-2); border: 1px dashed var(--border-strong); border-radius: var(--radius-sm); }
+  .sched-empty .ic { width: 56px; height: 56px; margin: 0 auto 12px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--text-3); border: 1px solid var(--border); }
+  .sched-empty .t1 { font-size: 14px; color: var(--text); font-weight: 600; }
+  .sched-empty .t2 { font-size: 12px; color: var(--text-3); margin-top: 4px; }
+
+  /* ====================== STATUS PANEL ====================== */
+  .status-card { padding: 18px; }
+  .status-card .label { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 12px; }
+  .status-main { display: flex; align-items: center; gap: 12px; padding: 14px; background: var(--success-soft); border: 1px solid #a7f3d0; border-radius: var(--radius-sm); }
+  .status-main .ic { width: 44px; height: 44px; background: var(--success); border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(16, 185, 129, .35); }
+  .status-main .t { font-size: 18px; font-weight: 800; color: #047857; letter-spacing: .02em; }
+  .status-main .s { font-size: 11px; color: #065f46; }
+
+  .progress { padding: 18px; border-top: 1px solid var(--border); }
+  .progress .label { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 14px; }
+  .stepper { display: flex; align-items: center; gap: 4px; margin-bottom: 14px; }
+  .step { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 0; position: relative; }
+  .step .circle { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; background: var(--surface-2); color: var(--text-3); border: 2px solid var(--border-strong); transition: all .2s; }
+  .step .circle svg { width: 13px; height: 13px; }
+  .step.done .circle { background: var(--success); color: white; border-color: var(--success); }
+  .step.current .circle { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(37, 99, 235, .15); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 4px rgba(37, 99, 235, .15); } 50% { box-shadow: 0 0 0 7px rgba(37, 99, 235, .08); } }
+  .step.current .lbl { display: block; }
+  .step .lbl {
+    display: none;
+    position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; font-weight: 700; color: var(--primary);
+    white-space: nowrap;
+  }
+  .step .tip {
+    position: absolute; bottom: -36px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; padding: 4px 8px; border-radius: 6px;
+    background: var(--text); color: white; white-space: nowrap;
+    opacity: 0; pointer-events: none; transition: opacity .15s;
+    z-index: 5;
+  }
+  .step:hover .tip { opacity: 1; }
+  .stepper { padding-bottom: 22px; }
+  .stepper .line { height: 2px; flex: 1; background: var(--border-strong); min-width: 6px; transition: background .2s; }
+  .stepper .line.done { background: var(--success); }
+  @media (max-width: 600px) {
+    .step .circle { width: 26px; height: 26px; font-size: 11px; }
+    .step .circle svg { width: 11px; height: 11px; }
+    .stepper { gap: 2px; }
+    .step .lbl { font-size: 10px; bottom: -20px; }
+  }
+  .progress-current { background: var(--primary-soft); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 12px; color: var(--primary); font-weight: 600; display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .progress-bar-z { height: 6px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+  .progress-bar-z .fill { height: 100%; width: 50%; background: linear-gradient(90deg, var(--primary), var(--purple)); border-radius: 999px; }
+  .progress-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-3); margin-top: 6px; }
+
+  /* ====================== QUICK ACTIONS ====================== */
+  .qa { padding: 18px; }
+  .qa .label { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 12px; }
+  .qa-list { display: flex; flex-direction: column; gap: 8px; }
+  .qa-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; transition: all .15s; font-size: 13px; color: var(--text); font-weight: 500; }
+  .qa-item:hover { border-color: var(--primary); background: var(--primary-soft); transform: translateX(2px); }
+  .qa-item .ic { width: 30px; height: 30px; border-radius: 8px; background: var(--surface-2); display: flex; align-items: center; justify-content: center; color: var(--primary); }
+  .qa-item.danger .ic { background: var(--danger-soft); color: var(--danger); }
+  .qa-item.danger:hover { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); }
+  .qa-item.success .ic { background: var(--success-soft); color: var(--success); }
+  .qa-item .t { flex: 1; }
+  .qa-item .ch { color: var(--text-3); }
+
+  /* ====================== HISTORY ====================== */
+  .history-hd { padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+  .history-hd .label { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .05em; display: flex; align-items: center; gap: 8px; }
+  .hist-list { padding: 0 18px 18px; display: flex; flex-direction: column; gap: 10px; }
+  .hist-item { display: flex; gap: 10px; padding: 8px 10px; background: var(--surface-2); border-radius: var(--radius-sm); }
+  .hist-item .ic { width: 28px; height: 28px; border-radius: 8px; background: white; display: flex; align-items: center; justify-content: center; color: var(--text-2); border: 1px solid var(--border); flex-shrink: 0; }
+  .hist-item .info { flex: 1; min-width: 0; }
+  .hist-item .info .a { font-size: 12px; font-weight: 600; color: var(--text); }
+  .hist-item .info .b { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+  .hist-item .info .c { font-size: 11px; color: var(--text-2); margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+  /* Tabs panes */
+  .tab.active { color: var(--primary); }
+  .tab { cursor: pointer; }
+  .tab-pane[hidden] { display: none; }
+
+  /* Documents */
+  .docs-toolbar { padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+  .docs-list { padding: 8px 0; }
+  .doc-row {
+    display: grid;
+    grid-template-columns: 44px 1fr auto auto;
+    gap: 14px;
+    align-items: center;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border);
+    transition: background .12s;
+  }
+  .doc-row:last-child { border-bottom: none; }
+  .doc-row:hover { background: var(--surface-2); }
+  .doc-ico { width: 44px; height: 44px; border-radius: 10px; background: var(--surface-3); color: var(--text-2); display: flex; align-items: center; justify-content: center; }
+  .doc-name { font-size: 13px; font-weight: 700; }
+  .doc-meta { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+  .doc-actions { display: flex; gap: 5px; }
+  .doc-actions .btn { padding: 4px 10px; font-size: 11px; }
+
+  /* Scoring */
+  .scoring-summary {
+    display: flex; gap: 18px; align-items: center;
+    padding: 18px;
+    background: var(--surface-2);
+    border-radius: var(--radius);
+    margin-bottom: 14px;
+  }
+  .ss-score { text-align: center; flex-shrink: 0; }
+  .ss-num { font-size: 48px; font-weight: 900; line-height: 1; letter-spacing: -.03em; color: var(--primary); }
+  .ss-lbl { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .08em; font-weight: 600; margin-top: 2px; }
+  .ss-meta { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .ss-row { display: flex; justify-content: space-between; font-size: 13px; }
+  .ss-row span:first-child { color: var(--text-3); }
+  .ss-row .v { font-weight: 600; }
+
+  .score-checks { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .sc-item {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: white;
+  }
+  .sc-item.ok { border-color: #a7f3d0; background: var(--success-soft); }
+  .sc-item.warn { border-color: #fde68a; background: var(--warning-soft); }
+  .sc-item .sc-i {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 12px;
+    flex-shrink: 0;
+    color: white;
+  }
+  .sc-item.ok .sc-i { background: var(--success); }
+  .sc-item.warn .sc-i { background: var(--warning); }
+  .sc-item .sc-n { font-size: 13px; font-weight: 700; }
+  .sc-item .sc-d { font-size: 11px; color: var(--text-2); margin-top: 2px; }
+
+  /* SMS */
+  .sms-list { padding: 12px 18px 18px; display: flex; flex-direction: column; gap: 8px; }
+  .sms-row {
+    padding: 10px 14px;
+    border-radius: 12px;
+    max-width: 75%;
+  }
+  .sms-row.out { background: var(--primary-soft); border: 1px solid #bfdbfe; align-self: flex-end; }
+  .sms-row.in  { background: var(--surface-2); border: 1px solid var(--border); align-self: flex-start; }
+  .sms-row .sms-meta { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-3); margin-bottom: 4px; }
+  .sms-row .badge.sm { font-size: 9px; padding: 1px 5px; }
+  .sms-row .sms-body { font-size: 13px; line-height: 1.4; }
+
+  /* Responsive helpers for narrow screens */
+  @media (max-width: 900px) {
+    .docs-toolbar { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .doc-row { grid-template-columns: 36px 1fr auto; }
+    .doc-row .doc-actions { grid-column: 1 / -1; flex-wrap: wrap; padding-top: 6px; border-top: 1px solid var(--border); }
+    .meta-grid { padding: 14px; }
+    .scoring-summary { flex-direction: column; align-items: stretch; gap: 10px; }
+    .score-checks { grid-template-columns: 1fr; }
+    .sms-row { max-width: 100%; }
+    .stat-grid.cols-4 { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 600px) {
+    .stat-grid.cols-4 { grid-template-columns: 1fr; }
+    .main-tabs { padding: 0 4px; overflow-x: auto; }
+    .main-tabs .tab { padding: 10px 12px; white-space: nowrap; font-size: 12px; }
+    .page-head { flex-direction: column; align-items: stretch; gap: 10px; }
+    .page-head-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    .page-head-actions .btn { padding: 7px 10px; font-size: 12px; }
+    .doc-actions .btn { padding: 4px 8px; font-size: 10px; }
+  }
+
+  /* Generic doc preview modal */
+  .doc-preview {
+    background: white; padding: 32px 40px; max-width: 720px; max-height: 80vh;
+    overflow-y: auto; border-radius: 12px; line-height: 1.6; font-size: 13px;
+  }
+  .doc-preview h2 { font-size: 18px; margin-bottom: 12px; }
+  .doc-preview .row { display: flex; justify-content: space-between; padding: 4px 0; }
+</style>
+</head>
+<body>
+
+<div id="app-root">
+
+<!-- ====================== ACTION BAR ====================== -->
+<div class="actionbar">
+  <div class="actions-left">
+    <button class="btn primary">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      Провести и закрыть
+    </button>
+    <button class="btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Записать
+    </button>
+    <button class="btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Провести
+    </button>
+    <button class="btn">Создать на основании <span class="chev"></span></button>
+    <button class="btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Печать
+    </button>
+  </div>
+  <div class="actions-left">
+    <button class="btn ghost">Еще <span class="chev"></span></button>
+  </div>
+</div>
+
+<!-- ====================== PAGE LAYOUT ====================== -->
+<div class="zayavka-grid">
+
+  <!-- =============== LEFT COLUMN =============== -->
+  <div class="col">
+
+    <div class="card client-card">
+      <div class="client-head">
+        <div class="avatar c1" data-bind="clientInitials" data-bind-class="clientColor" data-bind-class-prefix="avatar c">ДЛ</div>
+        <div class="client-meta">
+          <div class="label">Клиент</div>
+          <div class="name" data-bind="clientName">Даурбекова Луиза Саид-Усмановна</div>
+        </div>
+      </div>
+      <div class="client-rows">
+        <div class="client-row">
+          <div class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+          <a href="tel:" class="v" data-bind="clientPhone">+7 989 918-51-58</a>
+        </div>
+        <div class="client-row">
+          <div class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+          <span class="v" data-bind="clientAddress">Грозный, ул. Кольцова 226</span>
+        </div>
+        <div class="client-row">
+          <div class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg></div>
+          <span class="v" data-bind="clientBirthday">22.03.1973 (53 года)</span>
+        </div>
+        <div class="client-row">
+          <div class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/></svg></div>
+          <span class="v" data-bind="clientPassport">Паспорт 96 03 №451287</span>
+        </div>
+      </div>
+      <div class="quick-stats">
+        <div class="qstat"><div class="l">Сделок</div><div class="v" data-bind="clientDeals">3</div></div>
+        <div class="qstat"><div class="l">На сумму</div><div class="v" data-bind="clientTotal">38 400 ₽</div></div>
+      </div>
+      <a href="client.html" class="btn sm" style="width: 100%; justify-content: center; margin-top: 12px;">Открыть карточку клиента →</a>
+    </div>
+
+    <div class="card sb-card" id="sb-card">
+      <div class="sb-title">Проверка клиента (СБ)</div>
+      <div class="sb-status" id="sb-status">
+        <div class="sb-shield" id="sb-shield"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></div>
+        <div class="sb-status-text">
+          <div class="ttl" id="sb-status-title">Проверка пройдена</div>
+          <div class="sub" id="sb-status-sub">Все проверки пройдены успешно</div>
+          <div class="ts"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span id="sb-date" data-bind="sbDate">—</span></div>
+        </div>
+      </div>
+      <button class="btn primary sm" id="sb-run-btn" style="display: none; margin: 0 14px 14px; width: calc(100% - 28px); justify-content: center;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Запустить проверку
+      </button>
+      <div class="sb-list" id="sb-list">
+        <div class="sb-item">
+          <div class="i"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <div class="info"><div class="n">Служба безопасности</div><div class="v">Одобрено</div></div>
+          <div class="badge-ok"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        </div>
+        <div class="sb-item">
+          <div class="i"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+          <div class="info"><div class="n">Кредитная история</div><div class="v">Хорошая</div></div>
+          <div class="badge-ok"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        </div>
+        <div class="sb-item">
+          <div class="i"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 22a8 8 0 0 1 16 0"/></svg></div>
+          <div class="info"><div class="n">Чёрные списки</div><div class="v">Не найден</div></div>
+          <div class="badge-ok"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        </div>
+        <div class="sb-item">
+          <div class="i"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>
+          <div class="info"><div class="n">Скоринг</div><div class="v"><span data-bind="sbScore">82</span> баллов</div></div>
+          <div class="badge-ok"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card risk-card">
+      <div class="risk-head">
+        <div class="t">Уровень риска</div>
+        <span class="badge success" id="risk-badge" data-bind="sbScoreLabel">Низкий</span>
+      </div>
+      <div class="risk-score"><span data-bind="sbScore">82</span><small> / 100</small></div>
+      <div class="risk-bar"><div class="risk-fill" id="risk-fill"></div></div>
+      <div class="risk-meta"><span>Высокий риск</span><span>Низкий риск</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd"><h3>Поручители</h3></div>
+      <div style="padding: 14px;">
+        <div class="guar-empty">
+          <div class="plus"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+          <div class="t">Добавить поручителя</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card card-pad">
+      <label class="field-label">Комментарий</label>
+      <textarea class="textarea" placeholder="Введите комментарий"></textarea>
+      <div style="height: 14px"></div>
+      <label class="field-label">Ответственный</label>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <div class="avatar c2 sm" data-bind="managerInitials" data-bind-class="managerColor" data-bind-class-prefix="avatar c sm">БМ</div>
+        <select class="select" style="flex: 1;" data-bind-select="managerName"><option>Бекуев Муслим Денисович</option></select>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- =============== CENTER COLUMN =============== -->
+  <div class="col">
+    <div class="card" style="padding: 0; overflow: hidden;">
+      <div class="tabs main-tabs">
+        <div class="tab active" data-pane="main">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Основное
+        </div>
+        <div class="tab" data-pane="docs">Документы <span class="count">3</span></div>
+        <div class="tab" data-pane="requisites">Реквизиты</div>
+        <div class="tab" data-pane="profile">Анкета</div>
+        <div class="tab" data-pane="scoring">Скоринг</div>
+        <div class="tab" data-pane="sms">SMS / Уведомления <span class="count">8</span></div>
+      </div>
+
+      <div class="tab-pane active" data-pane-content="main">
+
+      <div class="meta-grid">
+        <div class="field">
+          <label class="field-label">Номер</label>
+          <input class="input" data-bind-value="number" value="0000000005" readonly />
+        </div>
+        <div class="field">
+          <label class="field-label">Дата</label>
+          <div class="field-input-wrap">
+            <input class="input" data-bind-value="date" value="19.04.2026 16:07:56" />
+            <div class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg></div>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Тип сделки</label>
+          <select class="select" data-bind-select="type"><option>Товар со склада</option><option>Товар от партнёра</option><option>Под заказ</option><option>Услуга</option></select>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <div class="section-title"><span class="dot"></span>Товары</div>
+          <div class="section-actions">
+            <button class="btn sm">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Добавить
+            </button>
+            <button class="btn ghost sm">Еще <span class="chev"></span></button>
+          </div>
+        </div>
+
+        <table class="tbl" style="border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden;">
+          <thead>
+            <tr>
+              <th style="width: 40px;">N</th>
+              <th>Номенклатура</th>
+              <th style="width: 90px;">Кол-во</th>
+              <th style="width: 120px;" class="t-right">Цена закупки</th>
+              <th style="width: 120px;" class="t-right">Цена продажи</th>
+              <th style="width: 130px;" class="t-right">Сумма продажи</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>
+                <div class="product-cell">
+                  <div class="product-img" data-bind="productIcon">🎧</div>
+                  <div class="product-info">
+                    <div class="pname" data-bind="productName">Airpods 4 CASE MXP93 · Белый USB-C CHARGING ANC (eu)</div>
+                    <div class="pcode" data-bind="productCode">Код: 000001234</div>
+                  </div>
+                </div>
+              </td>
+              <td data-bind="productQty">1 шт</td>
+              <td class="t-right t-mono" data-bind="productPurchase">11 500,00</td>
+              <td class="t-right t-mono" data-bind="productSale">12 800,00</td>
+              <td class="t-right t-mono t-strong" data-bind="productTotal">12 800,00</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <div class="section-title">
+            <span class="dot" style="background: #10b981"></span>Условия рассрочки
+          </div>
+        </div>
+
+        <div class="terms-grid">
+          <div class="term">
+            <div class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div>
+            <div class="l">Цена закупки</div>
+            <div class="v" data-bind="termsPurchase">11 500,00 ₽</div>
+          </div>
+          <div class="term">
+            <div class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-3a2 2 0 0 1-2-2V2"/><path d="M9 18a4.6 4.6 0 0 0 0-9H5"/></svg></div>
+            <div class="l">Цена продажи</div>
+            <div class="v" data-bind="termsSale">12 800,00 ₽</div>
+          </div>
+          <div class="term markup">
+            <div class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+            <div class="l">Наценка</div>
+            <div class="v" data-bind="termsMarkup">1 300,00 ₽</div>
+            <div class="s" data-bind="termsMarkupPct">11,30 %</div>
+          </div>
+
+          <div class="term-summary">
+            <div class="ts-head">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>
+              Условия одобрены
+            </div>
+            <div class="ts-row"><span>Надбавка (раскрытая)</span><span class="v" data-bind="termsMarkup">1 300,00 ₽</span></div>
+            <div class="ts-row"><span style="font-size: 11px;">Штрафные проценты</span><span class="v" style="font-size: 11px; color: var(--text-3);">не применяются</span></div>
+            <div class="ts-divider"></div>
+            <div class="ts-row ts-total"><span>Итого к оплате</span><span class="v" data-bind="termsTotal">12 800,00 ₽</span></div>
+          </div>
+
+          <div class="term">
+            <div class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+            <div class="l">Первоначальный взнос</div>
+            <div class="v" data-bind="termsDown">2 300,00 ₽</div>
+            <div class="s" data-bind="termsDownPct">10 %</div>
+          </div>
+          <div class="term">
+            <div class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+            <div class="l">Срок рассрочки</div>
+            <div class="v" data-bind="termsTerm">3 мес.</div>
+          </div>
+          <div class="term">
+            <div class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
+            <div class="l">Платёж в месяц</div>
+            <div class="v" data-bind="termsMonthly">3 500,00 ₽</div>
+          </div>
+          <div class="term" style="background: linear-gradient(135deg, #eff6ff, #dbeafe); border-color: #bfdbfe;">
+            <div class="ti" style="color: var(--primary); background: white; border-color: #bfdbfe;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+            <div class="l" style="color: var(--primary-2);">Дата окончания</div>
+            <div class="v" style="color: var(--primary-2);" data-bind="termsEndDate">19.07.2026</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <div class="section-title"><span class="dot" style="background: #8b5cf6"></span>График платежей</div>
+        </div>
+
+        <div class="sched-toolbar">
+          <div class="sched-actions">
+            <button class="btn primary sm">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Сформировать график
+            </button>
+            <button class="btn sm">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Пересчитать
+            </button>
+            <button class="btn sm">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/></svg>
+              Печать графика
+            </button>
+            <button class="btn sm">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/></svg>
+              Excel
+            </button>
+          </div>
+        </div>
+
+        <div class="sched-empty">
+          <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="14" x2="15" y2="14"/><line x1="9" y1="18" x2="13" y2="18"/></svg></div>
+          <div class="t1">График платежей не сформирован</div>
+          <div class="t2">Нажмите «Сформировать график» для расчёта на основании условий рассрочки</div>
+          <button class="btn primary" style="margin-top: 14px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Сформировать график
+          </button>
+        </div>
+      </div>
+
+      </div><!-- /tab-pane main -->
+
+      <!-- =============== ВКЛАДКА: ДОКУМЕНТЫ =============== -->
+      <div class="tab-pane" data-pane-content="docs" hidden>
+        <div class="docs-toolbar">
+          <div>
+            <div style="font-size: 14px; font-weight: 700;">Документы по заявке</div>
+            <div style="font-size: 12px; color: var(--text-3); margin-top: 2px;">Шаблоны генерируются автоматически из данных заявки</div>
+          </div>
+          <button class="btn primary sm" id="btn-gen-all-docs">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Сформировать все
+          </button>
+        </div>
+
+        <div class="docs-list">
+          <div class="doc-row" data-doc="contract">
+            <div class="doc-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+            <div class="doc-info">
+              <div class="doc-name">Договор рассрочки</div>
+              <div class="doc-meta">Шаблон №7 · обновлён 12.04.2026</div>
+            </div>
+            <span class="badge success" data-status>Готов</span>
+            <div class="doc-actions">
+              <button class="btn sm" data-act="preview">Просмотр</button>
+              <button class="btn sm" data-act="print">Печать</button>
+              <button class="btn sm" data-act="download">PDF</button>
+            </div>
+          </div>
+
+          <div class="doc-row" data-doc="schedule">
+            <div class="doc-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+            <div class="doc-info">
+              <div class="doc-name">График платежей</div>
+              <div class="doc-meta">Приложение №1 к договору</div>
+            </div>
+            <span class="badge success" data-status>Готов</span>
+            <div class="doc-actions">
+              <button class="btn sm" data-act="preview">Просмотр</button>
+              <button class="btn sm" data-act="print">Печать</button>
+              <button class="btn sm" data-act="download">PDF</button>
+            </div>
+          </div>
+
+          <div class="doc-row" data-doc="receipt">
+            <div class="doc-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2v20l-3-2-3 2-3-2-3 2V4l3-2 3 2 3-2 3 2z"/><line x1="9" y1="9" x2="14" y2="9"/><line x1="9" y1="13" x2="14" y2="13"/></svg></div>
+            <div class="doc-info">
+              <div class="doc-name">Акт приёма-передачи</div>
+              <div class="doc-meta">Подписывается при выдаче товара</div>
+            </div>
+            <span class="badge gray" data-status>Не сформирован</span>
+            <div class="doc-actions">
+              <button class="btn sm primary" data-act="generate">Сформировать</button>
+            </div>
+          </div>
+
+          <div class="doc-row" data-doc="consent">
+            <div class="doc-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+            <div class="doc-info">
+              <div class="doc-name">Согласие на обработку ПДн</div>
+              <div class="doc-meta">152-ФЗ</div>
+            </div>
+            <span class="badge success" data-status>Подписан</span>
+            <div class="doc-actions">
+              <button class="btn sm" data-act="preview">Просмотр</button>
+              <button class="btn sm" data-act="download">PDF</button>
+            </div>
+          </div>
+
+          <div class="doc-row" data-doc="passport">
+            <div class="doc-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M7 21v-2a3 3 0 0 1 3-3h4a3 3 0 0 1 3 3v2"/></svg></div>
+            <div class="doc-info">
+              <div class="doc-name">Скан паспорта клиента</div>
+              <div class="doc-meta">Стр. 2-3, прописка</div>
+            </div>
+            <span class="badge warning" data-status>Не загружен</span>
+            <div class="doc-actions">
+              <button class="btn sm primary" data-act="upload">Загрузить</button>
+            </div>
+          </div>
+
+          <div class="doc-row" data-doc="murabaha">
+            <div class="doc-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+            <div class="doc-info">
+              <div class="doc-name">Шариат-сертификат (Мурабаха)</div>
+              <div class="doc-meta">Только для исламской рассрочки</div>
+            </div>
+            <span class="badge primary" data-status data-bind-show="isIslamic">Применимо</span>
+            <div class="doc-actions">
+              <button class="btn sm" data-act="preview">Просмотр</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =============== ВКЛАДКА: РЕКВИЗИТЫ =============== -->
+      <div class="tab-pane" data-pane-content="requisites" hidden>
+        <div class="section">
+          <div class="section-head"><div class="section-title"><span class="dot" style="background: var(--primary)"></span>Реквизиты клиента</div></div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 0 18px 18px;">
+            <div class="field"><label class="field-label">ФИО</label><input class="input" data-bind-value="clientName" /></div>
+            <div class="field"><label class="field-label">Дата рождения</label><input class="input" data-bind-value="clientBirthday" /></div>
+            <div class="field"><label class="field-label">Паспорт</label><input class="input" data-bind-value="clientPassport" /></div>
+            <div class="field"><label class="field-label">Телефон</label><input class="input" data-bind-value="clientPhone" /></div>
+            <div class="field" style="grid-column: span 2;"><label class="field-label">Адрес регистрации</label><input class="input" data-bind-value="clientAddress" /></div>
+            <div class="field"><label class="field-label">ИНН</label><input class="input" placeholder="Не указан" /></div>
+            <div class="field"><label class="field-label">СНИЛС</label><input class="input" placeholder="Не указан" /></div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-head"><div class="section-title"><span class="dot" style="background: var(--success)"></span>Платёжные реквизиты</div></div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 0 18px 18px;">
+            <div class="field"><label class="field-label">Банк</label><input class="input" placeholder="Сбербанк" /></div>
+            <div class="field"><label class="field-label">БИК</label><input class="input" placeholder="044525225" /></div>
+            <div class="field" style="grid-column: span 2;"><label class="field-label">Расчётный счёт</label><input class="input" placeholder="40817 810 ...." /></div>
+            <div class="field" style="grid-column: span 2;"><label class="field-label">Карта для списаний</label><input class="input" placeholder="•••• 4567 (Сбер)" /></div>
+          </div>
+          <div style="padding: 0 18px 18px; display: flex; gap: 8px;">
+            <button class="btn primary sm">Сохранить реквизиты</button>
+            <button class="btn sm">Запросить через SMS</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- =============== ВКЛАДКА: АНКЕТА =============== -->
+      <div class="tab-pane" data-pane-content="profile" hidden>
+        <div class="section">
+          <div class="section-head"><div class="section-title"><span class="dot" style="background: var(--purple)"></span>Анкета клиента</div></div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 0 18px 18px;">
+            <div class="field"><label class="field-label">Семейное положение</label>
+              <select class="select"><option>Холост / Не замужем</option><option>Женат / Замужем</option><option>В разводе</option><option>Вдовец / Вдова</option></select>
+            </div>
+            <div class="field"><label class="field-label">Иждивенцы</label><input class="input" placeholder="0" /></div>
+            <div class="field"><label class="field-label">Образование</label>
+              <select class="select"><option>Высшее</option><option>Среднее специальное</option><option>Среднее</option><option>Неоконченное высшее</option></select>
+            </div>
+            <div class="field"><label class="field-label">Стаж работы</label><input class="input" placeholder="5 лет" /></div>
+            <div class="field" style="grid-column: span 2;"><label class="field-label">Место работы</label><input class="input" placeholder="ООО «...»" /></div>
+            <div class="field"><label class="field-label">Должность</label><input class="input" placeholder="Менеджер" /></div>
+            <div class="field"><label class="field-label">Доход в месяц</label><input class="input" placeholder="80 000 ₽" /></div>
+            <div class="field"><label class="field-label">Дополнительный доход</label><input class="input" placeholder="0 ₽" /></div>
+            <div class="field"><label class="field-label">Расходы в месяц</label><input class="input" placeholder="40 000 ₽" /></div>
+          </div>
+          <div style="padding: 0 18px 18px;">
+            <button class="btn primary sm">Сохранить анкету</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- =============== ВКЛАДКА: СКОРИНГ =============== -->
+      <div class="tab-pane" data-pane-content="scoring" hidden>
+        <div class="section">
+          <div class="section-head"><div class="section-title"><span class="dot" style="background: var(--warning)"></span>Результаты скоринга</div></div>
+          <div style="padding: 0 18px 18px;">
+            <div class="scoring-summary">
+              <div class="ss-score"><div class="ss-num"><span data-bind="sbScore">0</span></div><div class="ss-lbl">из 100</div></div>
+              <div class="ss-meta">
+                <div class="ss-row"><span>Уровень риска</span><span class="badge" data-bind="sbScoreLabel">Не определён</span></div>
+                <div class="ss-row"><span>Дата проверки</span><span class="v" data-bind="sbDate">—</span></div>
+                <div class="ss-row"><span>Источник</span><span class="v">НБКИ + чёрные списки</span></div>
+              </div>
+            </div>
+            <div class="score-checks">
+              <div class="sc-item ok"><div class="sc-i">✓</div><div><div class="sc-n">НБКИ</div><div class="sc-d">Кредитная история чистая</div></div></div>
+              <div class="sc-item ok"><div class="sc-i">✓</div><div><div class="sc-n">Чёрный список Payd</div><div class="sc-d">Не найден</div></div></div>
+              <div class="sc-item ok"><div class="sc-i">✓</div><div><div class="sc-n">ФССП</div><div class="sc-d">Без производств</div></div></div>
+              <div class="sc-item warn"><div class="sc-i">!</div><div><div class="sc-n">Подтверждение дохода</div><div class="sc-d">Заявленный доход не подтверждён</div></div></div>
+              <div class="sc-item ok"><div class="sc-i">✓</div><div><div class="sc-n">Паспорт</div><div class="sc-d">Действителен</div></div></div>
+              <div class="sc-item ok"><div class="sc-i">✓</div><div><div class="sc-n">Телефон</div><div class="sc-d">Подтверждён через SMS</div></div></div>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 14px;">
+              <button class="btn primary sm">Перепроверить</button>
+              <button class="btn sm">Запросить доп. документы</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =============== ВКЛАДКА: SMS / УВЕДОМЛЕНИЯ =============== -->
+      <div class="tab-pane" data-pane-content="sms" hidden>
+        <div class="section">
+          <div class="section-head">
+            <div class="section-title"><span class="dot" style="background: var(--teal)"></span>История сообщений</div>
+            <button class="btn primary sm" id="btn-send-sms">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Отправить SMS
+            </button>
+          </div>
+          <div class="sms-list">
+            <div class="sms-row out"><div class="sms-meta"><span>Сегодня 14:23</span><span class="badge success sm">Доставлено</span></div><div class="sms-body">Здравствуйте! Ваша заявка №<span data-bind="number">—</span> создана. Сумма платежа: <span data-bind="termsMonthly">—</span>/мес.</div></div>
+            <div class="sms-row in"><div class="sms-meta"><span>Сегодня 14:25</span><span class="badge gray sm">Входящее</span></div><div class="sms-body">Спасибо, всё понятно</div></div>
+            <div class="sms-row out"><div class="sms-meta"><span>Сегодня 11:08</span><span class="badge success sm">Доставлено</span></div><div class="sms-body">Код подтверждения: 4827. Никому его не сообщайте.</div></div>
+            <div class="sms-row out"><div class="sms-meta"><span>Сегодня 10:45</span><span class="badge success sm">Доставлено</span></div><div class="sms-body">Договор на подписание отправлен на ваш WhatsApp.</div></div>
+            <div class="sms-row out"><div class="sms-meta"><span>Вчера 16:30</span><span class="badge warning sm">Push</span></div><div class="sms-body">Напоминание: следующий платёж <span data-bind="termsMonthly">—</span> через 5 дней.</div></div>
+            <div class="sms-row out"><div class="sms-meta"><span>Вчера 09:15</span><span class="badge success sm">Доставлено</span></div><div class="sms-body">Спасибо за оплату! Платёж зачислен.</div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- =============== RIGHT COLUMN =============== -->
+  <div class="col">
+
+    <div class="card">
+      <div class="status-card">
+        <div class="label">Статус сделки</div>
+        <div class="status-main" id="status-block">
+          <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div>
+            <div class="t" data-bind="statusLabel">ОДОБРЕНА</div>
+            <div class="s" data-bind="statusSubtitle">Решение принято автоматически</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="progress">
+        <div class="label">Прогресс сделки</div>
+        <div class="stepper" id="stepper">
+          <div class="step" data-step="1"><div class="circle">1</div><div class="lbl">Создано</div></div>
+          <div class="line"></div>
+          <div class="step" data-step="2"><div class="circle">2</div><div class="lbl">Обработка</div></div>
+          <div class="line"></div>
+          <div class="step" data-step="3"><div class="circle">3</div><div class="lbl">Договор</div></div>
+          <div class="line"></div>
+          <div class="step" data-step="4"><div class="circle">4</div><div class="lbl">Первый взнос</div></div>
+          <div class="line"></div>
+          <div class="step" data-step="5"><div class="circle">5</div><div class="lbl">Заказ</div></div>
+          <div class="line"></div>
+          <div class="step" data-step="6"><div class="circle">6</div><div class="lbl">Выдача</div></div>
+        </div>
+        <div class="progress-current">
+          <span>Текущий этап: <span data-bind="progressLabel">Договор</span></span>
+          <span><span data-bind="progressPct">50</span>%</span>
+        </div>
+        <div class="progress-bar-z"><div class="fill" id="progress-fill"></div></div>
+        <div class="progress-meta"><span><span data-bind="progressStep">3</span> из 6 этапов</span><span id="progress-remain">Осталось 3</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="alert warning" id="next-step-alert" style="margin: 14px;">
+        <div class="ai"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+        <div id="next-step-text"><b>Следующий шаг:</b> сформируйте договор и распечатайте для подписания клиентом.</div>
+      </div>
+    </div>
+
+    <div class="card qa">
+      <div class="label">Быстрые действия</div>
+      <div class="qa-list" id="qa-list">
+        <div class="qa-item" data-qa="contract">
+          <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg></div>
+          <div class="t">Создать договор</div>
+          <div class="ch">›</div>
+        </div>
+        <div class="qa-item success" data-qa="downpay">
+          <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+          <div class="t">Принять первый взнос</div>
+          <div class="ch">›</div>
+        </div>
+        <div class="qa-item" data-qa="deliver">
+          <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
+          <div class="t">Выдать товар</div>
+          <div class="ch">›</div>
+        </div>
+        <div class="qa-item" data-qa="sms">
+          <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+          <div class="t">Отправить SMS клиенту</div>
+          <div class="ch">›</div>
+        </div>
+        <div class="qa-item" data-qa="buyback" style="display: none;">
+          <div class="ic" style="background: var(--warning-soft); color: #b45309;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></div>
+          <div class="t">Выкупить у клиента</div>
+          <div class="ch">›</div>
+        </div>
+        <div class="qa-item danger" data-qa="reject">
+          <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></div>
+          <div class="t">Отказать</div>
+          <div class="ch">›</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="history-hd">
+        <div class="label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          История изменений
+        </div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-3)"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="hist-list">
+        <div class="hist-item">
+          <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div>
+          <div class="info">
+            <div class="a">Создано</div>
+            <div class="b">19.04.2026 16:07</div>
+            <div class="c">Бекуев Муслим Д.</div>
+          </div>
+        </div>
+        <div class="hist-item">
+          <div class="ic" style="color: var(--success); background: var(--success-soft); border-color: #a7f3d0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="info">
+            <div class="a">Проверка СБ пройдена</div>
+            <div class="b">19.04.2026 15:55</div>
+            <div class="c">Автоматически</div>
+          </div>
+        </div>
+        <div class="hist-item">
+          <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+          <div class="info">
+            <div class="a">Последнее изменение</div>
+            <div class="b">19.04.2026 16:09</div>
+            <div class="c">Бекуев Муслим Д.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+</div>
+
+<script src="data.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="db.js"></script>
+<script src="app.js"></script>
+<script>
+  // Read application id + back-source from URL
+  const _params = new URLSearchParams(location.search);
+  const _appId = _params.get('id') || window.DEFAULT_APP_ID || '142';
+
+  // ============================================================
+  //  CALCULATOR-CREATED APPLICATIONS (id starts with 'A')
+  //  Build a synthetic _app from localStorage matching the
+  //  shape that renderApp() expects.
+  // ============================================================
+  function buildAppFromCalc(rec) {
+    const c = rec.calc || {};
+    const fmt = n => Math.round(n).toLocaleString('ru-RU');
+    const initials = name => {
+      const p = (name || '').trim().split(/\s+/);
+      return ((p[0]?.[0] || '?') + (p[1]?.[0] || '')).toUpperCase();
+    };
+    const COLORS = ['c1','c2','c3','c4','c5','c6','c7'];
+    const color = COLORS[Math.abs((rec.client?.name || '').length) % COLORS.length];
+    const d = new Date(rec.ts || Date.now());
+    const pad = n => String(n).padStart(2, '0');
+    const dateStr = `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    const isMurabaha = c.type === 'murabaha';
+    return {
+      number: rec.number,
+      date: dateStr,
+      status: 'new',
+      statusLabel: 'НОВАЯ',
+      statusSubtitle: 'Создана из калькулятора',
+      type: isMurabaha ? 'Исламская рассрочка' : 'Стандартная рассрочка',
+      typeLabel: c.typeLabel || (isMurabaha ? 'Мурабаха' : 'Стандартная'),
+      isIslamic: isMurabaha,
+      progressStep: 1,
+      progressLabel: 'Создана',
+      progressPct: 8,
+
+      clientName: rec.client?.name || '—',
+      clientInitials: initials(rec.client?.name),
+      clientColor: color,
+      clientPhone: rec.client?.phone || '',
+      clientAddress: '—',
+      clientBirthday: '—',
+      clientPassport: '—',
+      clientDeals: '0',
+      clientTotal: '0 ₽',
+
+      productIcon: '🧮',
+      productName: rec.partner ? `Расчёт калькулятора · ${rec.partner}` : 'Расчёт калькулятора',
+      productCode: 'Источник: ' + (rec.partner || 'Калькулятор'),
+      productQty: '1 шт',
+      productPurchase: fmt(c.price || 0) + ',00',
+      productSale:     fmt(c.price || 0) + ',00',
+      productTotal:    fmt(c.price || 0) + ',00',
+
+      termsPurchase:   fmt(c.price || 0) + ' ₽',
+      termsSale:       fmt(c.price || 0) + ' ₽',
+      termsMarkup:     fmt(c.markup || 0) + ' ₽',
+      termsMarkupPct:  ((c.annualRate || 0).toFixed(2)) + ' %',
+      termsRate:       isMurabaha ? `${c.annualRate || 0} % (Мурабаха)` : '0 %',
+      termsDown:       fmt(c.dpAmount || 0) + ' ₽',
+      termsDownPct:    (c.dpPct || 0) + ' %',
+      termsTerm:       (c.term || 0) + ' мес.',
+      termsMonthly:    fmt(c.monthly || 0) + ' ₽',
+      termsTotal:      fmt(c.total || 0) + ' ₽',
+      termsEndDate:    (() => {
+        const e = new Date(d); e.setMonth(e.getMonth() + (c.term || 0));
+        return `${pad(e.getDate())}.${pad(e.getMonth()+1)}.${e.getFullYear()}`;
+      })(),
+
+      sbPassed: false,
+      sbDate:   '—',
+      sbScore:  0,
+      sbScoreLabel: 'Не проверена',
+
+      managerName:     'Не назначен',
+      managerInitials: '—',
+      managerColor:    'c0'
+    };
+  }
+
+  let _app;
+  if (_appId.startsWith('A')) {
+    let list = [];
+    try { list = JSON.parse(localStorage.getItem('payd.calc.applications') || '[]'); } catch (_) {}
+    const rec = list.find(a => a.id === _appId);
+    if (rec) _app = buildAppFromCalc(rec);
+  }
+  if (!_app) _app = (window.APPLICATIONS && window.APPLICATIONS[_appId]) || window.APPLICATIONS['142'];
+
+  // Source-aware sidebar / breadcrumb / return URL
+  const SECTION_MAP = {
+    'manager.html':     { active: 'manager',    label: 'Менеджер · CRM' },
+    'zhurnal.html':     { active: 'zhurnal',    label: 'Журнал заявок' },
+    'clients.html':     { active: 'clients',    label: 'Клиенты' },
+    'client.html':      { active: 'clients',    label: 'Карточка клиента' },
+    'contracts.html':   { active: 'contracts',  label: 'Договоры' },
+    'collector.html':   { active: 'collector',  label: 'Взыскание' },
+    'warehouse.html':   { active: 'warehouse',  label: 'Выдача товара' },
+    'sb.html':          { active: 'sb',         label: 'Служба безопасности' },
+    'kassir.html':      { active: 'kassir',     label: 'Касса' },
+    'dashboard.html':   { active: 'dashboard',  label: 'Дашборд' }
+  };
+  const _backUrl = _params.get('back') || 'zhurnal.html';
+  const _backKey = _backUrl.split('?')[0];
+  const _section = SECTION_MAP[_backKey] || SECTION_MAP['zhurnal.html'];
+
+  // Save return URL globally so global handlers (app.js) can use it for "Провести и закрыть"
+  window._paydReturnUrl = _backUrl;
+
+  // Mount the shell with dynamic title and source-aware sidebar
+  PaydApp.mountShell({
+    active: _section.active,
+    title: `Заявка №${_app.number}`,
+    breadcrumbs: [
+      { label: 'Главная', href: 'dashboard.html' },
+      { label: _section.label, href: _backUrl },
+      { label: `#${_app.number}` }
+    ]
+  });
+
+  // ===== Render application data =====
+  function renderApp(app) {
+    // Plain text bindings: <... data-bind="key">
+    document.querySelectorAll('[data-bind]').forEach(el => {
+      const key = el.dataset.bind;
+      if (app[key] !== undefined && app[key] !== null) el.textContent = app[key];
+    });
+
+    // Input value bindings: <input data-bind-value="key">
+    document.querySelectorAll('[data-bind-value]').forEach(el => {
+      const key = el.dataset.bindValue;
+      if (app[key] !== undefined) el.value = app[key];
+    });
+
+    // Select with first matching option: <select data-bind-select="key">
+    document.querySelectorAll('[data-bind-select]').forEach(el => {
+      const key = el.dataset.bindSelect;
+      const val = app[key];
+      if (val) {
+        // If option exists, select it; otherwise prepend
+        let found = false;
+        for (const opt of el.options) {
+          if (opt.textContent === val) { opt.selected = true; found = true; break; }
+        }
+        if (!found) {
+          const opt = document.createElement('option');
+          opt.textContent = val;
+          opt.selected = true;
+          el.prepend(opt);
+        }
+      }
+    });
+
+    // Class bindings: <... data-bind-class="key" data-bind-class-prefix="...">
+    document.querySelectorAll('[data-bind-class]').forEach(el => {
+      const key = el.dataset.bindClass;
+      const prefix = el.dataset.bindClassPrefix || '';
+      const val = app[key];
+      if (val) {
+        // Remove old c1..c7 class
+        el.classList.forEach(c => { if (/^c[1-7]$/.test(c)) el.classList.remove(c); });
+        el.classList.add(val);
+      }
+    });
+
+    // Show/hide based on truthy: <... data-bind-show="key">
+    document.querySelectorAll('[data-bind-show]').forEach(el => {
+      const key = el.dataset.bindShow;
+      el.style.display = app[key] ? '' : 'none';
+    });
+
+    // Progress stepper: highlight done/current based on progressStep
+    const stepper = document.getElementById('stepper');
+    if (stepper) {
+      const cur = app.progressStep || 1;
+      stepper.querySelectorAll('.step').forEach((s, i) => {
+        const stepNum = i + 1;
+        s.classList.remove('done', 'current');
+        if (stepNum < cur) {
+          s.classList.add('done');
+          const c = s.querySelector('.circle');
+          c.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+        } else if (stepNum === cur) {
+          s.classList.add('current');
+          const c = s.querySelector('.circle');
+          c.textContent = stepNum;
+        } else {
+          const c = s.querySelector('.circle');
+          c.textContent = stepNum;
+        }
+      });
+      // Lines
+      stepper.querySelectorAll('.line').forEach((line, i) => {
+        line.classList.toggle('done', (i + 1) < cur);
+      });
+    }
+
+    // Progress fill width
+    const fill = document.getElementById('progress-fill');
+    if (fill) fill.style.width = (app.progressPct || 0) + '%';
+
+    // Remaining steps
+    const remain = document.getElementById('progress-remain');
+    if (remain) remain.textContent = `Осталось ${Math.max(0, 6 - (app.progressStep || 0))}`;
+
+    // Status block colour
+    const statusBlock = document.getElementById('status-block');
+    if (statusBlock) {
+      const colors = {
+        approved: { bg: 'var(--success-soft)', border: '#a7f3d0', icon: 'var(--success)', text: '#047857' },
+        active: { bg: 'var(--success-soft)', border: '#a7f3d0', icon: 'var(--success)', text: '#047857' },
+        new: { bg: 'var(--primary-soft)', border: '#bfdbfe', icon: 'var(--primary)', text: 'var(--primary-2)' },
+        sb_check: { bg: 'var(--warning-soft)', border: '#fde68a', icon: 'var(--warning)', text: '#92400e' },
+        in_contact: { bg: 'var(--primary-soft)', border: '#bfdbfe', icon: 'var(--primary)', text: 'var(--primary-2)' },
+        calculating: { bg: 'var(--purple-soft)', border: '#ddd6fe', icon: 'var(--purple)', text: 'var(--purple)' },
+        sent: { bg: 'var(--warning-soft)', border: '#fde68a', icon: 'var(--warning)', text: '#92400e' },
+        rejected: { bg: 'var(--danger-soft)', border: '#fecaca', icon: 'var(--danger)', text: '#b91c1c' }
+      };
+      const c = colors[app.status] || colors.approved;
+      statusBlock.style.background = c.bg;
+      statusBlock.style.borderColor = c.border;
+      statusBlock.querySelector('.ic').style.background = c.icon;
+      statusBlock.querySelector('.t').style.color = c.text;
+      statusBlock.querySelector('.s').style.color = c.text;
+    }
+
+    // Risk badge color based on score
+    const riskBadge = document.getElementById('risk-badge');
+    const riskFill = document.getElementById('risk-fill');
+    if (riskBadge && riskFill) {
+      const score = app.sbScore || 0;
+      if (score >= 75) {
+        riskBadge.className = 'badge success';
+        riskFill.style.background = 'linear-gradient(90deg, var(--success), #34d399)';
+      } else if (score >= 60) {
+        riskBadge.className = 'badge warning';
+        riskFill.style.background = 'linear-gradient(90deg, var(--warning), #fbbf24)';
+      } else {
+        riskBadge.className = 'badge danger';
+        riskFill.style.background = 'linear-gradient(90deg, var(--danger), #f87171)';
+      }
+      riskFill.style.width = score + '%';
+    }
+  }
+
+  renderApp(_app);
+
+  // ============= SCHEDULE GENERATION =============
+  (function () {
+    const generateBtns = [...document.querySelectorAll('button.btn')]
+      .filter(b => /Сформировать график/i.test(b.textContent));
+    if (!generateBtns.length) return;
+
+    function generateSchedule() {
+      const sched = parseInt(_app.termsTerm) || 3;
+      const monthly = parseInt(String(_app.termsMonthly).replace(/\D/g, '')) || 3500;
+      const startDate = new Date();
+      startDate.setMonth(startDate.getMonth() + 1);
+
+      const empty = document.querySelector('.sched-empty');
+      if (!empty) return;
+
+      // Build schedule table
+      const tbl = document.createElement('table');
+      tbl.className = 'tbl';
+      tbl.style.cssText = 'border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden;';
+      tbl.innerHTML = `
+        <thead>
+          <tr>
+            <th style="width: 40px;">N</th>
+            <th>Дата платежа</th>
+            <th class="t-right">Сумма платежа</th>
+            <th class="t-right">Остаток задолженности</th>
+            <th>Статус</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      `;
+      const tbody = tbl.querySelector('tbody');
+      let remaining = sched * monthly;
+      for (let i = 1; i <= sched; i++) {
+        const d = new Date(startDate);
+        d.setMonth(d.getMonth() + (i - 1));
+        const dateStr = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
+        remaining -= monthly;
+        tbody.innerHTML += `
+          <tr>
+            <td>${i}</td>
+            <td><div class="t-strong">${dateStr}</div></td>
+            <td class="t-right t-mono t-strong">${monthly.toLocaleString('ru-RU')} ₽</td>
+            <td class="t-right t-mono">${remaining.toLocaleString('ru-RU')} ₽</td>
+            <td><span class="badge gray">Ожидает</span></td>
+          </tr>
+        `;
+      }
+
+      empty.replaceWith(tbl);
+      PaydApp.toast(`График сформирован: ${sched} платежей по ${monthly.toLocaleString('ru-RU')} ₽`, 'success');
+    }
+
+    generateBtns.forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.preventDefault(); e.stopImmediatePropagation();
+        generateSchedule();
+      }, true);
+    });
+  })();
+
+  // ============================================================
+  //  TABS — switch panes
+  // ============================================================
+  (function () {
+    const tabs = document.querySelectorAll('.main-tabs .tab[data-pane]');
+    const panes = document.querySelectorAll('[data-pane-content]');
+    tabs.forEach(t => t.addEventListener('click', () => {
+      const id = t.dataset.pane;
+      tabs.forEach(x => x.classList.toggle('active', x === t));
+      panes.forEach(p => p.hidden = p.dataset.paneContent !== id);
+    }));
+  })();
+
+  // ============================================================
+  //  DOCUMENTS — generate / preview / print / download
+  // ============================================================
+  (function () {
+    const list = document.querySelector('.docs-list');
+    if (!list) return;
+
+    const docTitles = {
+      contract:  'Договор рассрочки',
+      schedule:  'График платежей',
+      receipt:   'Акт приёма-передачи',
+      consent:   'Согласие на обработку ПДн',
+      passport:  'Скан паспорта клиента',
+      murabaha:  'Шариат-сертификат (Мурабаха)'
+    };
+
+    function fillTemplate(docKey) {
+      const a = _app;
+      const head = `
+        <h2>${docTitles[docKey]}</h2>
+        <div style="font-size: 11px; color: #888; margin-bottom: 18px;">К заявке № ${a.number} от ${a.date}</div>
+      `;
+      switch (docKey) {
+        case 'contract':
+          return head + `
+            <p><b>Кредитор:</b> ООО «Payd», ИНН 2014782301, г. Грозный</p>
+            <p><b>Заёмщик:</b> ${a.clientName}, ${a.clientPassport}, ${a.clientAddress}, тел. ${a.clientPhone}</p>
+            <p><b>Предмет договора:</b> ${a.productName}</p>
+            <hr style="margin: 12px 0;" />
+            <div class="row"><span>Сумма договора</span><span><b>${a.termsSale}</b></span></div>
+            <div class="row"><span>Первоначальный взнос</span><span>${a.termsDown} (${a.termsDownPct})</span></div>
+            <div class="row"><span>Срок рассрочки</span><span>${a.termsTerm}</span></div>
+            <div class="row"><span>Платёж в месяц</span><span><b>${a.termsMonthly}</b></span></div>
+            <div class="row"><span>Дата окончания</span><span>${a.termsEndDate}</span></div>
+            <div class="row"><span>Тип</span><span>${a.typeLabel}</span></div>
+            <hr style="margin: 12px 0;" />
+            <p style="font-size: 11px; color: #888;">Стороны подтверждают согласие с условиями. Договор подписан простой электронной подписью через SMS-код.</p>
+          `;
+        case 'schedule': {
+          const term = parseInt(a.termsTerm) || 3;
+          const monthly = parseInt(String(a.termsMonthly).replace(/\D/g,'')) || 0;
+          const start = new Date();
+          let rows = '<table style="width:100%; border-collapse: collapse;"><thead><tr style="background:#f4f6fb"><th style="padding:6px; border:1px solid #e5e9f2; text-align:left;">№</th><th style="padding:6px; border:1px solid #e5e9f2; text-align:left;">Дата</th><th style="padding:6px; border:1px solid #e5e9f2; text-align:right;">Платёж</th><th style="padding:6px; border:1px solid #e5e9f2; text-align:right;">Остаток</th></tr></thead><tbody>';
+          let remain = monthly * term;
+          for (let i = 1; i <= term; i++) {
+            const d = new Date(start); d.setMonth(d.getMonth() + i);
+            const dateStr = d.toLocaleDateString('ru-RU');
+            remain -= monthly;
+            rows += `<tr><td style="padding:6px; border:1px solid #e5e9f2;">${i}</td><td style="padding:6px; border:1px solid #e5e9f2;">${dateStr}</td><td style="padding:6px; border:1px solid #e5e9f2; text-align:right;">${monthly.toLocaleString('ru-RU')} ₽</td><td style="padding:6px; border:1px solid #e5e9f2; text-align:right;">${Math.max(0,remain).toLocaleString('ru-RU')} ₽</td></tr>`;
+          }
+          return head + rows + '</tbody></table>';
+        }
+        case 'receipt':
+          return head + `
+            <p><b>Передающая сторона:</b> ООО «Payd»</p>
+            <p><b>Принимающая сторона:</b> ${a.clientName}</p>
+            <p><b>Передан товар:</b> ${a.productName} (${a.productCode})</p>
+            <div class="row"><span>Стоимость</span><span><b>${a.productSale}</b></span></div>
+            <div class="row"><span>Кол-во</span><span>${a.productQty}</span></div>
+            <p style="margin-top: 14px;">Товар осмотрен, претензий по комплектности и внешнему виду нет.</p>
+          `;
+        case 'consent':
+          return head + `<p>Я, ${a.clientName}, паспорт ${a.clientPassport}, в соответствии с Федеральным законом № 152-ФЗ «О персональных данных», даю своё согласие ООО «Payd» на обработку моих персональных данных в целях оформления и сопровождения сделки рассрочки.</p>`;
+        case 'passport':
+          return head + `<p style="text-align:center; padding: 40px; background: #f4f6fb; border-radius: 8px; color: #888;">📷 Скан паспорта не загружен.<br/><br/>Для генерации документа загрузите фото 2-3 страниц.</p>`;
+        case 'murabaha':
+          return head + `<p>Сделка проведена в соответствии с принципами исламского финансирования (мурабаха). Наценка раскрыта заранее, штрафные проценты не применяются.</p><p><b>Шариатский совет:</b> Подтверждено</p><div class="row"><span>Сумма закупки</span><span>${a.termsPurchase}</span></div><div class="row"><span>Сумма продажи</span><span>${a.termsSale}</span></div><div class="row"><span>Наценка</span><span>${a.termsMarkup} (${a.termsMarkupPct})</span></div>`;
+      }
+      return head + '<p>Шаблон в разработке.</p>';
+    }
+
+    function openPreview(docKey) {
+      const back = document.createElement('div');
+      back.style.cssText = 'position: fixed; inset: 0; background: rgba(15,23,42,.6); backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 24px;';
+      back.innerHTML = `
+        <div class="doc-preview">
+          ${fillTemplate(docKey)}
+          <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 22px; padding-top: 16px; border-top: 1px solid #e5e9f2;">
+            <button class="btn" data-act="dl">Скачать PDF</button>
+            <button class="btn" data-act="pr">Печать</button>
+            <button class="btn primary" data-act="cl">Закрыть</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(back);
+      const close = () => back.remove();
+      back.addEventListener('click', e => { if (e.target === back) close(); });
+      back.querySelector('[data-act="cl"]').onclick = close;
+      back.querySelector('[data-act="pr"]').onclick = () => { window.print(); };
+      back.querySelector('[data-act="dl"]').onclick = () => {
+        const blob = new Blob([fillTemplate(docKey)], { type: 'text/html' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${docTitles[docKey]} — № ${_app.number}.html`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        if (window.PaydApp?.toast) PaydApp.toast('Документ скачан', 'success');
+      };
+    }
+
+    list.addEventListener('click', e => {
+      const btn = e.target.closest('button[data-act]');
+      if (!btn) return;
+      const row = btn.closest('.doc-row');
+      const docKey = row.dataset.doc;
+      const act = btn.dataset.act;
+
+      if (act === 'preview') openPreview(docKey);
+      else if (act === 'print') { openPreview(docKey); setTimeout(() => window.print(), 200); }
+      else if (act === 'download') {
+        const blob = new Blob([fillTemplate(docKey)], { type: 'text/html' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${docTitles[docKey]} — № ${_app.number}.html`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        if (window.PaydApp?.toast) PaydApp.toast(`Скачан: ${docTitles[docKey]}`, 'success');
+      }
+      else if (act === 'generate') {
+        const status = row.querySelector('[data-status]');
+        status.className = 'badge success';
+        status.textContent = 'Готов';
+        const acts = row.querySelector('.doc-actions');
+        acts.innerHTML = '<button class="btn sm" data-act="preview">Просмотр</button><button class="btn sm" data-act="print">Печать</button><button class="btn sm" data-act="download">PDF</button>';
+        if (window.PaydApp?.toast) PaydApp.toast(`Сформирован: ${docTitles[docKey]}`, 'success');
+      }
+      else if (act === 'upload') {
+        const inp = document.createElement('input');
+        inp.type = 'file'; inp.accept = 'image/*,.pdf';
+        inp.onchange = () => {
+          const status = row.querySelector('[data-status]');
+          status.className = 'badge success';
+          status.textContent = 'Загружен';
+          const acts = row.querySelector('.doc-actions');
+          acts.innerHTML = '<button class="btn sm" data-act="preview">Просмотр</button><button class="btn sm" data-act="download">PDF</button>';
+          if (window.PaydApp?.toast) PaydApp.toast(`Файл загружен: ${inp.files[0].name}`, 'success');
+        };
+        inp.click();
+      }
+    });
+
+    // "Сформировать все"
+    document.getElementById('btn-gen-all-docs')?.addEventListener('click', () => {
+      list.querySelectorAll('button[data-act="generate"]').forEach(b => b.click());
+      if (window.PaydApp?.toast) PaydApp.toast('Все документы сформированы', { type: 'success', subtitle: 'Готовы к печати и подписанию' });
+    });
+  })();
+
+  // ============================================================
+  //  WORKFLOW — application stages, SB sync, quick actions
+  // ============================================================
+  // Stage flows per deal type. Each flow defines:
+  //   labels:         step names rendered in stepper
+  //   key:            stable keys per step (used for status colors and gating)
+  //   contractStep:   step at which contract is signed
+  //   downpayStep:    step at which first downpayment is taken
+  //   deliverStep:    final step (delivery / activation / first service)
+  //   deliverLabel:   label for the "deliver" quick action button
+  //   nextHints:      step → next-step hint text
+  //   statusByStep:   step → { t (status title), s (subtitle), bg/bd/ic/tx (colors) }
+  const STAGE_FLOWS = {
+    'Товар со склада': {
+      labels: ['Создано', 'Обработка', 'Договор', 'Первый взнос', 'Выдача'],
+      keys:   ['created', 'review',    'contract','downpay',     'deliver'],
+      contractStep: 3, downpayStep: 4, deliverStep: 5,
+      deliverLabels: { 5: 'Выдать со склада' },
+      finalLabel: 'ВЫДАНА',
+      finalSub:   'Товар выдан клиенту, рассрочка активна',
+      nextHints: {
+        1: 'Запустите проверку СБ.',
+        2: 'Сформируйте договор и распечатайте для подписания клиентом.',
+        3: 'Примите первоначальный взнос от клиента в кассе.',
+        4: 'Сверьте паспорт и выдайте товар со склада.',
+        5: 'Сделка завершена — товар выдан, рассрочка активна.'
+      }
+    },
+    'Товар от партнёра': {
+      // Шариат-совместимая Мурабаха: сначала ВЫКУПАЕМ у партнёра, и только потом перепродаём клиенту
+      labels: ['Создано', 'Обработка', 'Запрос партнёру', 'Резерв', 'Закупка у партнёра', 'Договор', 'Первый взнос', 'Выдача клиенту'],
+      keys:   ['created', 'review',    'request',          'reserve','purchase',           'contract','downpay',    'pickup'],
+      contractStep: 6, downpayStep: 7, deliverStep: 8,
+      deliverLabels: {
+        3: 'Отправить запрос партнёру',
+        4: 'Подтвердить резерв партнёра',
+        5: 'Закупить товар у партнёра',
+        8: 'Выдать клиенту (наш товар)'
+      },
+      finalLabel: 'ВЫДАНА',
+      finalSub:   'Товар выкуплен у партнёра и передан клиенту',
+      nextHints: {
+        1: 'Запустите проверку СБ.',
+        2: 'Отправьте запрос партнёру о наличии и стоимости товара.',
+        3: 'Дождитесь подтверждения резерва от партнёра.',
+        4: 'Выкупите товар у партнёра — оплата по счёту.',
+        5: 'Товар наш. Сформируйте договор Мурабаха с клиентом.',
+        6: 'Примите первоначальный взнос от клиента.',
+        7: 'Сверьте паспорт и передайте товар клиенту.',
+        8: 'Сделка завершена — товар выкуплен у партнёра и передан клиенту.'
+      }
+    },
+    'Под заказ': {
+      labels: ['Создано', 'Обработка', 'Договор', 'Первый взнос', 'Заказ', 'Получение', 'Выдача'],
+      keys:   ['created', 'review',    'contract','downpay',     'order',  'receipt',   'deliver'],
+      contractStep: 3, downpayStep: 4, deliverStep: 7,
+      deliverLabels: {
+        5: 'Оформить заказ у поставщика',
+        6: 'Подтвердить получение на склад',
+        7: 'Подтвердить выдачу клиенту'
+      },
+      finalLabel: 'ВЫДАНА',
+      finalSub:   'Товар выдан клиенту, рассрочка активна',
+      nextHints: {
+        1: 'Запустите проверку СБ.',
+        2: 'Сформируйте договор и подпишите электронно.',
+        3: 'Примите первоначальный взнос в кассе.',
+        4: 'Оформите заказ у партнёра / поставщика.',
+        5: 'Ожидайте поступления товара от поставщика.',
+        6: 'Уведомите клиента и согласуйте дату выдачи.',
+        7: 'Сделка завершена — товар выдан, рассрочка активна.'
+      }
+    },
+    'Услуга': {
+      labels: ['Создано', 'Обработка', 'Договор', 'Первый взнос', 'Активация'],
+      keys:   ['created', 'review',    'contract','downpay',     'activate'],
+      contractStep: 3, downpayStep: 4, deliverStep: 5,
+      deliverLabels: { 5: 'Активировать услугу' },
+      finalLabel: 'УСЛУГА АКТИВНА',
+      finalSub:   'Услуга активирована, рассрочка идёт',
+      nextHints: {
+        1: 'Запустите проверку клиента (СБ).',
+        2: 'Сформируйте договор Иджара и подпишите.',
+        3: 'Примите первый платёж по услуге.',
+        4: 'Активируйте услугу и сообщите клиенту.',
+        5: 'Услуга активна — следующий платёж по графику.'
+      }
+    }
+  };
+
+  function flowFor(type) {
+    return STAGE_FLOWS[type] || STAGE_FLOWS['Товар со склада'];
+  }
+
+  // Compact icon per stage key (rendered in stepper circles instead of text)
+  const STAGE_ICONS = {
+    created:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+    review:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+    contract: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+    downpay:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+    order:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>',
+    receipt:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h13l5 5v6a1 1 0 0 1-1 1h-1a3 3 0 0 1-6 0H10a3 3 0 0 1-6 0H3z"/></svg>',
+    deliver:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+    activate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+    reserve:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+    pickup:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+    settle:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg>',
+    request:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>',
+    purchase: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>'
+  };
+
+  function pad2(n) { return String(n).padStart(2, '0'); }
+  function nowStr() {
+    const d = new Date();
+    return `${pad2(d.getDate())}.${pad2(d.getMonth()+1)}.${d.getFullYear()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  }
+
+  // ---- Persistent workflow state per application ----
+  const WF_KEY = 'payd.zayavka.wf.v1';
+  function _loadAllWf() { try { return JSON.parse(localStorage.getItem(WF_KEY) || '{}'); } catch (_) { return {}; } }
+  function _saveWf() {
+    try {
+      const all = _loadAllWf();
+      all[_appId] = { step: wf.step, sbPassed: wf.sbPassed, sbScore: wf.sbScore, rejected: wf.rejected, completed: wf.completed, type: wf.type };
+      localStorage.setItem(WF_KEY, JSON.stringify(all));
+    } catch (_) {}
+  }
+  const _savedWf = _loadAllWf()[_appId];
+
+  // Mutable workflow state
+  const wf = {
+    step: _savedWf?.step ?? (_app.progressStep || 1),
+    sbPassed: _savedWf?.sbPassed ?? !!_app.sbPassed,
+    sbScore: _savedWf?.sbScore ?? (_app.sbScore || 0),
+    rejected: _savedWf?.rejected ?? (_app.status === 'rejected'),
+    completed: _savedWf?.completed ?? false,
+    type: _savedWf?.type ?? (_app.type || 'Товар со склада')
+  };
+
+  function renderStepper() {
+    const flow = flowFor(wf.type);
+    const stepper = document.getElementById('stepper');
+    if (!stepper) return;
+    let html = '';
+    flow.labels.forEach((label, i) => {
+      const n = i + 1;
+      const key = flow.keys[i];
+      html += `<div class="step" data-step="${n}" title="${label}">`
+            +   `<div class="circle">${n}</div>`
+            +   `<div class="lbl">${label}</div>`
+            +   `<div class="tip">${label}</div>`
+            + `</div>`;
+      if (i < flow.labels.length - 1) html += '<div class="line"></div>';
+    });
+    stepper.innerHTML = html;
+    // Clamp current step to flow length
+    if (wf.step > flow.labels.length) wf.step = flow.labels.length;
+  }
+
+  function applyWorkflow() {
+    _saveWf();
+    const flow = flowFor(wf.type);
+    const totalSteps = flow.labels.length;
+
+    // Status block
+    const statusBlock = document.getElementById('status-block');
+    if (statusBlock) {
+      const ttl = statusBlock.querySelector('.ttl');
+      const sub = statusBlock.querySelector('.sub');
+      if (wf.rejected) {
+        statusBlock.style.background = 'var(--danger-soft)';
+        statusBlock.style.borderColor = '#fecaca';
+        statusBlock.querySelector('.ic').style.background = 'var(--danger)';
+        if (ttl) { ttl.textContent = 'ОТКЛОНЕНА'; ttl.style.color = '#b91c1c'; }
+        if (sub) { sub.textContent = 'Заявка отклонена менеджером или СБ'; sub.style.color = '#b91c1c'; }
+      } else if (wf.completed) {
+        statusBlock.style.background = 'var(--success-soft)';
+        statusBlock.style.borderColor = '#a7f3d0';
+        statusBlock.querySelector('.ic').style.background = 'var(--success)';
+        if (ttl) { ttl.textContent = flow.finalLabel || 'ВЫДАНА'; ttl.style.color = '#047857'; }
+        if (sub) { sub.textContent = flow.finalSub || 'Сделка завершена'; sub.style.color = '#047857'; }
+      } else {
+        const key = flow.keys[wf.step - 1];
+        const stylesByKey = {
+          created:  { bg: 'var(--primary-soft)', bd: '#bfdbfe', ic: 'var(--primary)', tx: 'var(--primary-2)', t: 'НОВАЯ',           s: 'Создана и ожидает обработки' },
+          review:   { bg: 'var(--warning-soft)', bd: '#fde68a', ic: 'var(--warning)', tx: '#92400e',          t: 'НА ПРОВЕРКЕ',     s: 'СБ проверяет клиента' },
+          contract: { bg: 'var(--primary-soft)', bd: '#bfdbfe', ic: 'var(--primary)', tx: 'var(--primary-2)', t: 'ДОГОВОР',         s: 'Договор сформирован, ожидает подписи' },
+          downpay:  { bg: 'var(--purple-soft)',  bd: '#ddd6fe', ic: 'var(--purple)',  tx: 'var(--purple)',    t: 'ВЗНОС ПОЛУЧЕН',   s: 'Первоначальный взнос принят' },
+          order:    { bg: 'var(--warning-soft)', bd: '#fde68a', ic: 'var(--warning)', tx: '#92400e',          t: 'ЗАКАЗ',           s: 'Товар заказан у поставщика' },
+          receipt:  { bg: '#fef3c7',             bd: '#fde68a', ic: '#d97706',        tx: '#92400e',          t: 'ОЖИДАЕМ ТОВАР',   s: 'Товар в пути от поставщика' },
+          activate: { bg: 'var(--purple-soft)',  bd: '#ddd6fe', ic: 'var(--purple)',  tx: 'var(--purple)',    t: 'АКТИВАЦИЯ',       s: 'Активация услуги' },
+          deliver:  { bg: 'var(--warning-soft)', bd: '#fde68a', ic: 'var(--warning)', tx: '#92400e',          t: 'ВЫДАЧА',          s: 'Готово к выдаче клиенту' },
+          request:  { bg: 'var(--primary-soft)', bd: '#bfdbfe', ic: 'var(--primary)', tx: 'var(--primary-2)', t: 'ЗАПРОС ПАРТНЁРУ', s: 'Запрашиваем товар у партнёра' },
+          reserve:  { bg: 'var(--warning-soft)', bd: '#fde68a', ic: 'var(--warning)', tx: '#92400e',          t: 'РЕЗЕРВ',          s: 'Партнёр зарезервировал товар' },
+          purchase: { bg: '#fef3c7',             bd: '#fde68a', ic: '#d97706',        tx: '#92400e',          t: 'ЗАКУПКА',         s: 'Выкупаем товар у партнёра — становится нашим' },
+          pickup:   { bg: 'var(--warning-soft)', bd: '#fde68a', ic: 'var(--warning)', tx: '#92400e',          t: 'ВЫДАЧА',          s: 'Готово к передаче клиенту (наша собственность)' },
+          settle:   { bg: 'var(--purple-soft)',  bd: '#ddd6fe', ic: 'var(--purple)',  tx: 'var(--purple)',    t: 'РАСЧЁТ С ПАРТНЁРОМ',s:'Выплата партнёру за выданный товар' }
+        };
+        const c = stylesByKey[key] || stylesByKey.created;
+        statusBlock.style.background = c.bg;
+        statusBlock.style.borderColor = c.bd;
+        statusBlock.querySelector('.ic').style.background = c.ic;
+        if (ttl) { ttl.textContent = c.t; ttl.style.color = c.tx; }
+        if (sub) { sub.textContent = c.s; sub.style.color = c.tx; }
+      }
+    }
+
+    // Stepper — ensure rendered for current type
+    renderStepper();
+    const stepper = document.getElementById('stepper');
+    const checkSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+    if (stepper) {
+      stepper.querySelectorAll('.step').forEach((s, i) => {
+        const stepNum = i + 1;
+        const key = flow.keys[i];
+        const stageIcon = STAGE_ICONS[key] || '';
+        s.classList.remove('done', 'current');
+        const c = s.querySelector('.circle');
+        if (wf.completed || stepNum < wf.step) {
+          s.classList.add('done');
+          c.innerHTML = checkSvg;
+        } else if (stepNum === wf.step) {
+          s.classList.add('current');
+          // Show stage icon for current step (richer than a number)
+          c.innerHTML = stageIcon || String(stepNum);
+        } else {
+          c.innerHTML = stageIcon || String(stepNum);
+        }
+      });
+      stepper.querySelectorAll('.line').forEach((line, i) => {
+        line.classList.toggle('done', wf.completed || (i + 1) < wf.step);
+      });
+    }
+    const displayStep = wf.completed ? totalSteps : wf.step;
+    document.querySelectorAll('[data-bind="progressStep"]').forEach(el => el.textContent = displayStep);
+    const fill = document.getElementById('progress-fill');
+    if (fill) fill.style.width = (wf.completed ? 100 : Math.round((wf.step / totalSteps) * 100)) + '%';
+    const remain = document.getElementById('progress-remain');
+    if (remain) remain.textContent = wf.completed ? 'Сделка завершена' : `Осталось ${Math.max(0, totalSteps - wf.step)}`;
+    document.querySelectorAll('[data-bind="progressLabel"]').forEach(el => el.textContent = wf.completed ? 'Завершена' : (flow.labels[wf.step - 1] || flow.labels[0]));
+    // Update "X из N этапов"
+    const stepperMeta = document.querySelector('.progress-meta span:first-child');
+    if (stepperMeta) stepperMeta.innerHTML = `<span>${displayStep}</span> из ${totalSteps} этапов`;
+
+    // Update deliver button label dynamically per current step
+    const delBtn = document.querySelector('#qa-list [data-qa="deliver"] .t');
+    if (delBtn) {
+      const lbl = (flow.deliverLabels && flow.deliverLabels[wf.step]) || 'Выдать';
+      delBtn.textContent = lbl;
+    }
+
+    // Next step alert
+    const alertEl = document.getElementById('next-step-alert');
+    const alertText = document.getElementById('next-step-text');
+    if (wf.rejected) {
+      alertEl.className = 'alert danger';
+      alertEl.style.margin = '14px';
+      alertText.innerHTML = '<b>Заявка отклонена.</b> Дальнейшие действия недоступны.';
+    } else if (wf.completed) {
+      alertEl.className = 'alert success';
+      alertEl.style.margin = '14px';
+      alertText.innerHTML = '<b>Сделка завершена.</b> ' + (flow.nextHints[totalSteps] || '');
+    } else {
+      alertEl.className = 'alert warning';
+      alertEl.style.margin = '14px';
+      alertText.innerHTML = `<b>Следующий шаг:</b> ${flow.nextHints[wf.step] || ''}`;
+    }
+
+    // SB card
+    const sbStatus = document.getElementById('sb-status');
+    const sbList = document.getElementById('sb-list');
+    const sbRunBtn = document.getElementById('sb-run-btn');
+    const sbTitle = document.getElementById('sb-status-title');
+    const sbSub = document.getElementById('sb-status-sub');
+    const sbDate = document.getElementById('sb-date');
+    const sbShield = document.getElementById('sb-shield');
+    if (wf.sbPassed) {
+      sbStatus.style.background = 'var(--success-soft)';
+      sbStatus.style.borderColor = '#a7f3d0';
+      sbTitle.textContent = 'Проверка пройдена';
+      sbTitle.style.color = '#047857';
+      sbSub.textContent = `Скоринг ${wf.sbScore} баллов · все проверки успешны`;
+      sbShield.style.background = 'white';
+      sbShield.querySelector('svg').setAttribute('stroke', '#10b981');
+      sbList.style.display = '';
+      sbRunBtn.style.display = 'none';
+      if (sbDate) sbDate.textContent = _app.sbDate || nowStr();
+    } else {
+      sbStatus.style.background = 'var(--surface-2)';
+      sbStatus.style.borderColor = 'var(--border)';
+      sbTitle.textContent = 'Ожидает проверки';
+      sbTitle.style.color = 'var(--text)';
+      sbSub.textContent = 'Запустите автоматическую проверку клиента (НБКИ, ФССП, чёрные списки)';
+      sbShield.style.background = 'var(--surface-3)';
+      sbShield.querySelector('svg').setAttribute('stroke', '#6b7591');
+      sbList.style.display = 'none';
+      sbRunBtn.style.display = '';
+      if (sbDate) sbDate.textContent = '—';
+    }
+    document.querySelectorAll('[data-bind="sbScore"]').forEach(el => el.textContent = wf.sbScore || 0);
+
+    // Disable QA buttons by readiness — gating depends on flow steps
+    const qa = document.getElementById('qa-list');
+    qa.querySelectorAll('.qa-item').forEach(el => { el.style.pointerEvents = ''; el.style.opacity = ''; });
+    // Buyback button visible only on completed deals
+    const buybackBtn = qa.querySelector('[data-qa="buyback"]');
+    if (buybackBtn) buybackBtn.style.display = (wf.completed && !wf.rejected) ? '' : 'none';
+    if (wf.rejected || (wf.completed && !buybackBtn)) {
+      qa.querySelectorAll('.qa-item:not([data-qa="sms"]):not([data-qa="buyback"])').forEach(el => {
+        el.style.pointerEvents = 'none';
+        el.style.opacity = '.45';
+      });
+    } else if (wf.rejected || wf.completed) {
+      qa.querySelectorAll('.qa-item:not([data-qa="sms"]):not([data-qa="buyback"])').forEach(el => {
+        el.style.pointerEvents = 'none';
+        el.style.opacity = '.45';
+      });
+    } else {
+      // Contract: enabled only at the contract step, requires SB passed
+      const contractBtn = qa.querySelector('[data-qa="contract"]');
+      if (contractBtn) {
+        const ok = wf.sbPassed && wf.step === flow.contractStep;
+        if (!ok) { contractBtn.style.pointerEvents = 'none'; contractBtn.style.opacity = '.45'; }
+      }
+      // Downpay: enabled only at the downpay step
+      const downpayBtn = qa.querySelector('[data-qa="downpay"]');
+      if (downpayBtn) {
+        const ok = wf.step === flow.downpayStep;
+        if (!ok) { downpayBtn.style.pointerEvents = 'none'; downpayBtn.style.opacity = '.45'; }
+      }
+      // Deliver: enabled on any step that has a deliverLabels entry
+      const deliverBtn = qa.querySelector('[data-qa="deliver"]');
+      if (deliverBtn) {
+        const hasLabel = flow.deliverLabels && flow.deliverLabels[wf.step];
+        if (!hasLabel) { deliverBtn.style.pointerEvents = 'none'; deliverBtn.style.opacity = '.45'; }
+      }
+    }
+  }
+
+  function pushHistory(action, by = 'Бекуев Муслим Д.') {
+    const list = document.querySelector('.hist-list');
+    if (!list) return;
+    const item = document.createElement('div');
+    item.className = 'hist-item';
+    item.innerHTML = `
+      <div class="ic" style="color: var(--success); background: var(--success-soft); border-color: #a7f3d0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div class="info"><div class="a">${action}</div><div class="b">${nowStr()}</div><div class="c">${by}</div></div>
+    `;
+    list.prepend(item);
+  }
+
+  // ============= SB run =============
+  document.getElementById('sb-run-btn')?.addEventListener('click', () => {
+    document.getElementById('sb-run-btn').textContent = 'Проверяем…';
+    document.getElementById('sb-run-btn').disabled = true;
+    setTimeout(() => {
+      wf.sbPassed = true;
+      wf.sbScore = _app.sbScore || 76;
+      if (wf.step < 2) wf.step = 2;
+      _app.sbDate = nowStr();
+      pushHistory(`Проверка СБ пройдена (${wf.sbScore} баллов)`, 'Автоматически');
+      applyWorkflow();
+      if (window.PaydApp?.toast) PaydApp.toast('Проверка СБ пройдена', { type: 'success', subtitle: `Скоринг ${wf.sbScore} баллов` });
+    }, 1100);
+  });
+
+  // ============= QUICK ACTIONS =============
+  document.getElementById('qa-list').addEventListener('click', e => {
+    const item = e.target.closest('.qa-item');
+    if (!item) return;
+    if (item.style.pointerEvents === 'none') return;
+    const qa = item.dataset.qa;
+    if (qa === 'contract') return doCreateContract();
+    if (qa === 'downpay')  return doAcceptDownpay();
+    if (qa === 'deliver')  return doDeliverGoods();
+    if (qa === 'sms')      return openSmsDialog();
+    if (qa === 'reject')   return doReject();
+    if (qa === 'buyback')  return doBuyback();
+  });
+
+  function doBuyback() {
+    // Calculate remaining schedule based on app data
+    const total = parseInt(String(_app.termsTotal).replace(/\D/g, ''), 10) || 0;
+    const monthly = parseInt(String(_app.termsMonthly).replace(/\D/g, ''), 10) || 0;
+    const term = parseInt(_app.termsTerm) || 0;
+    const dpAmt = parseInt(String(_app.termsDown).replace(/\D/g, ''), 10) || 0;
+
+    const back = document.createElement('div');
+    back.style.cssText = 'position: fixed; inset: 0; background: rgba(15,23,42,.6); backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 24px;';
+    back.innerHTML = `
+      <div class="doc-preview" style="max-width: 500px;">
+        <h2>Выкуп товара у клиента</h2>
+        <p style="font-size: 13px; color: #444;">Клиент возвращает товар. Мы выкупаем его обратно и закрываем сделку.</p>
+        <div class="row"><span>Клиент</span><span><b>${_app.clientName}</b></span></div>
+        <div class="row"><span>Товар</span><span>${_app.productName}</span></div>
+        <div class="row"><span>Сумма по договору</span><span>${_app.termsSale}</span></div>
+        <div class="row"><span>Уже выплачено</span><span style="color: var(--success);">~ ${(dpAmt + Math.round(monthly * (term / 2))).toLocaleString('ru-RU')} ₽</span></div>
+        <hr style="margin: 14px 0;" />
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 11px; color: #555; text-transform: uppercase; font-weight: 700; letter-spacing: .06em;">Причина выкупа</label>
+          <select class="select" id="bb-reason" style="width: 100%; margin-top: 6px; padding: 10px;">
+            <option>Возврат товара клиентом</option>
+            <option>Брак / неисправность</option>
+            <option>Расторжение договора по соглашению</option>
+            <option>Trade-in (обмен на новый)</option>
+            <option>Досрочный выкуп клиентом</option>
+          </select>
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 11px; color: #555; text-transform: uppercase; font-weight: 700; letter-spacing: .06em;">Сумма выкупа (выплата клиенту)</label>
+          <input class="input" id="bb-amt" style="width: 100%; margin-top: 6px;" placeholder="Например: 35 000" />
+          <div style="font-size: 11px; color: #888; margin-top: 4px;">Остаток платежей по графику = ${(monthly * Math.max(0, term - 1)).toLocaleString('ru-RU')} ₽</div>
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 11px; color: #555; text-transform: uppercase; font-weight: 700; letter-spacing: .06em;">Состояние товара</label>
+          <select class="select" id="bb-cond" style="width: 100%; margin-top: 6px; padding: 10px;">
+            <option>Новое / в упаковке</option>
+            <option>Б/у в отличном состоянии</option>
+            <option>Б/у со следами эксплуатации</option>
+            <option>Неисправно</option>
+          </select>
+        </div>
+        <div style="margin-bottom: 14px;">
+          <label style="font-size: 11px; color: #555; text-transform: uppercase; font-weight: 700; letter-spacing: .06em;">Комментарий</label>
+          <textarea id="bb-note" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 13px; min-height: 60px; margin-top: 6px;" placeholder="Например: товар возвращён в полной комплектации"></textarea>
+        </div>
+        <div style="font-size: 12px; color: var(--warning); font-weight: 600;">⚠️ После выкупа сделка закрывается, статус → «Выкуплено». Сумма списывается из кассы.</div>
+        <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px;">
+          <button class="btn" data-act="cancel">Отмена</button>
+          <button class="btn warning" data-act="ok" style="background: var(--warning); color: white; border-color: var(--warning);">Выкупить у клиента</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(back);
+    const close = () => back.remove();
+    back.addEventListener('click', e => { if (e.target === back) close(); });
+    back.querySelector('[data-act="cancel"]').onclick = close;
+    back.querySelector('[data-act="ok"]').onclick = () => {
+      const amt = parseInt(String(back.querySelector('#bb-amt').value).replace(/\D/g, ''), 10) || 0;
+      if (!amt) { if (window.PaydApp?.toast) PaydApp.toast('Укажите сумму выкупа', 'warning'); return; }
+      const reason = back.querySelector('#bb-reason').value;
+      const cond = back.querySelector('#bb-cond').value;
+      const note = back.querySelector('#bb-note').value;
+      close();
+
+      // Create cash expense operation
+      try {
+        const ops = JSON.parse(localStorage.getItem('payd.cash.ops.v1') || '[]');
+        ops.unshift({
+          id: 'op_' + Date.now(),
+          num: 'PD-' + (1000 + ops.length + 1),
+          date: new Date().toISOString(),
+          articleId: 'a_refund',
+          articleName: 'Возврат клиенту (выкуп)',
+          dir: 'out',
+          cashId: 'c_main',
+          amount: amt,
+          party: _app.clientName,
+          note: `Выкуп по заявке №${_app.number}: ${reason} · ${cond}${note ? ' · ' + note : ''}`
+        });
+        localStorage.setItem('payd.cash.ops.v1', JSON.stringify(ops));
+      } catch (_) {}
+
+      // Mark deal as bought back
+      wf.rejected = false;
+      wf.completed = true;
+      _app._buybackData = { amt, reason, cond, note, ts: nowStr() };
+      pushHistory(`Товар выкуплен у клиента: ${reason} · ${amt.toLocaleString('ru-RU')} ₽`);
+
+      // Update status block specifically for buyback
+      const statusBlock = document.getElementById('status-block');
+      if (statusBlock) {
+        statusBlock.style.background = 'var(--warning-soft)';
+        statusBlock.style.borderColor = '#fde68a';
+        statusBlock.querySelector('.ic').style.background = 'var(--warning)';
+        const ttl = statusBlock.querySelector('.ttl');
+        const sub = statusBlock.querySelector('.sub');
+        if (ttl) { ttl.textContent = 'ВЫКУПЛЕНО'; ttl.style.color = '#92400e'; }
+        if (sub) { sub.textContent = `Товар вернулся к нам · ${amt.toLocaleString('ru-RU')} ₽ выплачено клиенту`; sub.style.color = '#92400e'; }
+      }
+      // Hide buyback button after action
+      const bb = document.querySelector('#qa-list [data-qa="buyback"]');
+      if (bb) bb.style.display = 'none';
+
+      if (window.PaydApp?.toast) PaydApp.toast(`Выкуп проведён: ${amt.toLocaleString('ru-RU')} ₽`, { type: 'success', subtitle: `${_app.clientName} · ${reason}` });
+    };
+  }
+
+  function doCreateContract() {
+    const back = document.createElement('div');
+    back.style.cssText = 'position: fixed; inset: 0; background: rgba(15,23,42,.6); backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 24px;';
+    back.innerHTML = `
+      <div class="doc-preview" style="max-width: 580px;">
+        <h2>Договор рассрочки</h2>
+        <div style="font-size: 11px; color: #888; margin-bottom: 14px;">К заявке № ${_app.number} от ${_app.date}</div>
+        <p><b>Кредитор:</b> ООО «Payd», ИНН 2014782301</p>
+        <p><b>Заёмщик:</b> ${_app.clientName}<br/>${_app.clientPassport}<br/>${_app.clientAddress}, тел. ${_app.clientPhone}</p>
+        <p><b>Предмет:</b> ${_app.productName}</p>
+        <hr style="margin: 12px 0;" />
+        <div class="row"><span>Сумма</span><span><b>${_app.termsSale}</b></span></div>
+        <div class="row"><span>Первый взнос</span><span>${_app.termsDown} (${_app.termsDownPct})</span></div>
+        <div class="row"><span>Срок</span><span>${_app.termsTerm}</span></div>
+        <div class="row"><span>Платёж/мес</span><span><b>${_app.termsMonthly}</b></span></div>
+        <div class="row"><span>Тип</span><span>${_app.typeLabel}</span></div>
+        <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 22px; padding-top: 16px; border-top: 1px solid #e5e9f2;">
+          <button class="btn" data-act="cancel">Отмена</button>
+          <button class="btn primary" data-act="ok">Подписать электронно</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(back);
+    const close = () => back.remove();
+    back.addEventListener('click', e => { if (e.target === back) close(); });
+    back.querySelector('[data-act="cancel"]').onclick = close;
+    back.querySelector('[data-act="ok"]').onclick = () => {
+      close();
+      const f = flowFor(wf.type);
+      // Договор подписан — двигаем дальше, на этап «Первый взнос»
+      wf.step = Math.max(wf.step, f.downpayStep);
+      pushHistory('Договор сформирован и подписан клиентом');
+      applyWorkflow();
+      if (window.PaydApp?.toast) PaydApp.toast('Договор подписан', { type: 'success', subtitle: 'Этап → Первый взнос' });
+    };
+  }
+
+  function doAcceptDownpay() {
+    if (!confirm(`Принять первоначальный взнос ${_app.termsDown} от клиента ${_app.clientName}?\nПлатёж будет проведён через кассу.`)) return;
+    const f = flowFor(wf.type);
+    // Взнос принят — двигаем дальше (на «Заказ» / «Выдача» / «Активация» в зависимости от типа)
+    wf.step = Math.max(wf.step, f.downpayStep + 1);
+    pushHistory(`Принят первый взнос: ${_app.termsDown}`);
+    applyWorkflow();
+    if (window.PaydApp?.toast) PaydApp.toast(`Взнос ${_app.termsDown} принят`, { type: 'success', subtitle: 'Чек напечатан · переход к выдаче товара' });
+    // Save to cash ops if storage exists
+    try {
+      const ops = JSON.parse(localStorage.getItem('payd.cash.ops.v1') || '[]');
+      const num = parseInt(String(_app.termsDown).replace(/\D/g, ''), 10) || 0;
+      if (num) {
+        ops.unshift({
+          id: 'op_' + Date.now(),
+          num: 'PD-' + (1000 + ops.length + 1),
+          date: new Date().toISOString(),
+          articleId: 'a_dp_client',
+          articleName: 'Первоначальный взнос',
+          dir: 'in',
+          cashId: 'c_main',
+          amount: num,
+          party: _app.clientName,
+          note: `Заявка №${_app.number}`
+        });
+        localStorage.setItem('payd.cash.ops.v1', JSON.stringify(ops));
+      }
+    } catch (_) {}
+  }
+
+  function doDeliverGoods() {
+    const f = flowFor(wf.type);
+    const currentKey = f.keys[wf.step - 1];
+    const stepLabel = f.deliverLabels?.[wf.step] || 'Шаг подтверждён';
+    const partnerName = _app.productName?.match(/·\s*([^·]+)$/)?.[1]?.trim() || 'Партнёр';
+
+    // Build step-specific modal body
+    let body, isFinal = false, isPurchase = false;
+    if (currentKey === 'request') {
+      body = `
+        <h2>Запрос партнёру</h2>
+        <p style="font-size: 13px; color: #444;">Отправить запрос партнёру <b>${partnerName}</b> о наличии и стоимости товара?</p>
+        <div class="row"><span>Товар</span><span><b>${_app.productName}</b></span></div>
+        <div class="row"><span>Сумма закупки (план)</span><span>${_app.termsPurchase}</span></div>
+        <div style="margin-top: 10px; font-size: 12px; color: #888;">📨 Партнёру уйдёт WhatsApp/SMS уведомление о новом запросе.</div>
+      `;
+    } else if (currentKey === 'reserve') {
+      body = `
+        <h2>Подтвердить резерв</h2>
+        <p style="font-size: 13px; color: #444;">Партнёр <b>${partnerName}</b> подтвердил резерв товара?</p>
+        <div class="row"><span>Товар</span><span><b>${_app.productName}</b></span></div>
+        <div class="row"><span>Кол-во</span><span>${_app.productQty}</span></div>
+        <div style="margin-top: 14px;">
+          <label style="font-size: 11px; color: #555; text-transform: uppercase; font-weight: 700; letter-spacing: .06em;">Срок резерва</label>
+          <input class="input" id="dl-res-time" style="width: 100%; margin-top: 6px;" value="48 часов" />
+        </div>
+      `;
+    } else if (currentKey === 'purchase') {
+      isPurchase = true;
+      body = `
+        <h2>Закупка товара у партнёра</h2>
+        <p style="font-size: 13px; color: #444;">⚠️ <b>Шариат-условие:</b> мы должны выкупить товар у партнёра <b>${partnerName}</b>, чтобы он стал нашей собственностью. Только после этого возможна Мурабаха.</p>
+        <div class="row"><span>Партнёр</span><span><b>${partnerName}</b></span></div>
+        <div class="row"><span>Товар</span><span><b>${_app.productName}</b></span></div>
+        <div class="row" style="font-size: 16px;"><span>К оплате партнёру</span><span><b style="color: var(--danger);">${_app.termsPurchase}</b></span></div>
+        <div style="margin-top: 14px;">
+          <label style="font-size: 11px; color: #555; text-transform: uppercase; font-weight: 700; letter-spacing: .06em;">Способ оплаты партнёру</label>
+          <select class="select" id="dl-pay-method" style="width: 100%; margin-top: 6px; padding: 10px;">
+            <option>Безналичный перевод</option>
+            <option>Наличные из кассы</option>
+            <option>СБП на счёт партнёра</option>
+          </select>
+        </div>
+        <div style="margin-top: 10px; font-size: 12px; color: var(--danger); font-weight: 600;">📦 После закупки товар считается нашей собственностью.</div>
+      `;
+    } else if (currentKey === 'pickup' || currentKey === 'deliver') {
+      isFinal = true;
+      body = `
+        <h2>Выдача товара клиенту</h2>
+        <p style="font-size: 13px; color: #444;">Подтвердите передачу товара клиенту:</p>
+        <div class="row"><span>Клиент</span><span><b>${_app.clientName}</b></span></div>
+        <div class="row"><span>Паспорт</span><span>${_app.clientPassport}</span></div>
+        <div class="row"><span>Товар</span><span><b>${_app.productName}</b></span></div>
+        <div class="row"><span>Сумма продажи</span><span>${_app.termsSale}</span></div>
+        <div style="margin-top: 14px;">
+          <label style="font-size: 11px; color: #555; text-transform: uppercase; font-weight: 700; letter-spacing: .06em;">Кто выдал</label>
+          <input class="input" id="dl-by" style="width: 100%; margin-top: 6px;" placeholder="ФИО кассира/менеджера" value="Бекуев Муслим Д." />
+        </div>
+        <div style="margin-top: 10px; font-size: 12px; color: #888;">⚠️ Сверьте паспорт с заёмщиком!</div>
+      `;
+    } else {
+      body = `
+        <h2>${stepLabel}</h2>
+        <p style="font-size: 13px; color: #444;">Подтвердите следующий шаг сделки.</p>
+      `;
+    }
+
+    const back = document.createElement('div');
+    back.style.cssText = 'position: fixed; inset: 0; background: rgba(15,23,42,.6); backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 24px;';
+    back.innerHTML = `
+      <div class="doc-preview" style="max-width: 460px;">
+        ${body}
+        <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px;">
+          <button class="btn" data-act="cancel">Отмена</button>
+          <button class="btn ${isPurchase ? 'danger' : 'primary'}" data-act="ok">${isPurchase ? 'Провести закупку' : (isFinal ? 'Подтвердить выдачу' : 'Подтвердить')}</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(back);
+    const close = () => back.remove();
+    back.addEventListener('click', e => { if (e.target === back) close(); });
+    back.querySelector('[data-act="cancel"]').onclick = close;
+    back.querySelector('[data-act="ok"]').onclick = () => {
+      const by = back.querySelector('#dl-by')?.value.trim() || 'Менеджер';
+      close();
+
+      // Side-effect: actual cash expense operation when purchasing from partner
+      if (isPurchase) {
+        try {
+          const ops = JSON.parse(localStorage.getItem('payd.cash.ops.v1') || '[]');
+          const num = parseInt(String(_app.termsPurchase).replace(/\D/g, ''), 10) || 0;
+          if (num) {
+            ops.unshift({
+              id: 'op_' + Date.now(),
+              num: 'PD-' + (1000 + ops.length + 1),
+              date: new Date().toISOString(),
+              articleId: 'a_partner_out',
+              articleName: 'Закупка товара у партнёра',
+              dir: 'out',
+              cashId: 'c_main',
+              amount: num,
+              party: partnerName,
+              note: `Заявка №${_app.number} · ${_app.productName}`
+            });
+            localStorage.setItem('payd.cash.ops.v1', JSON.stringify(ops));
+          }
+        } catch (_) {}
+      }
+
+      // Advance one step. If we're at deliverStep — mark deal completed.
+      if (wf.step >= f.deliverStep) {
+        wf.completed = true;
+      } else {
+        wf.step += 1;
+      }
+      pushHistory(stepLabel, by);
+      applyWorkflow();
+      if (window.PaydApp?.toast) {
+        let subtitle = wf.completed ? 'Сделка завершена, график платежей активен' : 'Этап подтверждён';
+        if (isPurchase) subtitle = 'Товар выкуплен у партнёра — теперь наша собственность';
+        PaydApp.toast(stepLabel, { type: 'success', subtitle });
+      }
+    };
+  }
+
+  function doReject() {
+    if (!confirm(`Отклонить заявку ${_app.number}? Это действие нельзя отменить.`)) return;
+    const reason = prompt('Причина отказа (будет видна в истории):', 'Не пройдена проверка / отказ клиента');
+    if (reason === null) return;
+    wf.rejected = true;
+    pushHistory(`Заявка отклонена: ${reason || '—'}`);
+    applyWorkflow();
+    if (window.PaydApp?.toast) PaydApp.toast('Заявка отклонена', { type: 'warning', subtitle: reason || 'Без указания причины' });
+  }
+
+  function openSmsDialog() {
+    // Switch to SMS tab if available
+    const smsTab = document.querySelector('.main-tabs .tab[data-pane="sms"]');
+    if (smsTab) {
+      smsTab.click();
+      smsTab.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    setTimeout(() => document.getElementById('btn-send-sms')?.click(), 200);
+  }
+
+  // Type change in select → re-render progress
+  document.querySelectorAll('select[data-bind-select="type"]').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const newType = sel.value || sel.options[sel.selectedIndex]?.textContent || 'Товар со склада';
+      wf.type = newType;
+      // Clamp step to new flow length
+      const f = flowFor(newType);
+      if (wf.step > f.labels.length) wf.step = f.labels.length;
+      pushHistory(`Тип сделки изменён на: ${newType}`);
+      applyWorkflow();
+      if (window.PaydApp?.toast) PaydApp.toast(`Тип: ${newType}`, { type: 'info', subtitle: `${f.labels.length} этапов` });
+    });
+  });
+
+  // Run initial sync
+  applyWorkflow();
+
+  // ============================================================
+  //  SMS — send new message
+  // ============================================================
+  document.getElementById('btn-send-sms')?.addEventListener('click', () => {
+    const text = prompt('Текст SMS для клиента ' + _app.clientName + ':', '');
+    if (!text) return;
+    const list = document.querySelector('.sms-list');
+    if (!list) return;
+    const now = new Date();
+    const time = `Сейчас · ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    const div = document.createElement('div');
+    div.className = 'sms-row out';
+    div.innerHTML = `<div class="sms-meta"><span>${time}</span><span class="badge primary sm">Отправляется</span></div><div class="sms-body">${text}</div>`;
+    list.prepend(div);
+    setTimeout(() => {
+      const b = div.querySelector('.badge');
+      b.className = 'badge success sm';
+      b.textContent = 'Доставлено';
+    }, 1500);
+    if (window.PaydApp?.toast) PaydApp.toast('SMS отправлено', 'success');
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Кассы и проводки — Payd</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  /* ============ TABS ============ */
+  .ka-tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 18px; padding: 0 4px; overflow-x: auto; }
+  .ka-tab { padding: 12px 18px; font-size: 13px; font-weight: 500; color: var(--text-2); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: all .15s; display: inline-flex; align-items: center; gap: 8px; }
+  .ka-tab:hover { color: var(--text); }
+  .ka-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 700; }
+  .ka-tab .badge { background: var(--surface-2); color: var(--text-3); padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .ka-tab.active .badge { background: var(--primary-soft); color: var(--primary); }
+  .ka-pane { display: none; }
+  .ka-pane.active { display: block; }
+
+  /* ============ CASH REGISTERS ============ */
+  .cash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .cash-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    cursor: pointer;
+    transition: all .15s;
+    position: relative;
+  }
+  .cash-card:hover { border-color: var(--primary); box-shadow: var(--shadow-md); transform: translateY(-2px); }
+  .cash-card.archived { opacity: .55; }
+  .cash-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+  .cash-icon {
+    width: 44px; height: 44px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+    border: 1px solid var(--border);
+    color: #1a2332;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .cash-name { font-size: 15px; font-weight: 700; line-height: 1.3; }
+  .cash-meta { font-size: 11px; color: var(--text-3); margin-top: 3px; line-height: 1.4; }
+  .cash-balance {
+    padding-top: 12px; margin-top: 12px;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: baseline; gap: 6px;
+  }
+  .cash-balance .l { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; flex: 1; }
+  .cash-balance .v { font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--primary); }
+
+  .cash-tags { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
+
+  /* ============ OPERATIONS TABLE ============ */
+  .ka-toolbar {
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    margin-bottom: 14px;
+  }
+  .ka-toolbar .filter-search { flex: 1; min-width: 200px; }
+  .ops-tbl { width: 100%; border-collapse: separate; border-spacing: 0; }
+  .ops-tbl thead th { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-3); font-weight: 700; padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+  .ops-tbl tbody td { padding: 12px 14px; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .ops-tbl tbody tr:hover { background: var(--surface-2); }
+  .ops-tbl tbody tr { cursor: pointer; }
+  .ops-tbl .num { font-family: 'SF Mono', monospace; color: var(--text-3); font-weight: 600; }
+  .ops-tbl .amt { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+  .ops-tbl .amt.in { color: var(--success); }
+  .ops-tbl .amt.out { color: var(--danger); }
+  .ops-tbl .article-cell { display: inline-flex; align-items: center; gap: 6px; }
+  .ops-tbl .article-cell .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  .empty-state { padding: 60px 30px; text-align: center; color: var(--text-3); }
+  .empty-state .ico { font-size: 36px; opacity: .5; margin-bottom: 8px; }
+
+  /* ============ ARTICLES ============ */
+  .art-group {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+  .art-group-head {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .art-group-head h3 { font-size: 14px; font-weight: 700; }
+  .art-group-head .h-sub { font-size: 12px; color: var(--text-3); }
+  .art-list { display: flex; flex-direction: column; }
+  .art-row {
+    padding: 11px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .art-row:last-child { border-bottom: none; }
+  .art-row .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .art-row .name { flex: 1; font-size: 13px; font-weight: 600; }
+  .art-row .stat { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+  .art-row .actions { display: flex; gap: 4px; opacity: 0; transition: opacity .15s; }
+  .art-row:hover .actions { opacity: 1; }
+  .art-row .actions .btn { padding: 3px 9px; font-size: 11px; }
+
+  /* ============ DDS PIVOT ============ */
+  .dds-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+  .dds-summary .stat { padding: 14px 16px; }
+  .dds-tbl { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+  .dds-tbl th, .dds-tbl td { padding: 10px 14px; border-bottom: 1px solid var(--border); text-align: right; }
+  .dds-tbl th:first-child, .dds-tbl td:first-child { text-align: left; }
+  .dds-tbl thead th { background: var(--surface-2); font-size: 11px; text-transform: uppercase; color: var(--text-3); font-weight: 700; letter-spacing: .04em; }
+  .dds-tbl tbody td { font-variant-numeric: tabular-nums; }
+  .dds-tbl tbody tr.group-row td { background: var(--surface-2); font-weight: 700; }
+  .dds-tbl .article-cell { display: inline-flex; align-items: center; gap: 6px; }
+  .dds-tbl .article-cell .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dds-tbl .total-row td { font-weight: 800; border-top: 2px solid var(--text); border-bottom: none; }
+
+  /* ============ MODAL ============ */
+  .km-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,.55); backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 24px; opacity: 0; pointer-events: none; transition: opacity .18s; }
+  .km-backdrop.show { opacity: 1; pointer-events: auto; }
+  .km-modal { background: white; border-radius: 16px; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; box-shadow: 0 30px 80px rgba(0,0,0,.35); transform: translateY(8px); transition: transform .2s; }
+  .km-backdrop.show .km-modal { transform: translateY(0); }
+  .km-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid var(--border); }
+  .km-head h3 { font-size: 17px; font-weight: 800; }
+  .km-close { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: white; color: var(--text-2); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+  .km-body { padding: 18px 22px; }
+  .km-foot { display: flex; gap: 8px; justify-content: flex-end; padding: 14px 22px; border-top: 1px solid var(--border); background: var(--surface-2); }
+  .km-row { margin-bottom: 12px; }
+  .km-row label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-3); font-weight: 700; margin-bottom: 6px; }
+  .km-row textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 13px; outline: none; resize: vertical; min-height: 60px; }
+  .km-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* Combobox — searchable picker */
+  .cbo { position: relative; }
+  .cbo-input { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: white; cursor: text; }
+  .cbo-input:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+  .cbo-input input { flex: 1; border: none; outline: none; font-family: inherit; font-size: 13px; background: transparent; min-width: 0; }
+  .cbo-input .clear { width: 22px; height: 22px; border: none; background: var(--surface-2); border-radius: 4px; color: var(--text-3); cursor: pointer; display: none; align-items: center; justify-content: center; padding: 0; }
+  .cbo-input.has-value .clear { display: inline-flex; }
+  .cbo-input .clear:hover { color: var(--danger); background: var(--danger-soft); }
+  .cbo-list {
+    position: absolute; top: 100%; left: 0; right: 0;
+    z-index: 10;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-top: 4px;
+    max-height: 240px; overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0,0,0,.12);
+    display: none;
+  }
+  .cbo.open .cbo-list { display: block; }
+  .cbo-opt { padding: 10px 12px; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--border); }
+  .cbo-opt:last-child { border-bottom: none; }
+  .cbo-opt:hover, .cbo-opt.hover { background: var(--primary-soft); }
+  .cbo-opt .name { font-weight: 600; }
+  .cbo-opt .meta { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+  .cbo-opt mark { background: rgba(37,99,235,.18); color: var(--text); border-radius: 2px; padding: 0 1px; }
+  .cbo-empty { padding: 12px; text-align: center; font-size: 12px; color: var(--text-3); }
+  .cbo-create { padding: 10px 12px; font-size: 12px; color: var(--primary); font-weight: 600; cursor: pointer; border-top: 1px solid var(--border); }
+  .cbo-create:hover { background: var(--primary-soft); }
+
+  .dir-pills { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; background: var(--surface-2); border-radius: 10px; margin-bottom: 14px; }
+  .dir-pill { padding: 9px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-2); border-radius: 7px; cursor: pointer; }
+  .dir-pill.active.in { background: var(--success-soft); color: var(--success-2); box-shadow: 0 1px 2px rgba(0,0,0,.05); font-weight: 700; }
+  .dir-pill.active.out { background: var(--danger-soft); color: #b91c1c; box-shadow: 0 1px 2px rgba(0,0,0,.05); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div id="app-root">
+
+<div class="page-head">
+  <div>
+    <h1>Кассы и проводки</h1>
+    <div class="desc">Учёт денежных средств: кассы, документы, статьи и ДДС</div>
+  </div>
+  <div class="page-head-actions">
+    <button class="btn" id="btn-export-ops">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Экспорт
+    </button>
+    <button class="btn primary" id="btn-new-op">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Новая проводка
+    </button>
+  </div>
+</div>
+
+<!-- ===== STATS ===== -->
+<div class="stat-grid cols-4 mb-5">
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label">Касс активно</div>
+    <div class="stat-value" style="font-size: 22px;" id="kpi-cashes">—</div>
+    <div class="stat-sub" id="kpi-cashes-sub">—</div>
+  </div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label">Остаток в кассах</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--primary);" id="kpi-balance">—</div>
+    <div class="stat-sub">Сумма по всем кассам</div>
+  </div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label">Приход за месяц</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--success);" id="kpi-in">—</div>
+    <div class="stat-sub" id="kpi-in-sub">—</div>
+  </div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label">Расход за месяц</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--danger);" id="kpi-out">—</div>
+    <div class="stat-sub" id="kpi-out-sub">—</div>
+  </div>
+</div>
+
+<!-- ===== TABS ===== -->
+<div class="ka-tabs">
+  <div class="ka-tab active" data-tab="cashes">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+    Кассы <span class="badge" id="cnt-cashes">0</span>
+  </div>
+  <div class="ka-tab" data-tab="ops">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    Проводки <span class="badge" id="cnt-ops">0</span>
+  </div>
+  <div class="ka-tab" data-tab="articles">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+    Статьи <span class="badge" id="cnt-articles">0</span>
+  </div>
+  <div class="ka-tab" data-tab="dds">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    ДДС
+  </div>
+</div>
+
+<!-- ===== PANE: CASHES ===== -->
+<div class="ka-pane active" data-pane="cashes">
+  <div class="ka-toolbar">
+    <div style="flex: 1; font-size: 13px; color: var(--text-3);">Управляйте кассами вашей сети. Нажмите на карточку, чтобы открыть проводки этой кассы.</div>
+    <button class="btn primary" id="btn-new-cash">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Новая касса
+    </button>
+  </div>
+  <div class="cash-grid" id="cash-grid"></div>
+</div>
+
+<!-- ===== PANE: OPERATIONS ===== -->
+<div class="ka-pane" data-pane="ops">
+  <div class="ka-toolbar">
+    <div class="filter-search">
+      <span class="si"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+      <input type="text" placeholder="Поиск по контрагенту, комментарию, номеру..." id="op-search" />
+    </div>
+    <select id="op-fcash"><option value="">Все кассы</option></select>
+    <select id="op-fdir"><option value="">Все типы</option><option value="in">Приход</option><option value="out">Расход</option></select>
+    <select id="op-farticle"><option value="">Все статьи</option></select>
+    <select id="op-fperiod">
+      <option value="all">Всё время</option>
+      <option value="month" selected>Этот месяц</option>
+      <option value="prev">Прошлый месяц</option>
+      <option value="week">Эта неделя</option>
+      <option value="today">Сегодня</option>
+    </select>
+    <button class="btn primary" id="btn-new-op-2">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Новая
+    </button>
+  </div>
+
+  <div class="card" style="padding: 0; overflow: hidden;">
+    <table class="ops-tbl">
+      <thead>
+        <tr>
+          <th style="width: 100px;">№</th>
+          <th style="width: 120px;">Дата</th>
+          <th style="width: 90px;">Тип</th>
+          <th>Статья</th>
+          <th>Контрагент / Основание</th>
+          <th>Касса</th>
+          <th style="width: 130px; text-align: right;">Сумма</th>
+        </tr>
+      </thead>
+      <tbody id="ops-body"></tbody>
+    </table>
+    <div id="ops-empty"></div>
+  </div>
+</div>
+
+<!-- ===== PANE: ARTICLES ===== -->
+<div class="ka-pane" data-pane="articles">
+  <div class="ka-toolbar">
+    <div style="flex: 1; font-size: 13px; color: var(--text-3);">Каталог статей доходов и расходов. Используется при создании проводок и в отчёте ДДС.</div>
+    <button class="btn primary" id="btn-new-article">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Новая статья
+    </button>
+  </div>
+  <div id="articles-host"></div>
+</div>
+
+<!-- ===== PANE: DDS ===== -->
+<div class="ka-pane" data-pane="dds">
+  <div class="dds-summary">
+    <div class="stat"><div class="stat-label">Поступило за период</div><div class="stat-value" style="color: var(--success); font-size: 22px;" id="dds-in">—</div></div>
+    <div class="stat"><div class="stat-label">Выбыло за период</div><div class="stat-value" style="color: var(--danger); font-size: 22px;" id="dds-out">—</div></div>
+    <div class="stat"><div class="stat-label">Чистый поток</div><div class="stat-value" style="font-size: 22px;" id="dds-net">—</div></div>
+    <div class="stat"><div class="stat-label">Период</div><div class="stat-value" style="font-size: 17px;" id="dds-period">—</div></div>
+  </div>
+  <div class="card" style="padding: 18px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+      <div style="font-size: 14px; font-weight: 700;">ДДС по статьям × месяцам</div>
+      <select id="dds-window">
+        <option value="3">Последние 3 месяца</option>
+        <option value="6" selected>Последние 6 месяцев</option>
+        <option value="12">Последний год</option>
+      </select>
+    </div>
+    <div style="overflow-x: auto;">
+      <table class="dds-tbl" id="dds-tbl"></table>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="db.js"></script>
+<script src="app.js"></script>
+<script>
+  PaydApp.mountShell({
+    active: 'kassa',
+    title: 'Кассы и проводки',
+    breadcrumbs: [{ label: 'Главная', href: 'dashboard.html' }, { label: 'Кассы и проводки' }]
+  });
+
+  // ============================================================
+  //  STORAGE
+  // ============================================================
+  const KEY_CASH = 'payd.cashes.v1';
+  const KEY_OPS  = 'payd.cash.ops.v1';
+  const KEY_ART  = 'payd.cash.articles.v1';
+
+  const fmt = n => Math.round(n).toLocaleString('ru-RU');
+  const parse = s => parseInt(String(s).replace(/\D/g, ''), 10) || 0;
+  const today = () => new Date();
+  const isoDate = (d) => d.toISOString().slice(0, 10);
+
+  // ===== Default seeds =====
+  const SEED_CASHES = [
+    { id: 'c_main',    name: 'Касса · Грозный (центр)', address: 'Грозный, пр. Путина, 18', kkt: 'Атол 30Ф',     fn: '00109876541234', responsible: 'Бекуев Муслим Д.', balance: 312800, status: 'active', icon: 'shop' },
+    { id: 'c_argun',   name: 'Касса · Аргун',           address: 'Аргун, ул. Кадырова, 7',   kkt: 'Эвотор 7.2',   fn: '00112233445566', responsible: 'Хасанов Ислам',     balance: 184500, status: 'active', icon: 'shop' },
+    { id: 'c_gudermes',name: 'Касса · Гудермес',        address: 'Гудермес, ул. Терская, 33',kkt: 'Меркурий 185Ф',fn: '00198765432109', responsible: 'Алиев Саид',        balance: 96400,  status: 'active', icon: 'shop' }
+  ];
+
+  const SEED_ARTICLES = [
+    // Income
+    { id: 'a_pmt_client',  name: 'Платёж клиента',          dir: 'in',  color: '#10b981', group: 'Основная деятельность' },
+    { id: 'a_dp_client',   name: 'Первоначальный взнос',    dir: 'in',  color: '#22c55e', group: 'Основная деятельность' },
+    { id: 'a_partner_in',  name: 'Поступление от партнёра', dir: 'in',  color: '#0ea5e9', group: 'Партнёры' },
+    { id: 'a_refill',      name: 'Пополнение из банка',     dir: 'in',  color: '#3b82f6', group: 'Финансы' },
+    { id: 'a_deposit',     name: 'Внесение собственных',    dir: 'in',  color: '#6366f1', group: 'Финансы' },
+    { id: 'a_other_in',    name: 'Прочий приход',           dir: 'in',  color: '#a3a3a3', group: 'Прочее' },
+    // Expenses
+    { id: 'a_partner_out', name: 'Выплата комиссии партнёру',  dir: 'out', color: '#8b5cf6', group: 'Партнёры' },
+    { id: 'a_inkass',      name: 'Инкассация в банк',           dir: 'out', color: '#0284c7', group: 'Финансы' },
+    { id: 'a_refund',      name: 'Возврат клиенту',             dir: 'out', color: '#ef4444', group: 'Основная деятельность' },
+    { id: 'a_salary',      name: 'Зарплата сотрудникам',        dir: 'out', color: '#dc2626', group: 'Персонал' },
+    { id: 'a_rent',        name: 'Аренда помещений',            dir: 'out', color: '#f97316', group: 'Накладные расходы' },
+    { id: 'a_utility',     name: 'Коммунальные услуги',         dir: 'out', color: '#fb923c', group: 'Накладные расходы' },
+    { id: 'a_marketing',   name: 'Реклама и маркетинг',         dir: 'out', color: '#ec4899', group: 'Накладные расходы' },
+    { id: 'a_taxes',       name: 'Налоги и взносы',             dir: 'out', color: '#7c2d12', group: 'Налоги' },
+    { id: 'a_office',      name: 'Канцелярия и хоз. расходы',   dir: 'out', color: '#a16207', group: 'Накладные расходы' },
+    { id: 'a_software',    name: 'Программы и сервисы',         dir: 'out', color: '#0d9488', group: 'IT' },
+    { id: 'a_other_out',   name: 'Прочий расход',               dir: 'out', color: '#737373', group: 'Прочее' }
+  ];
+
+  // ===== Generate demo operations =====
+  function seedOps() {
+    const now = new Date();
+    const ops = [];
+    let counter = 1000;
+    function add(daysAgo, articleId, cashId, amount, party, note) {
+      const d = new Date(now); d.setDate(d.getDate() - daysAgo);
+      const art = SEED_ARTICLES.find(a => a.id === articleId);
+      ops.push({
+        id: 'op_' + (Date.now() + counter),
+        num: 'PD-' + String(counter++),
+        date: d.toISOString(),
+        articleId, articleName: art.name, dir: art.dir,
+        cashId, amount, party, note
+      });
+    }
+    // This month
+    add(1,  'a_pmt_client', 'c_main',     12400, 'Магомедов А. С.', 'Платёж #143 · 5/12');
+    add(1,  'a_pmt_client', 'c_main',     10500, 'Хасиев А. Х.',     'Платёж #144 · 4/4 финал');
+    add(2,  'a_pmt_client', 'c_argun',    9700,  'Абдулаева З. М.',  'Платёж #139 · 4/6');
+    add(2,  'a_dp_client',  'c_main',     21000, 'Усманов М. И.',    'Первоначальный взнос #147');
+    add(3,  'a_partner_out','c_main',     42000, 'ТехноМир — Грозный','Комиссии за апрель');
+    add(4,  'a_pmt_client', 'c_gudermes', 6200,  'Иналов И. У.',     'Платёж #135 · 7/12');
+    add(5,  'a_inkass',     'c_main',     150000,'Сбербанк',         'Инкассация в банк');
+    add(7,  'a_pmt_client', 'c_argun',    8700,  'Вагапов А. Р.',    'Платёж #138 · 6/6 финал');
+    add(8,  'a_rent',       'c_main',     85000, 'ИП Алханов',       'Аренда офиса за апрель');
+    add(10, 'a_salary',     'c_main',     245000,'Сотрудники',       'Аванс по зарплате');
+    add(12, 'a_partner_out','c_argun',    28500, 'ДигиМаркет',        'Комиссии партнёра');
+    add(14, 'a_marketing',  'c_main',     45000, 'Yandex Реклама',   'РК апрель');
+    add(15, 'a_dp_client',  'c_main',     14500, 'Тазуев Р. С.',     'Первоначальный взнос #142');
+    add(18, 'a_utility',    'c_main',     12400, 'УК «Дом»',         'Коммунальные за март');
+    add(20, 'a_software',   'c_main',     9900,  'Битрикс24',        'Подписка');
+    add(22, 'a_pmt_client', 'c_argun',    11400, 'Магомадов Р. С.',  'Платёж #131 · 5/9');
+    add(25, 'a_taxes',      'c_main',     180000,'ФНС',              'УСН за 1 квартал');
+    add(28, 'a_refill',     'c_argun',    100000,'Сбербанк',         'Подкрепление кассы');
+    add(30, 'a_office',     'c_argun',    8400,  'Метро',            'Канцтовары');
+    // Last month
+    add(40, 'a_partner_out','c_main',     58000, 'ТехноМир — Грозный','Комиссии март');
+    add(45, 'a_rent',       'c_main',     85000, 'ИП Алханов',       'Аренда март');
+    add(48, 'a_salary',     'c_main',     230000,'Сотрудники',       'Зарплата март');
+    add(50, 'a_pmt_client', 'c_main',     14200, 'Гайтаев И. М.',    'Платёж #145 · 2/6');
+    add(55, 'a_inkass',     'c_argun',    120000,'Сбербанк',         'Инкассация март');
+    return ops.sort((a, b) => new Date(b.date) - new Date(a.date));
+  }
+
+  function loadOrSeed(key, defaults) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const obj = JSON.parse(raw);
+        if (Array.isArray(obj) ? obj.length : Object.keys(obj).length) return obj;
+      }
+    } catch (_) {}
+    localStorage.setItem(key, JSON.stringify(defaults));
+    return JSON.parse(JSON.stringify(defaults));
+  }
+
+  let cashes   = loadOrSeed(KEY_CASH, SEED_CASHES);
+  let articles = loadOrSeed(KEY_ART,  SEED_ARTICLES);
+  let ops      = (() => {
+    try {
+      const raw = localStorage.getItem(KEY_OPS);
+      if (raw) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr) && arr.length) return arr;
+      }
+    } catch (_) {}
+    const seeded = seedOps();
+    localStorage.setItem(KEY_OPS, JSON.stringify(seeded));
+    return seeded;
+  })();
+
+  function saveAll() {
+    localStorage.setItem(KEY_CASH, JSON.stringify(cashes));
+    localStorage.setItem(KEY_ART,  JSON.stringify(articles));
+    localStorage.setItem(KEY_OPS,  JSON.stringify(ops));
+  }
+
+  // ============================================================
+  //  TABS
+  // ============================================================
+  document.querySelectorAll('.ka-tab').forEach(t => t.addEventListener('click', () => {
+    document.querySelectorAll('.ka-tab').forEach(x => x.classList.toggle('active', x === t));
+    document.querySelectorAll('.ka-pane').forEach(p => p.classList.toggle('active', p.dataset.pane === t.dataset.tab));
+    if (t.dataset.tab === 'dds') renderDds();
+  }));
+
+  // ============================================================
+  //  STATS
+  // ============================================================
+  function refreshKpis() {
+    const active = cashes.filter(c => c.status !== 'archived');
+    document.getElementById('kpi-cashes').textContent = active.length;
+    document.getElementById('kpi-cashes-sub').textContent = `${cashes.length - active.length} архив, ${active.length} активно`;
+    const totalBal = cashes.reduce((s, c) => s + (c.balance || 0), 0);
+    document.getElementById('kpi-balance').textContent = '₽ ' + fmt(totalBal);
+
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthOps = ops.filter(o => new Date(o.date) >= monthStart);
+    const inSum  = monthOps.filter(o => o.dir === 'in').reduce((s, o) => s + o.amount, 0);
+    const outSum = monthOps.filter(o => o.dir === 'out').reduce((s, o) => s + o.amount, 0);
+    document.getElementById('kpi-in').textContent = '₽ ' + fmt(inSum);
+    document.getElementById('kpi-out').textContent = '₽ ' + fmt(outSum);
+    document.getElementById('kpi-in-sub').textContent = `${monthOps.filter(o => o.dir === 'in').length} проводок`;
+    document.getElementById('kpi-out-sub').textContent = `${monthOps.filter(o => o.dir === 'out').length} проводок`;
+
+    document.getElementById('cnt-cashes').textContent = cashes.length;
+    document.getElementById('cnt-ops').textContent = ops.length;
+    document.getElementById('cnt-articles').textContent = articles.length;
+  }
+
+  // ============================================================
+  //  CASHES
+  // ============================================================
+  const CASH_ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><circle cx="12" cy="15" r="2"/></svg>';
+
+  function renderCashes() {
+    const host = document.getElementById('cash-grid');
+    if (!cashes.length) {
+      host.innerHTML = '<div class="empty-state"><div class="ico">💼</div><div>Нет касс. Создайте первую.</div></div>';
+      return;
+    }
+    host.innerHTML = cashes.map(c => `
+      <div class="cash-card ${c.status === 'archived' ? 'archived' : ''}" data-id="${c.id}">
+        <div class="cash-head">
+          <div class="cash-icon">${CASH_ICON}</div>
+          <div style="flex: 1; min-width: 0;">
+            <div class="cash-name">${c.name}</div>
+            <div class="cash-meta">${c.address}<br/>${c.kkt} · ФН ${c.fn}<br/>Ответственный: ${c.responsible}</div>
+            <div class="cash-tags">
+              ${c.status === 'archived' ? '<span class="badge gray">Архив</span>' : '<span class="badge success dot">Активна</span>'}
+            </div>
+          </div>
+        </div>
+        <div class="cash-balance">
+          <div class="l">Остаток в кассе</div>
+          <div class="v">${fmt(c.balance)} ₽</div>
+        </div>
+      </div>
+    `).join('');
+    host.querySelectorAll('.cash-card').forEach(card => {
+      card.addEventListener('click', () => openCashEdit(card.dataset.id));
+    });
+  }
+
+  function openCashEdit(id) {
+    const isNew = !id;
+    const c = isNew ? { id: 'c_' + Date.now(), name: '', address: '', kkt: '', fn: '', responsible: '', balance: 0, status: 'active' } : cashes.find(x => x.id === id);
+    if (!c) return;
+    const m = openModal({
+      title: isNew ? 'Новая касса' : 'Касса',
+      body: `
+        <div class="km-row">
+          <label>Название кассы *</label>
+          <input class="input" id="c-name" value="${c.name || ''}" placeholder="Касса · Грозный (центр)" />
+        </div>
+        <div class="km-row">
+          <label>Адрес</label>
+          <input class="input" id="c-addr" value="${c.address || ''}" placeholder="Грозный, пр. Путина, 18" />
+        </div>
+        <div class="km-grid">
+          <div class="km-row">
+            <label>Модель ККТ</label>
+            <input class="input" id="c-kkt" value="${c.kkt || ''}" placeholder="Атол 30Ф" />
+          </div>
+          <div class="km-row">
+            <label>Номер ФН</label>
+            <input class="input" id="c-fn" value="${c.fn || ''}" placeholder="00109876541234" />
+          </div>
+        </div>
+        <div class="km-row">
+          <label>Ответственный кассир</label>
+          <input class="input" id="c-resp" value="${c.responsible || ''}" placeholder="ФИО" />
+        </div>
+        <div class="km-grid">
+          <div class="km-row">
+            <label>Остаток на ${isoDate(today())} *</label>
+            <input class="input" id="c-bal" value="${c.balance || 0}" />
+          </div>
+          <div class="km-row">
+            <label>Статус</label>
+            <select class="select" id="c-st">
+              <option value="active"${c.status === 'active' ? ' selected' : ''}>Активна</option>
+              <option value="archived"${c.status === 'archived' ? ' selected' : ''}>Архив</option>
+            </select>
+          </div>
+        </div>
+      `,
+      footer: `
+        ${!isNew ? '<button class="btn danger" data-act="del" style="margin-right: auto;">Удалить</button>' : ''}
+        <button class="btn" data-act="cancel">Отмена</button>
+        <button class="btn primary" data-act="save">${isNew ? 'Создать' : 'Сохранить'}</button>
+      `
+    });
+    m.modal.querySelector('[data-act="cancel"]').onclick = m.close;
+    m.modal.querySelector('[data-act="save"]').onclick = () => {
+      const name = m.modal.querySelector('#c-name').value.trim();
+      if (!name) { PaydApp.toast('Укажите название', 'warning'); return; }
+      const updated = {
+        ...c,
+        name,
+        address: m.modal.querySelector('#c-addr').value.trim(),
+        kkt: m.modal.querySelector('#c-kkt').value.trim(),
+        fn: m.modal.querySelector('#c-fn').value.trim(),
+        responsible: m.modal.querySelector('#c-resp').value.trim(),
+        balance: parse(m.modal.querySelector('#c-bal').value),
+        status: m.modal.querySelector('#c-st').value
+      };
+      if (isNew) cashes.push(updated);
+      else { const i = cashes.findIndex(x => x.id === c.id); cashes[i] = updated; }
+      saveAll(); refreshAll(); m.close();
+      PaydApp.toast(isNew ? 'Касса создана' : 'Касса сохранена', { type: 'success', subtitle: name });
+    };
+    if (!isNew) m.modal.querySelector('[data-act="del"]').onclick = () => {
+      if (!confirm(`Удалить кассу «${c.name}»? Все её проводки сохранятся.`)) return;
+      cashes = cashes.filter(x => x.id !== c.id);
+      saveAll(); refreshAll(); m.close();
+      PaydApp.toast('Касса удалена', 'success');
+    };
+  }
+
+  document.getElementById('btn-new-cash').addEventListener('click', () => openCashEdit(null));
+
+  // ============================================================
+  //  OPERATIONS
+  // ============================================================
+  function articleById(id) { return articles.find(a => a.id === id); }
+  function cashById(id)    { return cashes.find(c => c.id === id); }
+
+  function fillFilters() {
+    const cs = document.getElementById('op-fcash');
+    cs.innerHTML = '<option value="">Все кассы</option>' + cashes.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    const as = document.getElementById('op-farticle');
+    as.innerHTML = '<option value="">Все статьи</option>' + articles.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+  }
+
+  function filteredOps() {
+    const q = document.getElementById('op-search').value.toLowerCase();
+    const fcash = document.getElementById('op-fcash').value;
+    const fdir = document.getElementById('op-fdir').value;
+    const fart = document.getElementById('op-farticle').value;
+    const fper = document.getElementById('op-fperiod').value;
+    const now = new Date();
+    return ops.filter(o => {
+      if (fcash && o.cashId !== fcash) return false;
+      if (fdir && o.dir !== fdir) return false;
+      if (fart && o.articleId !== fart) return false;
+      if (q) {
+        const hay = (o.party + ' ' + o.note + ' ' + o.num + ' ' + o.articleName).toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      if (fper !== 'all') {
+        const d = new Date(o.date);
+        if (fper === 'today') {
+          if (d.toDateString() !== now.toDateString()) return false;
+        } else if (fper === 'week') {
+          const wkAgo = new Date(now); wkAgo.setDate(wkAgo.getDate() - 7);
+          if (d < wkAgo) return false;
+        } else if (fper === 'month') {
+          if (d.getMonth() !== now.getMonth() || d.getFullYear() !== now.getFullYear()) return false;
+        } else if (fper === 'prev') {
+          const pm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          if (d.getMonth() !== pm.getMonth() || d.getFullYear() !== pm.getFullYear()) return false;
+        }
+      }
+      return true;
+    });
+  }
+
+  function renderOps() {
+    const list = filteredOps();
+    const tbody = document.getElementById('ops-body');
+    const empty = document.getElementById('ops-empty');
+    if (!list.length) {
+      tbody.innerHTML = '';
+      empty.innerHTML = '<div class="empty-state"><div class="ico">📋</div><div>Нет проводок по выбранным фильтрам</div></div>';
+      return;
+    }
+    empty.innerHTML = '';
+    tbody.innerHTML = list.map(o => {
+      const art = articleById(o.articleId);
+      const cash = cashById(o.cashId);
+      const d = new Date(o.date);
+      const dStr = `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+      const tStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      return `
+        <tr data-id="${o.id}">
+          <td class="num">${o.num}</td>
+          <td><div style="font-weight: 600;">${dStr}</div><div style="font-size: 11px; color: var(--text-3);">${tStr}</div></td>
+          <td>${o.dir === 'in' ? '<span class="badge success">Приход</span>' : '<span class="badge danger">Расход</span>'}</td>
+          <td><span class="article-cell"><span class="dot" style="background: ${art?.color || '#999'};"></span>${o.articleName}</span></td>
+          <td><div style="font-weight: 600;">${o.party}</div><div style="font-size: 11px; color: var(--text-3);">${o.note || ''}</div></td>
+          <td style="font-size: 12px; color: var(--text-2);">${cash?.name || '—'}</td>
+          <td class="amt ${o.dir}">${o.dir === 'in' ? '+' : '−'} ${fmt(o.amount)} ₽</td>
+        </tr>
+      `;
+    }).join('');
+    tbody.querySelectorAll('tr').forEach(tr => {
+      tr.addEventListener('click', () => openOpEdit(tr.dataset.id));
+    });
+  }
+
+  function openOpEdit(id) {
+    const isNew = !id;
+    const o = isNew
+      ? { id: 'op_' + Date.now(), num: 'PD-' + (1000 + ops.length + 1), date: new Date().toISOString(), articleId: '', cashId: cashes[0]?.id, amount: 0, party: '', note: '', dir: 'in' }
+      : ops.find(x => x.id === id);
+    if (!o) return;
+    const dt = new Date(o.date);
+    const dtStr = dt.toISOString().slice(0, 16);
+    const articlesIn  = articles.filter(a => a.dir === 'in');
+    const articlesOut = articles.filter(a => a.dir === 'out');
+    const m = openModal({
+      title: isNew ? 'Новая проводка' : 'Проводка ' + o.num,
+      body: `
+        <div class="dir-pills" id="op-dir">
+          <div class="dir-pill ${o.dir === 'in' ? 'active in' : ''}" data-dir="in">+ Приход</div>
+          <div class="dir-pill ${o.dir === 'out' ? 'active out' : ''}" data-dir="out">− Расход</div>
+        </div>
+        <div class="km-row">
+          <label>Сумма *</label>
+          <input class="input" id="o-amt" value="${o.amount || ''}" placeholder="0" />
+        </div>
+        <div class="km-row">
+          <label>Статья *</label>
+          <select class="select" id="o-art">
+            ${(o.dir === 'in' ? articlesIn : articlesOut).map(a => `<option value="${a.id}"${a.id === o.articleId ? ' selected' : ''}>${a.name}</option>`).join('')}
+          </select>
+        </div>
+        <div class="km-grid">
+          <div class="km-row">
+            <label>Касса *</label>
+            <select class="select" id="o-cash">
+              ${cashes.filter(c => c.status !== 'archived').map(c => `<option value="${c.id}"${c.id === o.cashId ? ' selected' : ''}>${c.name}</option>`).join('')}
+            </select>
+          </div>
+          <div class="km-row">
+            <label>Дата и время</label>
+            <input class="input" id="o-date" type="datetime-local" value="${dtStr}" />
+          </div>
+        </div>
+        <div class="km-row">
+          <label id="o-party-label">Контрагент / Основание *</label>
+          <div class="cbo${o.party ? ' has-value' : ''}" id="o-party-cbo">
+            <div class="cbo-input">
+              <input id="o-party" value="${(o.party || '').replace(/"/g, '&quot;')}" placeholder="Начните вводить ФИО или название…" autocomplete="off" />
+              <button type="button" class="clear" tabindex="-1"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div class="cbo-list"></div>
+          </div>
+          <div style="font-size: 11px; color: var(--text-3); margin-top: 4px;" id="o-party-hint"></div>
+        </div>
+        <div class="km-row">
+          <label>Комментарий</label>
+          <textarea id="o-note">${o.note || ''}</textarea>
+        </div>
+      `,
+      footer: `
+        ${!isNew ? '<button class="btn danger" data-act="del" style="margin-right: auto;">Удалить</button>' : ''}
+        <button class="btn" data-act="cancel">Отмена</button>
+        <button class="btn primary" data-act="save">${isNew ? 'Провести' : 'Сохранить'}</button>
+      `
+    });
+    // Wire dir pills
+    let curDir = o.dir;
+    function updatePartyMode() {
+      const lbl = m.modal.querySelector('#o-party-label');
+      const hint = m.modal.querySelector('#o-party-hint');
+      if (curDir === 'in') {
+        lbl.textContent = 'Клиент *';
+        hint.textContent = 'Поиск по ФИО или телефону. Можно ввести вручную, если клиента нет в списке.';
+      } else {
+        lbl.textContent = 'Партнёр / Получатель *';
+        hint.textContent = 'Поиск по партнёрам. Для других расходов (зарплата, аренда…) можно ввести вручную.';
+      }
+    }
+    m.modal.querySelectorAll('#op-dir .dir-pill').forEach(p => p.addEventListener('click', () => {
+      curDir = p.dataset.dir;
+      m.modal.querySelectorAll('#op-dir .dir-pill').forEach(x => x.classList.remove('active', 'in', 'out'));
+      p.classList.add('active', curDir);
+      const sel = m.modal.querySelector('#o-art');
+      const arts = curDir === 'in' ? articlesIn : articlesOut;
+      sel.innerHTML = arts.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+      updatePartyMode();
+    }));
+    updatePartyMode();
+
+    // Combobox for contractor (clients on Приход / partners on Расход)
+    const partyWrap = m.modal.querySelector('#o-party-cbo');
+    const partyInput = m.modal.querySelector('#o-party');
+    const partyList = partyWrap.querySelector('.cbo-list');
+    setupCombo({
+      wrap: partyWrap, input: partyInput, list: partyList,
+      source: () => curDir === 'in' ? loadClients() : loadPartners(),
+      allowFree: true
+    });
+
+    m.modal.querySelector('[data-act="cancel"]').onclick = m.close;
+    m.modal.querySelector('[data-act="save"]').onclick = () => {
+      const amount = parse(m.modal.querySelector('#o-amt').value);
+      const articleId = m.modal.querySelector('#o-art').value;
+      const cashId = m.modal.querySelector('#o-cash').value;
+      const party = m.modal.querySelector('#o-party').value.trim();
+      const dateStr = m.modal.querySelector('#o-date').value;
+      if (!amount) { PaydApp.toast('Введите сумму', 'warning'); return; }
+      if (!articleId) { PaydApp.toast('Выберите статью', 'warning'); return; }
+      if (!party) { PaydApp.toast('Укажите контрагента', 'warning'); return; }
+
+      const art = articleById(articleId);
+      const updated = {
+        ...o,
+        dir: curDir,
+        amount,
+        articleId, articleName: art.name,
+        cashId, party,
+        date: dateStr ? new Date(dateStr).toISOString() : o.date,
+        note: m.modal.querySelector('#o-note').value.trim()
+      };
+
+      // Update cash balance: revert old, apply new
+      if (!isNew) {
+        const cashOld = cashById(o.cashId);
+        if (cashOld) cashOld.balance += (o.dir === 'in' ? -o.amount : o.amount);
+      }
+      const cashNew = cashById(cashId);
+      if (cashNew) {
+        // For income side cashes can also receive; for expense, deduct
+        // Simplistic: in -> +, out -> - (regardless of cash type, this matches "money in/out of this cash")
+        cashNew.balance += (curDir === 'in' ? amount : -amount);
+      }
+
+      if (isNew) ops.unshift(updated);
+      else { const i = ops.findIndex(x => x.id === o.id); ops[i] = updated; }
+      ops.sort((a, b) => new Date(b.date) - new Date(a.date));
+      saveAll(); refreshAll(); m.close();
+      PaydApp.toast(isNew ? `Проводка ${updated.num} создана` : 'Проводка обновлена', { type: 'success', subtitle: `${art.name} · ${fmt(amount)} ₽` });
+    };
+    if (!isNew) m.modal.querySelector('[data-act="del"]').onclick = () => {
+      if (!confirm(`Удалить проводку ${o.num}? Остаток кассы будет скорректирован.`)) return;
+      const cash = cashById(o.cashId);
+      if (cash) cash.balance += (o.dir === 'in' ? -o.amount : o.amount);
+      ops = ops.filter(x => x.id !== o.id);
+      saveAll(); refreshAll(); m.close();
+      PaydApp.toast('Проводка удалена', 'success');
+    };
+  }
+
+  ['op-search', 'op-fcash', 'op-fdir', 'op-farticle', 'op-fperiod'].forEach(id => {
+    document.getElementById(id).addEventListener('input', renderOps);
+    document.getElementById(id).addEventListener('change', renderOps);
+  });
+
+  document.getElementById('btn-new-op').addEventListener('click', () => openOpEdit(null));
+  document.getElementById('btn-new-op-2').addEventListener('click', () => openOpEdit(null));
+
+  document.getElementById('btn-export-ops').addEventListener('click', () => {
+    const list = filteredOps();
+    const csv = ['№;Дата;Тип;Статья;Контрагент;Касса;Сумма'];
+    list.forEach(o => {
+      const d = new Date(o.date).toLocaleString('ru-RU');
+      csv.push(`${o.num};${d};${o.dir === 'in' ? 'Приход' : 'Расход'};${o.articleName};${o.party};${cashById(o.cashId)?.name || ''};${o.amount}`);
+    });
+    const blob = new Blob(['﻿' + csv.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `Проводки ${isoDate(today())}.csv`;
+    a.click();
+    PaydApp.toast(`Экспортировано: ${list.length} проводок`, 'success');
+  });
+
+  // ============================================================
+  //  ARTICLES
+  // ============================================================
+  function renderArticles() {
+    const host = document.getElementById('articles-host');
+    const groups = { 'Приход': articles.filter(a => a.dir === 'in'), 'Расход': articles.filter(a => a.dir === 'out') };
+    let html = '';
+    for (const [label, list] of Object.entries(groups)) {
+      const sum = ops.filter(o => list.some(a => a.id === o.articleId)).reduce((s, o) => s + o.amount, 0);
+      html += `
+        <div class="art-group">
+          <div class="art-group-head">
+            <div><h3>${label} <span class="badge ${label === 'Приход' ? 'success' : 'danger'}">${list.length}</span></h3><div class="h-sub">Всего по статьям: ${fmt(sum)} ₽</div></div>
+          </div>
+          <div class="art-list">
+            ${list.map(a => {
+              const arOps = ops.filter(o => o.articleId === a.id);
+              const arSum = arOps.reduce((s, o) => s + o.amount, 0);
+              return `
+                <div class="art-row" data-id="${a.id}">
+                  <span class="dot" style="background: ${a.color};"></span>
+                  <div class="name">${a.name}<div style="font-size: 11px; color: var(--text-3); font-weight: 500; margin-top: 2px;">${a.group}</div></div>
+                  <div class="stat"><b style="color: var(--text); font-weight: 700; font-size: 13px;">${fmt(arSum)} ₽</b><br/>${arOps.length} проводок</div>
+                  <div class="actions">
+                    <button class="btn" data-act="edit">Изменить</button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }
+    host.innerHTML = html;
+    host.querySelectorAll('.art-row [data-act="edit"]').forEach(b => {
+      b.addEventListener('click', e => {
+        e.stopPropagation();
+        openArticleEdit(b.closest('.art-row').dataset.id);
+      });
+    });
+  }
+
+  function openArticleEdit(id) {
+    const isNew = !id;
+    const a = isNew ? { id: 'a_' + Date.now(), name: '', dir: 'in', color: '#10b981', group: 'Прочее' } : articles.find(x => x.id === id);
+    if (!a) return;
+    const m = openModal({
+      title: isNew ? 'Новая статья' : 'Статья',
+      body: `
+        <div class="dir-pills">
+          <div class="dir-pill ${a.dir === 'in' ? 'active in' : ''}" data-dir="in">+ Приход</div>
+          <div class="dir-pill ${a.dir === 'out' ? 'active out' : ''}" data-dir="out">− Расход</div>
+        </div>
+        <div class="km-row">
+          <label>Название статьи *</label>
+          <input class="input" id="a-name" value="${a.name || ''}" placeholder="Например: Реклама и маркетинг" />
+        </div>
+        <div class="km-row">
+          <label>Группа</label>
+          <input class="input" id="a-group" value="${a.group || ''}" placeholder="Накладные расходы / Партнёры / ..." />
+        </div>
+        <div class="km-row">
+          <label>Цвет в отчётах</label>
+          <input class="input" id="a-color" type="color" value="${a.color}" style="height: 42px; padding: 4px;" />
+        </div>
+      `,
+      footer: `
+        ${!isNew ? '<button class="btn danger" data-act="del" style="margin-right: auto;">Удалить</button>' : ''}
+        <button class="btn" data-act="cancel">Отмена</button>
+        <button class="btn primary" data-act="save">${isNew ? 'Создать' : 'Сохранить'}</button>
+      `
+    });
+    let curDir = a.dir;
+    m.modal.querySelectorAll('.dir-pill').forEach(p => p.addEventListener('click', () => {
+      curDir = p.dataset.dir;
+      m.modal.querySelectorAll('.dir-pill').forEach(x => x.classList.remove('active', 'in', 'out'));
+      p.classList.add('active', curDir);
+    }));
+    m.modal.querySelector('[data-act="cancel"]').onclick = m.close;
+    m.modal.querySelector('[data-act="save"]').onclick = () => {
+      const name = m.modal.querySelector('#a-name').value.trim();
+      if (!name) { PaydApp.toast('Введите название', 'warning'); return; }
+      const updated = { ...a, name, dir: curDir, group: m.modal.querySelector('#a-group').value.trim() || 'Прочее', color: m.modal.querySelector('#a-color').value };
+      if (isNew) articles.push(updated);
+      else { const i = articles.findIndex(x => x.id === a.id); articles[i] = updated; }
+      saveAll(); refreshAll(); m.close();
+      PaydApp.toast(isNew ? 'Статья создана' : 'Статья сохранена', { type: 'success', subtitle: name });
+    };
+    if (!isNew) m.modal.querySelector('[data-act="del"]').onclick = () => {
+      const used = ops.filter(o => o.articleId === a.id).length;
+      if (used && !confirm(`Эта статья используется в ${used} проводках. Удалить всё равно?`)) return;
+      articles = articles.filter(x => x.id !== a.id);
+      saveAll(); refreshAll(); m.close();
+      PaydApp.toast('Статья удалена', 'success');
+    };
+  }
+
+  document.getElementById('btn-new-article').addEventListener('click', () => openArticleEdit(null));
+
+  // ============================================================
+  //  DDS PIVOT
+  // ============================================================
+  function renderDds() {
+    const months = parseInt(document.getElementById('dds-window').value, 10) || 6;
+    const now = new Date();
+    const monthList = [];
+    for (let i = months - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      monthList.push({ y: d.getFullYear(), m: d.getMonth(), label: d.toLocaleDateString('ru-RU', { month: 'short', year: '2-digit' }) });
+    }
+    const inOps  = ops.filter(o => o.dir === 'in');
+    const outOps = ops.filter(o => o.dir === 'out');
+
+    function rowsFor(arts, source) {
+      return arts.map(a => {
+        const cells = monthList.map(({ y, m }) => {
+          const sum = source.filter(o => o.articleId === a.id).filter(o => {
+            const d = new Date(o.date); return d.getFullYear() === y && d.getMonth() === m;
+          }).reduce((s, o) => s + o.amount, 0);
+          return sum;
+        });
+        return { article: a, cells, total: cells.reduce((s, x) => s + x, 0) };
+      }).filter(r => r.total > 0);
+    }
+
+    const inRows  = rowsFor(articles.filter(a => a.dir === 'in'),  inOps);
+    const outRows = rowsFor(articles.filter(a => a.dir === 'out'), outOps);
+
+    const inTotalsByMonth  = monthList.map((_, i) => inRows.reduce((s, r) => s + r.cells[i], 0));
+    const outTotalsByMonth = monthList.map((_, i) => outRows.reduce((s, r) => s + r.cells[i], 0));
+    const inGrand  = inTotalsByMonth.reduce((s, x) => s + x, 0);
+    const outGrand = outTotalsByMonth.reduce((s, x) => s + x, 0);
+
+    document.getElementById('dds-in').textContent  = '+' + fmt(inGrand) + ' ₽';
+    document.getElementById('dds-out').textContent = '−' + fmt(outGrand) + ' ₽';
+    const net = inGrand - outGrand;
+    const netEl = document.getElementById('dds-net');
+    netEl.textContent = (net >= 0 ? '+' : '−') + fmt(Math.abs(net)) + ' ₽';
+    netEl.style.color = net >= 0 ? 'var(--success)' : 'var(--danger)';
+    document.getElementById('dds-period').textContent = monthList[0].label + ' — ' + monthList[monthList.length - 1].label;
+
+    const headHtml = '<thead><tr><th>Статья</th>' + monthList.map(x => `<th>${x.label}</th>`).join('') + '<th>Итого</th></tr></thead>';
+    function tb(label, rows, totals) {
+      let body = `<tr class="group-row"><td>${label}</td>` + totals.map(x => `<td>${x ? fmt(x) + ' ₽' : '—'}</td>`).join('') + `<td>${fmt(totals.reduce((s, x) => s + x, 0))} ₽</td></tr>`;
+      rows.forEach(r => {
+        body += `<tr><td><span class="article-cell"><span class="dot" style="background:${r.article.color};"></span>${r.article.name}</span></td>`;
+        r.cells.forEach(c => body += `<td>${c ? fmt(c) + ' ₽' : '—'}</td>`);
+        body += `<td><b>${fmt(r.total)} ₽</b></td></tr>`;
+      });
+      return body;
+    }
+    let rows = '<tbody>';
+    rows += tb('ПОСТУПЛЕНИЯ', inRows, inTotalsByMonth);
+    rows += tb('ВЫБЫТИЯ', outRows, outTotalsByMonth);
+    rows += `<tr class="total-row"><td>Чистый поток</td>` + monthList.map((_, i) => {
+      const v = inTotalsByMonth[i] - outTotalsByMonth[i];
+      return `<td style="color: ${v >= 0 ? 'var(--success)' : 'var(--danger)'};">${(v >= 0 ? '+' : '−') + fmt(Math.abs(v))} ₽</td>`;
+    }).join('') + `<td style="color: ${net >= 0 ? 'var(--success)' : 'var(--danger)'};">${(net >= 0 ? '+' : '−') + fmt(Math.abs(net))} ₽</td></tr>`;
+    rows += '</tbody>';
+    document.getElementById('dds-tbl').innerHTML = headHtml + rows;
+  }
+  document.getElementById('dds-window').addEventListener('change', renderDds);
+
+  // ============================================================
+  //  CONTACT SOURCES (clients / partners)
+  // ============================================================
+  // Clients — extract from APPLICATIONS in data.js, plus from calc-created apps
+  function loadClients() {
+    const set = new Map();
+    // Calc-created applications
+    try {
+      const apps = JSON.parse(localStorage.getItem('payd.calc.applications') || '[]');
+      apps.forEach(a => {
+        if (a.client?.name) set.set(a.client.name, { name: a.client.name, phone: a.client.phone || '', meta: 'Заявка №' + a.number });
+      });
+    } catch (_) {}
+    // Hardcoded demo clients (mirrors common journal entries)
+    const seed = [
+      { name: 'Тазуев Р. С.',        phone: '+7 928 891-23-45', meta: 'Заявка #147 · iPhone 16 Pro' },
+      { name: 'Эльмурзаева П. А.',   phone: '+7 963 712-44-89', meta: 'Заявка #146 · MacBook Air' },
+      { name: 'Гайтаев И. М.',       phone: '+7 938 022-87-13', meta: 'Заявка #145 · iPhone 15 Plus' },
+      { name: 'Хасиев А. Х.',        phone: '+7 928 449-12-08', meta: 'Заявка #144 · Apple Watch' },
+      { name: 'Магомедов А. С.',     phone: '+7 989 156-22-44', meta: 'Заявка #143 · Airpods 4 ANC · Белый' },
+      { name: 'Даурбекова Л. С.',    phone: '+7 989 918-51-58', meta: 'Заявка #142 · Airpods 4 CASE' },
+      { name: 'Усманов М. И.',       phone: '+7 928 778-04-12', meta: 'Заявка #141 · Samsung QLED' },
+      { name: 'Исраилов Я. А.',      phone: '+7 963 311-45-78', meta: 'Заявка #140 · Samsung Galaxy S25' },
+      { name: 'Абдулаева З. М.',     phone: '+7 928 005-67-21', meta: 'Заявка #139 · Lenovo IdeaPad' },
+      { name: 'Вагапов А. Р.',       phone: '+7 989 220-11-09', meta: 'Заявка #138 · PS5 Slim' },
+      { name: 'Магомадов Р. С.',     phone: '+7 989 156-22-44', meta: 'Заявка #131 · 5/9 платёж' },
+      { name: 'Иналов И. У.',        phone: '+7 928 005-67-22', meta: 'Заявка #135 · 7/12 платёж' },
+      { name: 'Тазуев М. Я.',        phone: '+7 928 778-04-13', meta: 'Заявка #129 · 4 500 ₽' },
+      { name: 'Курбанов М. М.',      phone: '+7 989 124-55-67', meta: 'Заявка #134' }
+    ];
+    seed.forEach(c => { if (!set.has(c.name)) set.set(c.name, c); });
+    return [...set.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  // Partners — from partner storage
+  function loadPartners() {
+    try {
+      const all = JSON.parse(localStorage.getItem('payd.partners.v1') || '{}');
+      return Object.values(all).map(p => ({
+        name: p.name,
+        phone: p.phone || '',
+        meta: [p.address, p.legal].filter(Boolean).join(' · ') || 'Партнёр'
+      })).sort((a, b) => a.name.localeCompare(b.name));
+    } catch (_) { return []; }
+  }
+
+  // Generic combobox: bind to a wrapper + input + list elements
+  function setupCombo({ wrap, input, list, source, allowFree = true, onPick }) {
+    let hover = -1;
+    let open = false;
+
+    function escape(s) { return s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]); }
+    function highlight(text, q) {
+      if (!q) return escape(text);
+      const i = text.toLowerCase().indexOf(q.toLowerCase());
+      if (i < 0) return escape(text);
+      return escape(text.slice(0, i)) + '<mark>' + escape(text.slice(i, i + q.length)) + '</mark>' + escape(text.slice(i + q.length));
+    }
+
+    function render() {
+      const q = input.value.trim().toLowerCase();
+      const items = (typeof source === 'function' ? source() : source);
+      const filtered = !q ? items.slice(0, 50) : items.filter(x =>
+        x.name.toLowerCase().includes(q) || (x.meta || '').toLowerCase().includes(q) || (x.phone || '').includes(q)
+      ).slice(0, 50);
+      if (!filtered.length) {
+        list.innerHTML = `<div class="cbo-empty">Ничего не найдено${allowFree ? ' · можно ввести вручную' : ''}</div>` +
+          (allowFree && q ? `<div class="cbo-create" data-create="1">+ Использовать «${escape(q)}»</div>` : '');
+      } else {
+        list.innerHTML = filtered.map((x, i) => `
+          <div class="cbo-opt ${i === hover ? 'hover' : ''}" data-name="${escape(x.name)}">
+            <div class="name">${highlight(x.name, input.value.trim())}</div>
+            <div class="meta">${x.phone ? '<b>' + escape(x.phone) + '</b> · ' : ''}${escape(x.meta || '')}</div>
+          </div>
+        `).join('');
+      }
+      list.querySelectorAll('.cbo-opt').forEach(opt => {
+        opt.addEventListener('mousedown', e => {
+          e.preventDefault();
+          input.value = opt.dataset.name;
+          wrap.classList.add('has-value');
+          wrap.classList.remove('open');
+          open = false;
+          onPick?.(opt.dataset.name);
+        });
+      });
+      list.querySelectorAll('[data-create="1"]').forEach(opt => {
+        opt.addEventListener('mousedown', e => {
+          e.preventDefault();
+          wrap.classList.remove('open'); open = false;
+          onPick?.(input.value);
+        });
+      });
+    }
+
+    input.addEventListener('focus', () => { wrap.classList.add('open'); open = true; render(); });
+    input.addEventListener('input', () => {
+      hover = -1;
+      wrap.classList.toggle('has-value', !!input.value);
+      if (!open) { wrap.classList.add('open'); open = true; }
+      render();
+    });
+    input.addEventListener('blur', () => { setTimeout(() => { wrap.classList.remove('open'); open = false; }, 150); });
+    input.addEventListener('keydown', e => {
+      if (!open) return;
+      const opts = list.querySelectorAll('.cbo-opt');
+      if (e.key === 'ArrowDown') { e.preventDefault(); hover = Math.min(opts.length - 1, hover + 1); render(); list.querySelectorAll('.cbo-opt')[hover]?.scrollIntoView({ block: 'nearest' }); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); hover = Math.max(0, hover - 1); render(); }
+      else if (e.key === 'Enter' && hover >= 0) { e.preventDefault(); opts[hover]?.dispatchEvent(new Event('mousedown')); }
+      else if (e.key === 'Escape') { wrap.classList.remove('open'); open = false; }
+    });
+    wrap.querySelector('.clear')?.addEventListener('click', () => {
+      input.value = ''; wrap.classList.remove('has-value');
+      input.focus();
+      render();
+    });
+    if (input.value) wrap.classList.add('has-value');
+  }
+
+  // ============================================================
+  //  MODAL HELPER
+  // ============================================================
+  function openModal({ title, body, footer }) {
+    const back = document.createElement('div');
+    back.className = 'km-backdrop';
+    back.innerHTML = `
+      <div class="km-modal">
+        <div class="km-head"><h3>${title}</h3><button class="km-close" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+        <div class="km-body">${body}</div>
+        ${footer ? `<div class="km-foot">${footer}</div>` : ''}
+      </div>
+    `;
+    document.body.appendChild(back);
+    requestAnimationFrame(() => back.classList.add('show'));
+    const close = () => { back.classList.remove('show'); setTimeout(() => back.remove(), 200); };
+    back.querySelector('.km-close').onclick = close;
+    back.addEventListener('click', e => { if (e.target === back) close(); });
+    return { back, modal: back.querySelector('.km-modal'), close };
+  }
+
+  // ============================================================
+  //  INIT
+  // ============================================================
+  function refreshAll() {
+    refreshKpis();
+    fillFilters();
+    renderCashes();
+    renderOps();
+    renderArticles();
+  }
+  refreshAll();
+</script>
+</body>
+</html>

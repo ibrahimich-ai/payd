@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Вход — Payd</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  body {
+    background: linear-gradient(135deg, #1a2332 0%, #2563eb 50%, #8b5cf6 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  body::before {
+    content: '';
+    position: absolute;
+    top: -200px; right: -200px;
+    width: 500px; height: 500px;
+    background: rgba(255,255,255,.05);
+    border-radius: 50%;
+    filter: blur(60px);
+  }
+  body::after {
+    content: '';
+    position: absolute;
+    bottom: -200px; left: -200px;
+    width: 600px; height: 600px;
+    background: rgba(139,92,246,.2);
+    border-radius: 50%;
+    filter: blur(80px);
+  }
+
+  .login-wrap {
+    width: 100%;
+    max-width: 1000px;
+    background: white;
+    border-radius: 24px;
+    box-shadow: 0 30px 60px rgba(0,0,0,.3);
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    position: relative;
+    z-index: 1;
+  }
+  @media (max-width: 800px) { .login-wrap { grid-template-columns: 1fr; } .login-side { display: none; } }
+
+  .login-side {
+    background: linear-gradient(135deg, #1d4ed8 0%, #8b5cf6 100%);
+    color: white;
+    padding: 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+  }
+  .login-side::before {
+    content: '';
+    position: absolute;
+    top: -100px; right: -100px;
+    width: 300px; height: 300px;
+    background: rgba(255,255,255,.1);
+    border-radius: 50%;
+  }
+  .login-side::after {
+    content: '';
+    position: absolute;
+    bottom: -150px; left: -50px;
+    width: 250px; height: 250px;
+    background: rgba(255,255,255,.05);
+    border-radius: 50%;
+  }
+  .ls-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 30px; position: relative; z-index: 1; }
+  .ls-logo {
+    width: 48px; height: 48px;
+    background: linear-gradient(160deg, #0e1a36, #060b1a);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 900;
+    color: white;
+    letter-spacing: -.04em;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.18);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 8px 22px rgba(0,0,0,.3);
+  }
+  .ls-logo::after {
+    content: '';
+    position: absolute;
+    left: 11px; bottom: 8px;
+    width: 11px; height: 13px;
+    background: #2f7bff;
+    clip-path: polygon(0 0, 100% 0, 70% 100%, 0% 100%);
+    border-radius: 1px;
+    box-shadow: 0 0 10px rgba(47,123,255,.6);
+  }
+  .ls-logo span { position: relative; z-index: 1; margin-left: -4px; }
+  .ls-name { font-size: 22px; font-weight: 900; letter-spacing: -.02em; }
+  .ls-sub { font-size: 12px; opacity: .8; }
+
+  .ls-content { position: relative; z-index: 1; }
+  .ls-content h1 { font-size: 32px; font-weight: 800; line-height: 1.2; margin-bottom: 16px; letter-spacing: -.02em; }
+  .ls-content p { font-size: 15px; opacity: .85; line-height: 1.6; }
+
+  .ls-features { display: flex; flex-direction: column; gap: 14px; margin-top: 28px; position: relative; z-index: 1; }
+  .ls-feature { display: flex; gap: 12px; align-items: flex-start; }
+  .ls-feature .ic { width: 32px; height: 32px; background: rgba(255,255,255,.15); backdrop-filter: blur(10px); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid rgba(255,255,255,.15); }
+  .ls-feature .t { font-size: 13px; font-weight: 600; }
+  .ls-feature .s { font-size: 12px; opacity: .75; margin-top: 1px; }
+
+  .ls-stats { display: flex; gap: 32px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,.15); position: relative; z-index: 1; }
+  .ls-stat .v { font-size: 22px; font-weight: 800; }
+  .ls-stat .l { font-size: 11px; opacity: .8; text-transform: uppercase; letter-spacing: .05em; }
+
+  .login-form { padding: 48px; display: flex; flex-direction: column; justify-content: center; }
+  .lf-head { margin-bottom: 28px; }
+  .lf-head h2 { font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
+  .lf-head p { font-size: 13px; color: var(--text-3); margin-top: 6px; }
+
+  .lf-tabs { display: flex; gap: 4px; padding: 4px; background: var(--surface-2); border-radius: 10px; margin-bottom: 24px; }
+  .lf-tab { flex: 1; padding: 8px 12px; text-align: center; font-size: 13px; font-weight: 500; color: var(--text-2); border-radius: 7px; cursor: pointer; transition: all .15s; }
+  .lf-tab.active { background: white; color: var(--text); font-weight: 600; box-shadow: var(--shadow-sm); }
+
+  .lf-form { display: flex; flex-direction: column; gap: 14px; }
+  .lf-form .input { padding: 12px 14px; font-size: 14px; }
+  .lf-form .input-with-icon input { padding-left: 40px; }
+  .lf-form .input-with-icon .ico.left { left: 14px; }
+
+  .lf-options { display: flex; align-items: center; justify-content: space-between; font-size: 12px; }
+  .lf-checkbox { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .lf-link { color: var(--primary); font-weight: 600; }
+  .lf-link:hover { text-decoration: underline; }
+
+  .lf-submit { padding: 14px; font-size: 15px; font-weight: 700; }
+
+  .lf-divider { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+  .lf-divider::before, .lf-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .lf-divider span { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; }
+
+  .lf-sso { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .lf-sso-btn { padding: 10px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: white; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; }
+  .lf-sso-btn:hover { border-color: var(--primary); background: var(--surface-2); }
+
+  .lf-foot { text-align: center; font-size: 12px; color: var(--text-3); margin-top: 20px; }
+</style>
+</head>
+<body>
+
+<div class="login-wrap">
+
+  <div class="login-side">
+    <div class="ls-brand">
+      <div class="ls-logo"><span>P</span></div>
+      <div>
+        <div class="ls-name">PAYD</div>
+        <div class="ls-sub">Платформа рассрочки</div>
+      </div>
+    </div>
+
+    <div class="ls-content">
+      <h1>Управляйте всеми сделками рассрочки в одной системе</h1>
+      <p>Заявки, кассир, СБ, взыскание долгов, отчёты — всё в одной платформе. Поддержка стандартной и исламской рассрочки (Мурабаха).</p>
+
+      <div class="ls-features">
+        <div class="ls-feature">
+          <div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div>
+            <div class="t">Полный цикл сделки</div>
+            <div class="s">От заявки до выдачи и закрытия</div>
+          </div>
+        </div>
+        <div class="ls-feature">
+          <div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <div>
+            <div class="t">Автоматический скоринг</div>
+            <div class="s">НБКИ, чёрные списки, проверка дохода</div>
+          </div>
+        </div>
+        <div class="ls-feature">
+          <div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+          <div>
+            <div class="t">Аналитика в реальном времени</div>
+            <div class="s">Дашборды, отчёты, KPI</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ls-stats">
+      <div class="ls-stat">
+        <div class="v">1 248</div>
+        <div class="l">Клиентов</div>
+      </div>
+      <div class="ls-stat">
+        <div class="v">147</div>
+        <div class="l">Активных сделок</div>
+      </div>
+      <div class="ls-stat">
+        <div class="v">28</div>
+        <div class="l">Партнёров</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="login-form">
+    <div class="lf-head">
+      <h2>Вход в систему</h2>
+      <p>Войдите в свой аккаунт для продолжения</p>
+    </div>
+
+    <div class="lf-tabs">
+      <div class="lf-tab active">Email / телефон</div>
+      <div class="lf-tab">QR-код</div>
+    </div>
+
+    <form class="lf-form" onsubmit="window.location='dashboard.html'; return false;">
+      <div class="field">
+        <label class="field-label">Email или телефон</label>
+        <div class="input-with-icon">
+          <span class="ico left"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8993a6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"/></svg></span>
+          <input class="input has-icon-left" placeholder="i.dzhabrailov@payd.ru" value="i.dzhabrailov@payd.ru" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Пароль</label>
+        <div class="input-with-icon">
+          <span class="ico left"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8993a6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+          <input type="password" class="input has-icon-left" value="••••••••" />
+          <span class="ico" style="cursor: pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
+        </div>
+      </div>
+
+      <div class="lf-options">
+        <label class="lf-checkbox">
+          <input type="checkbox" checked />
+          <span>Запомнить меня</span>
+        </label>
+        <a href="#" class="lf-link">Забыли пароль?</a>
+      </div>
+
+      <button type="submit" class="btn primary lf-submit">
+        Войти в Payd
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </button>
+
+      <div class="lf-divider"><span>или войти через</span></div>
+
+      <div class="lf-sso">
+        <button type="button" class="lf-sso-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+          Госуслуги
+        </button>
+        <button type="button" class="lf-sso-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/></svg>
+          Yandex ID
+        </button>
+      </div>
+    </form>
+
+    <div class="lf-foot">
+      Хотите посчитать платёж? <a href="calculator.html" class="lf-link">Открыть калькулятор</a>
+      <br/>
+      Нет аккаунта? <a href="#" class="lf-link">Связаться с поддержкой</a>
+      <br/><br/>
+      © 2026 Payd. Все права защищены.
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="db.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

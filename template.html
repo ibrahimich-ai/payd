@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Шаблон договора — Payd</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .tmpl-grid { display: grid; grid-template-columns: 1fr 380px; gap: 16px; }
+  @media (max-width: 1300px) { .tmpl-grid { grid-template-columns: 1fr; } }
+
+  .editor-card { display: flex; flex-direction: column; height: calc(100vh - 200px); min-height: 600px; }
+  .editor-tabs { padding: 0 18px; }
+  .editor-toolbar { display: flex; align-items: center; gap: 4px; padding: 8px 14px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .et-btn { padding: 6px 8px; border: none; background: transparent; border-radius: 5px; cursor: pointer; color: var(--text-2); font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; transition: all .12s; font-family: inherit; }
+  .et-btn:hover { background: var(--surface-2); color: var(--text); }
+  .et-sep { width: 1px; height: 18px; background: var(--border); margin: 0 4px; }
+
+  .editor-split { display: grid; grid-template-columns: 1fr 1fr; flex: 1; min-height: 0; }
+  @media (max-width: 1100px) { .editor-split { grid-template-columns: 1fr; } }
+
+  .editor-pane, .preview-pane { padding: 24px 28px; overflow-y: auto; min-height: 0; }
+  .editor-pane { border-right: 1px solid var(--border); background: #fafbfd; font-family: 'Times New Roman', Georgia, serif; line-height: 1.7; font-size: 13px; color: #1a2332; }
+  .editor-pane h1 { font-size: 16px; font-weight: 700; margin-bottom: 4px; text-align: center; letter-spacing: .04em; }
+  .editor-pane h2 { font-size: 13px; font-weight: 700; margin: 14px 0 6px; }
+  .editor-pane p { margin-bottom: 10px; }
+  .editor-pane .center { text-align: center; margin-bottom: 14px; color: var(--text-2); }
+  .editor-pane .signature-block { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 30px; padding-top: 16px; border-top: 1px dashed var(--border-strong); }
+  .editor-pane .signature-block .col .l { font-size: 11px; color: var(--text-3); text-transform: uppercase; }
+  .editor-pane .signature-block .col .v { font-size: 12px; margin-top: 4px; }
+
+  .var-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 7px;
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border: 1px solid #fcd34d;
+    color: #92400e;
+    border-radius: 4px;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    margin: 0 1px;
+    cursor: pointer;
+    transition: all .12s;
+    white-space: nowrap;
+  }
+  .var-chip:hover { background: var(--warning); color: white; border-color: var(--warning); transform: translateY(-1px); }
+  .var-chip.system { background: var(--primary-soft); border-color: #bfdbfe; color: var(--primary-2); }
+  .var-chip.system:hover { background: var(--primary); color: white; }
+  .var-chip.client { background: var(--success-soft); border-color: #a7f3d0; color: #047857; }
+  .var-chip.client:hover { background: var(--success); color: white; }
+  .var-chip.deal { background: var(--purple-soft); border-color: #ddd6fe; color: var(--purple); }
+  .var-chip.deal:hover { background: var(--purple); color: white; }
+
+  .preview-pane { background: white; font-family: 'Times New Roman', Georgia, serif; line-height: 1.7; font-size: 13px; color: #1a2332; }
+  .preview-pane h1 { font-size: 16px; font-weight: 700; margin-bottom: 4px; text-align: center; letter-spacing: .04em; }
+  .preview-pane h2 { font-size: 13px; font-weight: 700; margin: 14px 0 6px; }
+  .preview-pane p { margin-bottom: 10px; }
+  .preview-pane .center { text-align: center; margin-bottom: 14px; color: var(--text-2); }
+  .preview-pane .filled { background: rgba(16, 185, 129, .12); padding: 1px 4px; border-radius: 3px; font-weight: 600; color: #047857; }
+  .preview-pane .signature-block { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 30px; padding-top: 16px; border-top: 1px dashed var(--border-strong); }
+
+  .pane-head { padding: 10px 18px; border-bottom: 1px solid var(--border); background: white; display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); }
+
+  .vars-list { display: flex; flex-direction: column; }
+  .vars-section { padding: 10px 16px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); background: var(--surface-2); }
+  .var-row { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .12s; }
+  .var-row:hover { background: var(--surface-2); }
+  .var-row .info { flex: 1; min-width: 0; }
+  .var-row .key { font-family: 'Courier New', monospace; font-size: 11px; color: var(--text-2); }
+  .var-row .val { font-size: 12px; font-weight: 600; margin-top: 2px; }
+  .var-row .copy { color: var(--text-3); font-size: 11px; }
+  .var-row:hover .copy { color: var(--primary); }
+
+  .ver-row { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+  .ver-row:hover { background: var(--surface-2); }
+  .ver-row.current { background: var(--primary-soft); border-left: 3px solid var(--primary); padding-left: 13px; }
+  .ver-row .v { font-weight: 700; font-size: 13px; }
+  .ver-row .when { font-size: 11px; color: var(--text-3); }
+</style>
+</head>
+<body>
+
+<div id="app-root">
+
+<div class="page-head">
+  <div>
+    <h1 id="page-title">Шаблон: Договор рассрочки (стандарт)</h1>
+    <div class="desc"><span id="version-badge">Версия v2.4 · активная</span> · <span id="usage-stats">использован 412 раз</span></div>
+  </div>
+  <div class="page-head-actions">
+    <button class="btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Тест на клиенте
+    </button>
+    <button class="btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Дублировать
+    </button>
+    <a href="contracts.html" class="btn">Отмена</a>
+    <button class="btn primary">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>
+      Сохранить шаблон
+    </button>
+  </div>
+</div>
+
+<!-- TEMPLATE PICKER -->
+<div class="chip-row mb-4">
+  <a class="chip" data-tmpl="standard" href="?t=standard">Договор рассрочки</a>
+  <a class="chip" data-tmpl="murabaha" href="?t=murabaha">Договор Мурабаха</a>
+  <a class="chip" data-tmpl="guarantee" href="?t=guarantee">Поручительство</a>
+  <a class="chip" data-tmpl="act" href="?t=act">Акт приёма-передачи</a>
+  <a class="chip" data-tmpl="partner" href="?t=partner">Соглашение с партнёром</a>
+  <a class="chip" data-tmpl="notice" href="?t=notice">Уведомление о просрочке</a>
+</div>
+
+<div class="tmpl-grid">
+
+  <!-- EDITOR -->
+  <div class="card editor-card">
+    <div class="tabs editor-tabs">
+      <div class="tab active">Содержание</div>
+      <div class="tab">Стиль и шапка</div>
+      <div class="tab">История версий</div>
+      <div class="tab">Доступы</div>
+    </div>
+
+    <div class="editor-toolbar">
+      <button class="et-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 17V7M5 12h8"/></svg> H1</button>
+      <button class="et-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 17V7"/></svg> H2</button>
+      <div class="et-sep"></div>
+      <button class="et-btn" style="font-weight: 800;">B</button>
+      <button class="et-btn" style="font-style: italic;">I</button>
+      <button class="et-btn" style="text-decoration: underline;">U</button>
+      <div class="et-sep"></div>
+      <button class="et-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> Список</button>
+      <button class="et-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3z"/><path d="M9 3v18M3 9h18M3 15h18M15 3v18"/></svg> Таблица</button>
+      <div class="et-sep"></div>
+      <button class="et-btn" style="background: var(--warning-soft); color: #92400e;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Переменная
+      </button>
+      <div style="margin-left: auto; display: flex; gap: 6px; align-items: center;">
+        <button class="et-btn" title="Отменить"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></button>
+        <button class="et-btn" title="Повторить"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg></button>
+      </div>
+    </div>
+
+    <div class="editor-split">
+      <div class="editor-pane" id="editor-content"></div>
+      <div style="display: flex; flex-direction: column; min-height: 0;">
+        <div class="pane-head"><span>Превью с тестовыми данными</span> <span style="color: var(--success); font-weight: 700;">● Live</span></div>
+        <div class="preview-pane" id="preview-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIDE PANEL -->
+  <div style="display: flex; flex-direction: column; gap: 16px;">
+    <div class="card">
+      <div class="card-hd">
+        <h3 id="vars-count-title">Переменные · 14</h3>
+        <button class="btn sm">+</button>
+      </div>
+      <div class="vars-list" id="vars-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd">
+        <h3>История версий</h3>
+        <span class="text-sm text-muted">12 версий</span>
+      </div>
+      <div>
+        <div class="ver-row current">
+          <div>
+            <div class="v">v 2.4</div>
+            <div class="when">текущая · 412 использований</div>
+          </div>
+          <span class="badge success">Активна</span>
+        </div>
+        <div class="ver-row">
+          <div>
+            <div class="v">v 2.3</div>
+            <div class="when">12.02.2026 · 184 использования</div>
+          </div>
+          <button class="btn sm">Откатить</button>
+        </div>
+        <div class="ver-row">
+          <div>
+            <div class="v">v 2.2</div>
+            <div class="when">04.11.2025 · 156 использований</div>
+          </div>
+          <button class="btn sm">Откатить</button>
+        </div>
+        <div class="ver-row">
+          <div>
+            <div class="v">v 2.1</div>
+            <div class="when">18.07.2025 · 98 использований</div>
+          </div>
+          <button class="btn sm">Откатить</button>
+        </div>
+        <div class="ver-row">
+          <div>
+            <div class="v">v 2.0</div>
+            <div class="when">02.04.2025 · 246 использований</div>
+          </div>
+          <button class="btn sm">Откатить</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="padding: 16px 18px;">
+      <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px;">Подсказки</div>
+      <ul style="list-style: none; padding: 0; font-size: 12px; color: var(--text-2); display: flex; flex-direction: column; gap: 8px;">
+        <li>💡 Кликните на переменную справа, чтобы вставить её в текст</li>
+        <li>📝 Превью обновляется в реальном времени с данными тестового клиента</li>
+        <li>🔒 При сохранении создаётся новая версия — старые остаются доступны</li>
+        <li>⚡ Тестовая отправка проверит документ на реальном клиенте</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="db.js"></script>
+<script src="app.js"></script>
+<script>
+const TEMPLATES = {
+  standard: {
+    name: 'Договор рассрочки (Мурабаха)',
+    version: 'v 3.0',
+    usage: 'использован 412 раз · одобрен ШК',
+    vars: 14,
+    content: `
+      <h1>ДОГОВОР РАССРОЧКИ С ФИКСИРОВАННОЙ ЦЕНОЙ (МУРАБАХА) № <span class="var-chip system" data-key="contract_no">номер_договора</span></h1>
+      <div class="center">г. <span class="var-chip system" data-key="city">город</span>, <span class="var-chip system" data-key="contract_date">дата_договора</span> г.</div>
+
+      <p>ООО «Payd» (далее — «Финансовая компания») в лице директора Джабраилова Ибрагима Магомедовича, действующего на основании Устава, с одной стороны, и <span class="var-chip client" data-key="client_full">фио_клиента</span> (паспорт <span class="var-chip client" data-key="client_passport">паспорт</span>, зарегистрирован: <span class="var-chip client" data-key="client_address">адрес</span>), далее — «Клиент», с другой стороны, заключили настоящий договор о нижеследующем.</p>
+
+      <h2>1. СУТЬ СДЕЛКИ</h2>
+      <p>1.1. Финансовая компания приобретает у поставщика товар <span class="var-chip deal" data-key="product_name">наименование_товара</span> по цене закупки <span class="var-chip deal" data-key="purchase_price">цена_закупки</span> руб., становится его собственником и перепродаёт Клиенту.</p>
+      <p>1.2. Цена продажи товара Клиенту: <span class="var-chip deal" data-key="sale_price">цена_продажи</span> руб., в том числе раскрытая надбавка <span class="var-chip deal" data-key="markup">надбавка</span> руб., являющаяся вознаграждением Финансовой компании за услугу.</p>
+      <p>1.3. <b>Цена и срок зафиксированы в момент подписания и не изменяются ни при каких обстоятельствах.</b> Проценты не начисляются.</p>
+
+      <h2>2. ПОРЯДОК ОПЛАТЫ</h2>
+      <p>2.1. Первоначальный взнос: <span class="var-chip deal" data-key="down_payment">первый_взнос</span> руб., оплачивается в день подписания договора.</p>
+      <p>2.2. Срок рассрочки: <span class="var-chip deal" data-key="term">срок_рассрочки</span> месяцев.</p>
+      <p>2.3. Ежемесячный платёж: <span class="var-chip deal" data-key="monthly">платёж_в_месяц</span> руб.</p>
+      <p>2.4. Итоговая сумма к оплате: <span class="var-chip deal" data-key="total">итого_к_оплате</span> руб.</p>
+      <p>2.5. Клиент имеет право досрочного погашения без какой-либо переплаты или скидки — оплачивается оставшаяся часть зафиксированной цены.</p>
+
+      <h2>3. ПРОСРОЧКА ПЛАТЕЖА</h2>
+      <p>3.1. <b>При просрочке сумма долга не увеличивается.</b> Штрафные проценты и пени не начисляются.</p>
+      <p>3.2. Финансовая компания уведомляет Клиента о пропущенном платеже SMS / телефонным звонком.</p>
+      <p>3.3. При финансовых трудностях Клиента стороны проводят реструктуризацию графика без увеличения суммы долга.</p>
+      <p>3.4. При просрочке свыше 90 дней Финансовая компания вправе расторгнуть договор и вернуть товар, с возвратом Клиенту фактически уплаченных средств за вычетом стоимости пользования.</p>
+
+      <div class="signature-block">
+        <div class="col">
+          <div class="l">Финансовая компания</div>
+          <div class="v">ООО «Payd»<br/>ИНН 2014782301<br/>Подпись: ____________<br/>М.П.</div>
+        </div>
+        <div class="col">
+          <div class="l">Клиент</div>
+          <div class="v"><span class="var-chip client" data-key="client_full">фио_клиента</span><br/>Тел: <span class="var-chip client" data-key="client_phone">телефон</span><br/>Подпись: ____________</div>
+        </div>
+      </div>
+    `,
+    variables: [
+      { section: 'Системные', items: [
+        { key: 'contract_no', name: 'Номер договора', val: 'ДР-0142/2026', cls: 'system' },
+        { key: 'contract_date', name: 'Дата договора', val: '19.04.2026', cls: 'system' },
+        { key: 'city', name: 'Город', val: 'Аргун', cls: 'system' }
+      ]},
+      { section: 'Клиент', items: [
+        { key: 'client_full', name: 'ФИО клиента', val: 'Даурбекова Луиза Саид-Усмановна', cls: 'client' },
+        { key: 'client_passport', name: 'Паспорт', val: '96 03 № 451287', cls: 'client' },
+        { key: 'client_address', name: 'Адрес', val: 'Грозный, ул. Кольцова 226', cls: 'client' },
+        { key: 'client_phone', name: 'Телефон', val: '+7 989 918-51-58', cls: 'client' }
+      ]},
+      { section: 'Сделка', items: [
+        { key: 'product_name', name: 'Товар', val: 'Airpods 4 ANC · Белый USB-C · Белый', cls: 'deal' },
+        { key: 'purchase_price', name: 'Цена закупки', val: '11 500,00', cls: 'deal' },
+        { key: 'sale_price', name: 'Цена продажи', val: '12 800,00', cls: 'deal' },
+        { key: 'markup', name: 'Надбавка', val: '1 300,00', cls: 'deal' },
+        { key: 'down_payment', name: 'Первый взнос', val: '2 300,00', cls: 'deal' },
+        { key: 'term', name: 'Срок (мес)', val: '3', cls: 'deal' },
+        { key: 'monthly', name: 'Платёж/мес', val: '3 500,00', cls: 'deal' },
+        { key: 'total', name: 'Итого', val: '12 800,00', cls: 'deal' }
+      ]}
+    ]
+  },
+
+  murabaha: {
+    name: 'Договор Мурабаха (расширенный)',
+    version: 'v 2.0',
+    usage: 'использован 184 раза',
+    vars: 11,
+    content: `
+      <h1>ДОГОВОР МУРАБАХА № <span class="var-chip system" data-key="contract_no">номер_договора</span></h1>
+      <div class="center">г. <span class="var-chip system" data-key="city">город</span>, <span class="var-chip system" data-key="contract_date">дата_договора</span> г.</div>
+
+      <p>ООО «Payd» (далее — «Финансовая компания»), с одной стороны, и <span class="var-chip client" data-key="client_full">фио_клиента</span> (паспорт <span class="var-chip client" data-key="client_passport">паспорт</span>), далее — «Клиент», с другой стороны, заключили договор о следующем.</p>
+
+      <h2>1. СУТЬ СДЕЛКИ (МУРАБАХА)</h2>
+      <p>1.1. Финансовая компания приобретает у поставщика <span class="var-chip deal" data-key="supplier">поставщик</span> товар <span class="var-chip deal" data-key="product_name">наименование_товара</span> по цене закупки <span class="var-chip deal" data-key="purchase_price">цена_закупки</span> руб.</p>
+      <p>1.2. Финансовая компания перепродаёт товар Клиенту по цене <span class="var-chip deal" data-key="sale_price">цена_продажи</span> руб., включая прозрачную надбавку <span class="var-chip deal" data-key="markup">надбавка</span> руб. (<span class="var-chip deal" data-key="markup_pct">процент_надбавки</span>).</p>
+      <p>1.3. <b>Цена и срок зафиксированы и не изменяются.</b> Проценты не начисляются.</p>
+
+      <h2>2. ПОРЯДОК ОПЛАТЫ</h2>
+      <p>2.1. Первоначальный взнос: <span class="var-chip deal" data-key="down_payment">первый_взнос</span> руб.</p>
+      <p>2.2. Срок: <span class="var-chip deal" data-key="term">срок</span> месяцев. Ежемесячный платёж: <span class="var-chip deal" data-key="monthly">платёж_в_месяц</span> руб.</p>
+      <p>2.3. Цена фиксированная и <b>не изменяется</b> в течение срока договора.</p>
+
+      <h2>3. ПРОСРОЧКА ПЛАТЕЖА</h2>
+      <p>3.1. <b>При просрочке сумма долга не увеличивается.</b> Штрафные проценты и пени не начисляются.</p>
+      <p>3.2. Финансовая компания уведомляет Клиента о пропущенном платеже SMS / телефонным звонком.</p>
+      <p>3.3. При документально подтверждённой нужде (болезнь, потеря работы) Финансовая компания обязуется реструктурировать график без увеличения суммы долга.</p>
+      <p>3.4. При длительной просрочке без объяснений Финансовая компания вправе расторгнуть договор и вернуть товар с возмещением фактически уплаченных средств.</p>
+
+      <div class="signature-block">
+        <div class="col">
+          <div class="l">Финансовая компания</div>
+          <div class="v">ООО «Payd»<br/>Подпись: ____________<br/>М.П.</div>
+        </div>
+        <div class="col">
+          <div class="l">Клиент</div>
+          <div class="v"><span class="var-chip client" data-key="client_full">фио_клиента</span><br/>Подпись: ____________</div>
+        </div>
+      </div>
+    `,
+    variables: [
+      { section: 'Системные', items: [
+        { key: 'contract_no', name: 'Номер договора', val: 'ДМ-0145/2026', cls: 'system' },
+        { key: 'contract_date', name: 'Дата', val: '30.04.2026', cls: 'system' },
+        { key: 'city', name: 'Город', val: 'Аргун', cls: 'system' }
+      ]},
+      { section: 'Клиент', items: [
+        { key: 'client_full', name: 'ФИО клиента', val: 'Гайтаев Ислам Магомедович', cls: 'client' },
+        { key: 'client_passport', name: 'Паспорт', val: '96 14 № 728401', cls: 'client' }
+      ]},
+      { section: 'Сделка', items: [
+        { key: 'supplier', name: 'Поставщик', val: 'ТехноМир — Грозный', cls: 'deal' },
+        { key: 'product_name', name: 'Товар', val: 'iPhone 15 Plus 128GB · Голубой', cls: 'deal' },
+        { key: 'purchase_price', name: 'Цена закупки', val: '62 000,00', cls: 'deal' },
+        { key: 'sale_price', name: 'Цена продажи', val: '68 400,00', cls: 'deal' },
+        { key: 'markup', name: 'Надбавка', val: '6 400,00', cls: 'deal' },
+        { key: 'markup_pct', name: '% надбавки', val: '10,3 %', cls: 'deal' },
+        { key: 'down_payment', name: 'Первый взнос', val: '6 840,00', cls: 'deal' },
+        { key: 'term', name: 'Срок', val: '6 мес', cls: 'deal' },
+        { key: 'monthly', name: 'Платёж/мес', val: '10 260,00', cls: 'deal' }
+      ]}
+    ]
+  },
+
+  guarantee: {
+    name: 'Договор поручительства',
+    version: 'v 2.1',
+    usage: 'использован 38 раз',
+    vars: 8,
+    content: `
+      <h1>ДОГОВОР ПОРУЧИТЕЛЬСТВА № <span class="var-chip system" data-key="g_no">номер</span></h1>
+      <div class="center">г. <span class="var-chip system" data-key="city">город</span>, <span class="var-chip system" data-key="g_date">дата</span> г.</div>
+
+      <p>ООО «Payd» (далее — «Финансовая компания») и <span class="var-chip client" data-key="guarantor_full">фио_поручителя</span> (паспорт <span class="var-chip client" data-key="guarantor_passport">паспорт</span>, телефон <span class="var-chip client" data-key="guarantor_phone">телефон</span>), далее — «Поручитель», заключили договор.</p>
+
+      <h2>1. ПРЕДМЕТ ДОГОВОРА</h2>
+      <p>1.1. Поручитель добровольно и безвозмездно обязуется отвечать перед Финансовой компанией за исполнение <span class="var-chip client" data-key="debtor_full">фио_должника</span> (далее — «Основной должник») обязательств по договору рассрочки № <span class="var-chip deal" data-key="base_contract">основной_договор</span> на сумму <span class="var-chip deal" data-key="base_amount">сумма_сделки</span> руб.</p>
+      <p>1.2. <b>Поручительство является безвозмездным</b> — Поручитель не получает вознаграждения за принятие обязательства.</p>
+
+      <h2>2. ОТВЕТСТВЕННОСТЬ ПОРУЧИТЕЛЯ</h2>
+      <p>2.1. Поручитель и Основной должник отвечают перед Финансовой компанией солидарно в пределах суммы основного обязательства.</p>
+      <p>2.2. Поручитель отвечает только за зафиксированную сумму сделки.</p>
+      <p>2.3. Поручительство прекращается с прекращением основного обязательства.</p>
+
+      <h2>3. ПРАВО ОБРАЩЕНИЯ К ДОЛЖНИКУ</h2>
+      <p>3.1. После исполнения обязательства за Должника Поручитель имеет право регресса — взыскания уплаченной суммы с Основного должника.</p>
+
+      <div class="signature-block">
+        <div class="col">
+          <div class="l">Финансовая компания</div>
+          <div class="v">ООО «Payd»<br/>Подпись: ____________<br/>М.П.</div>
+        </div>
+        <div class="col">
+          <div class="l">Поручитель</div>
+          <div class="v"><span class="var-chip client" data-key="guarantor_full">фио_поручителя</span><br/>Подпись: ____________</div>
+        </div>
+      </div>
+    `,
+    variables: [
+      { section: 'Системные', items: [
+        { key: 'g_no', name: 'Номер договора', val: 'ДП-014/2026', cls: 'system' },
+        { key: 'g_date', name: 'Дата', val: '30.04.2026', cls: 'system' },
+        { key: 'city', name: 'Город', val: 'Аргун', cls: 'system' }
+      ]},
+      { section: 'Поручитель / Должник', items: [
+        { key: 'guarantor_full', name: 'ФИО поручителя', val: 'Хасиев Ахмед Хамзатович', cls: 'client' },
+        { key: 'guarantor_passport', name: 'Паспорт поручителя', val: '96 14 № 728401', cls: 'client' },
+        { key: 'guarantor_phone', name: 'Телефон поручителя', val: '+7 928 449-12-08', cls: 'client' },
+        { key: 'debtor_full', name: 'ФИО должника', val: 'Магомадов Леча Хасанович', cls: 'client' }
+      ]},
+      { section: 'Сделка', items: [
+        { key: 'base_contract', name: 'Основной договор', val: 'ДР-0148/2026', cls: 'deal' },
+        { key: 'base_amount', name: 'Сумма сделки', val: '145 000,00', cls: 'deal' }
+      ]}
+    ]
+  },
+
+  act: {
+    name: 'Акт приёма-передачи товара',
+    version: 'v 2.1',
+    usage: 'использован 368 раз',
+    vars: 10,
+    content: `
+      <h1>АКТ ПРИЁМА-ПЕРЕДАЧИ ТОВАРА № <span class="var-chip system" data-key="act_no">номер_акта</span></h1>
+      <div class="center">по договору <span class="var-chip deal" data-key="contract_no">номер_договора</span> от <span class="var-chip system" data-key="act_date">дата_акта</span> г.</div>
+
+      <p>Мы, нижеподписавшиеся:</p>
+      <p>— ООО «Payd» в лице <span class="var-chip system" data-key="employee_full">фио_сотрудника</span>, с одной стороны,</p>
+      <p>— <span class="var-chip client" data-key="client_full">фио_клиента</span>, с другой стороны,</p>
+      <p>составили настоящий акт о том, что:</p>
+
+      <h2>1. ПЕРЕДАВАЕМЫЙ ТОВАР</h2>
+      <p>Наименование: <span class="var-chip deal" data-key="product_name">наименование</span></p>
+      <p>Артикул: <span class="var-chip deal" data-key="article">артикул</span></p>
+      <p>Серийный номер: <span class="var-chip deal" data-key="serial">серийный_номер</span></p>
+      <p>Количество: <span class="var-chip deal" data-key="qty">кол-во</span> шт.</p>
+      <p>Стоимость: <span class="var-chip deal" data-key="price">стоимость</span> руб.</p>
+
+      <h2>2. СОСТОЯНИЕ ТОВАРА</h2>
+      <p>Товар передан в исправном состоянии, в заводской упаковке, без видимых повреждений. Клиент претензий по качеству и комплектности не имеет.</p>
+
+      <h2>3. ФОТОФИКСАЦИЯ</h2>
+      <p>К настоящему акту прилагаются фото товара, сделанные при выдаче (приложение №1).</p>
+
+      <h2>4. ПЕРЕХОД СОБСТВЕННОСТИ</h2>
+      <p>С момента подписания акта право собственности на товар переходит к Клиенту в полном объёме.</p>
+
+      <div class="signature-block">
+        <div class="col">
+          <div class="l">Передал (сотрудник)</div>
+          <div class="v"><span class="var-chip system" data-key="employee_full">фио_сотрудника</span><br/>Подпись: ____________<br/>М.П.</div>
+        </div>
+        <div class="col">
+          <div class="l">Принял (клиент)</div>
+          <div class="v"><span class="var-chip client" data-key="client_full">фио_клиента</span><br/>Подпись: ____________</div>
+        </div>
+      </div>
+    `,
+    variables: [
+      { section: 'Системные', items: [
+        { key: 'act_no', name: 'Номер акта', val: 'АПП-0142/2026', cls: 'system' },
+        { key: 'act_date', name: 'Дата акта', val: '19.04.2026', cls: 'system' },
+        { key: 'employee_full', name: 'Сотрудник', val: 'Тагаев Руслан Беканович', cls: 'system' }
+      ]},
+      { section: 'Клиент', items: [
+        { key: 'client_full', name: 'ФИО клиента', val: 'Даурбекова Луиза Саид-Усмановна', cls: 'client' }
+      ]},
+      { section: 'Товар', items: [
+        { key: 'contract_no', name: 'Договор', val: 'ДР-0142/2026', cls: 'deal' },
+        { key: 'product_name', name: 'Товар', val: 'Airpods 4 ANC · Белый USB-C · Белый', cls: 'deal' },
+        { key: 'article', name: 'Артикул', val: '000001234', cls: 'deal' },
+        { key: 'serial', name: 'Серийный №', val: 'H4G7L9F8X2K', cls: 'deal' },
+        { key: 'qty', name: 'Количество', val: '1', cls: 'deal' },
+        { key: 'price', name: 'Стоимость', val: '12 800,00', cls: 'deal' }
+      ]}
+    ]
+  },
+
+  partner: {
+    name: 'Соглашение с партнёром',
+    version: 'v 1.5',
+    usage: 'использован 28 раз',
+    vars: 12,
+    content: `
+      <h1>СОГЛАШЕНИЕ О ПАРТНЁРСТВЕ № <span class="var-chip system" data-key="p_no">номер</span></h1>
+      <div class="center">г. <span class="var-chip system" data-key="city">город</span>, <span class="var-chip system" data-key="p_date">дата</span> г.</div>
+
+      <p>ООО «Payd» (далее — «Финансовая компания») и <span class="var-chip client" data-key="partner_org">наименование_партнёра</span> в лице <span class="var-chip client" data-key="partner_director">директор_партнёра</span>, ИНН <span class="var-chip client" data-key="partner_inn">инн</span> (далее — «Партнёр»), заключили соглашение.</p>
+
+      <h2>1. ПРЕДМЕТ СОГЛАШЕНИЯ</h2>
+      <p>1.1. Партнёр размещает в своих торговых точках (<span class="var-chip client" data-key="partner_address">адрес_точки</span>) информацию об услугах рассрочки от Финансовой компании.</p>
+      <p>1.2. Партнёр направляет клиентов в Финансовую компанию для оформления сделок.</p>
+
+      <h2>2. ВОЗНАГРАЖДЕНИЕ ПАРТНЁРА</h2>
+      <p>2.1. За каждую успешно оформленную сделку Партнёр получает фиксированное вознаграждение в размере <span class="var-chip deal" data-key="commission_pct">процент_комиссии</span> от стоимости товара.</p>
+      <p>2.2. Минимальный объём для повышенной ставки: <span class="var-chip deal" data-key="min_volume">мин_оборот</span> руб./мес.</p>
+      <p>2.3. Расчёт по вознаграждению: <span class="var-chip deal" data-key="payment_period">периодичность</span> (до 5 числа следующего месяца).</p>
+
+      <h2>3. СРОК ДЕЙСТВИЯ</h2>
+      <p>3.1. Соглашение действует с <span class="var-chip system" data-key="start_date">дата_начала</span> по <span class="var-chip system" data-key="end_date">дата_окончания</span>.</p>
+
+      <div class="signature-block">
+        <div class="col">
+          <div class="l">Финансовая компания</div>
+          <div class="v">ООО «Payd»<br/>Подпись: ____________<br/>М.П.</div>
+        </div>
+        <div class="col">
+          <div class="l">Партнёр</div>
+          <div class="v"><span class="var-chip client" data-key="partner_org">наименование</span><br/>Подпись: ____________<br/>М.П.</div>
+        </div>
+      </div>
+    `,
+    variables: [
+      { section: 'Системные', items: [
+        { key: 'p_no', name: 'Номер соглашения', val: 'СП-014/2026', cls: 'system' },
+        { key: 'p_date', name: 'Дата подписания', val: '15.04.2026', cls: 'system' },
+        { key: 'city', name: 'Город', val: 'Аргун', cls: 'system' },
+        { key: 'start_date', name: 'Дата начала', val: '15.04.2026', cls: 'system' },
+        { key: 'end_date', name: 'Дата окончания', val: '14.04.2027', cls: 'system' }
+      ]},
+      { section: 'Партнёр', items: [
+        { key: 'partner_org', name: 'Организация', val: 'ИП Тагаев Р. А. (ТехноМир — Грозный)', cls: 'client' },
+        { key: 'partner_director', name: 'Директор', val: 'Тагаев Руслан Анатольевич', cls: 'client' },
+        { key: 'partner_inn', name: 'ИНН', val: '200148273912', cls: 'client' },
+        { key: 'partner_address', name: 'Адрес точки', val: 'Аргун, ул. Шоссейная, 144', cls: 'client' }
+      ]},
+      { section: 'Условия', items: [
+        { key: 'commission_pct', name: 'Комиссия', val: '5 %', cls: 'deal' },
+        { key: 'min_volume', name: 'Мин. оборот', val: '500 000', cls: 'deal' },
+        { key: 'payment_period', name: 'Периодичность', val: 'Ежемесячно', cls: 'deal' }
+      ]}
+    ]
+  },
+
+  notice: {
+    name: 'Уведомление о просрочке',
+    version: 'v 1.2',
+    usage: 'использован 64 раза',
+    vars: 7,
+    content: `
+      <h1>УВЕДОМЛЕНИЕ № <span class="var-chip system" data-key="n_no">номер</span></h1>
+      <div class="center">от <span class="var-chip system" data-key="n_date">дата</span> г.</div>
+
+      <p>Уважаемый(ая) <span class="var-chip client" data-key="client_full">фио_клиента</span>!</p>
+
+      <p>По договору рассрочки № <span class="var-chip deal" data-key="contract_no">номер_договора</span> от <span class="var-chip deal" data-key="contract_date">дата_договора</span> у Вас имеется неисполненный платёж:</p>
+
+      <p style="padding: 12px; background: #fffbeb; border-radius: 6px; border: 1px solid #fde68a;">
+        <b>Сумма к оплате:</b> <span class="var-chip deal" data-key="amount">сумма_долга</span> руб.<br/>
+        <b>Дата платежа по графику:</b> <span class="var-chip deal" data-key="due_date">плановая_дата</span><br/>
+        <b>Срок просрочки:</b> <span class="var-chip deal" data-key="days_overdue">дней_просрочки</span> дней
+      </p>
+
+      <p><b>Сумма Вашей задолженности не увеличивается.</b> ООО «Payd» не взимает штрафных процентов или пеней за просрочку.</p>
+
+      <p>Просим Вас в кратчайшие сроки погасить задолженность:</p>
+      <p>— Онлайн в личном кабинете: <a href="lk-client.html" style="color: var(--primary);">lk.payd.ru</a></p>
+      <p>— В офисе: г. Аргун, ул. Шоссейная, 144</p>
+      <p>— Через менеджера: +7 8712 22-44-66</p>
+
+      <p style="padding: 12px; background: #ecfdf5; border-radius: 6px; border: 1px solid #a7f3d0;">
+        <b>Если у Вас финансовые трудности</b>, мы готовы реструктурировать график без увеличения суммы долга. Просто свяжитесь с нами — поможем найти решение.
+      </p>
+
+      <p>С уважением,<br/>Служба клиентского сервиса Payd</p>
+    `,
+    variables: [
+      { section: 'Системные', items: [
+        { key: 'n_no', name: 'Номер уведомления', val: 'УП-001/2026', cls: 'system' },
+        { key: 'n_date', name: 'Дата уведомления', val: '01.05.2026', cls: 'system' }
+      ]},
+      { section: 'Клиент', items: [
+        { key: 'client_full', name: 'ФИО клиента', val: 'Исраилов Якуб Анзорович', cls: 'client' }
+      ]},
+      { section: 'Сделка', items: [
+        { key: 'contract_no', name: 'Договор', val: 'ДР-0140/2026', cls: 'deal' },
+        { key: 'contract_date', name: 'Дата договора', val: '28.04.2026', cls: 'deal' },
+        { key: 'amount', name: 'Сумма долга', val: '10 511,00', cls: 'deal' },
+        { key: 'due_date', name: 'Плановая дата', val: '28.04.2026', cls: 'deal' },
+        { key: 'days_overdue', name: 'Дней просрочки', val: '3', cls: 'deal' }
+      ]}
+    ]
+  }
+};
+
+// Read URL param
+const params = new URLSearchParams(location.search);
+const tplKey = params.get('t') || 'standard';
+const tpl = TEMPLATES[tplKey] || TEMPLATES.standard;
+
+// Page header
+document.getElementById('page-title').textContent = `Шаблон: ${tpl.name}`;
+document.getElementById('version-badge').textContent = `Версия ${tpl.version} · активная`;
+document.getElementById('usage-stats').textContent = tpl.usage;
+document.getElementById('vars-count-title').textContent = `Переменные · ${tpl.vars}`;
+
+// Editor & preview content
+const editorEl = document.getElementById('editor-content');
+const previewEl = document.getElementById('preview-content');
+editorEl.innerHTML = tpl.content;
+
+// Build preview by replacing all .var-chip elements with filled values
+const allValues = {};
+tpl.variables.forEach(s => s.items.forEach(i => allValues[i.key] = i.val));
+
+const previewClone = editorEl.cloneNode(true);
+previewClone.querySelectorAll('.var-chip').forEach(el => {
+  const key = el.dataset.key;
+  const val = allValues[key];
+  if (val) {
+    const span = document.createElement('span');
+    span.className = 'filled';
+    span.textContent = val;
+    el.replaceWith(span);
+  }
+});
+previewEl.innerHTML = previewClone.innerHTML;
+
+// Variables panel
+const varsEl = document.getElementById('vars-list');
+varsEl.innerHTML = tpl.variables.map(section => `
+  <div class="vars-section">${section.section}</div>
+  ${section.items.map(item => `
+    <div class="var-row">
+      <div class="info">
+        <div class="key">{{${item.key}}}</div>
+        <div class="val">${item.val}</div>
+      </div>
+      <span class="copy">Вставить</span>
+    </div>
+  `).join('')}
+`).join('');
+
+// Highlight current template chip
+document.querySelectorAll('[data-tmpl]').forEach(el => {
+  if (el.dataset.tmpl === tplKey) el.classList.add('active');
+});
+
+PaydApp.mountShell({
+  active: 'contracts',
+  title: 'Конструктор шаблона',
+  breadcrumbs: [
+    { label: 'Главная', href: 'dashboard.html' },
+    { label: 'Договоры', href: 'contracts.html' },
+    { label: 'Шаблон' }
+  ]
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Новая заявка — Payd</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .new-grid { display: grid; grid-template-columns: 1fr 360px; gap: 16px; }
+  @media (max-width: 1200px) { .new-grid { grid-template-columns: 1fr; } }
+
+  .stepper-row { display: flex; align-items: center; gap: 0; padding: 18px; border-bottom: 1px solid var(--border); }
+  .step-cell { display: flex; align-items: center; gap: 8px; }
+  .step-circle { width: 32px; height: 32px; border-radius: 50%; background: var(--surface-3); color: var(--text-3); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; border: 2px solid var(--border-strong); }
+  .step-cell.done .step-circle { background: var(--success); color: white; border-color: var(--success); }
+  .step-cell.current .step-circle { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(37,99,235,.15); }
+  .step-cell .lbl { font-size: 12px; font-weight: 500; color: var(--text-3); }
+  .step-cell.done .lbl, .step-cell.current .lbl { color: var(--text); font-weight: 600; }
+  .step-line { flex: 1; height: 2px; background: var(--border-strong); margin: 0 12px; }
+  .step-line.done { background: var(--success); }
+
+  .step-pane { display: none; }
+  .step-pane.active { display: block; }
+
+  .calc-result { background: linear-gradient(135deg, #eff6ff, #dbeafe); border: 1px solid #bfdbfe; padding: 16px; border-radius: var(--radius-sm); }
+  .calc-result .ttl { font-size: 12px; color: var(--primary-2); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+  .calc-result .row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
+  .calc-result .row .v { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .calc-result .row.big { font-size: 17px; padding-top: 8px; margin-top: 8px; border-top: 1px dashed #93c5fd; }
+  .calc-result .row.big .v { color: var(--primary-2); font-size: 22px; font-weight: 800; }
+
+  .summary-card { padding: 18px; }
+  .summary-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
+  .summary-row .l { color: var(--text-2); }
+  .summary-row .v { font-weight: 600; }
+
+  .combo { position: relative; }
+  .combo-list {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 50;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md); max-height: 240px; overflow-y: auto;
+    display: none;
+  }
+  .combo-list.open { display: block; }
+  .combo-item { padding: 10px 12px; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--border); }
+  .combo-item:last-child { border-bottom: none; }
+  .combo-item:hover, .combo-item.active { background: var(--primary-soft); }
+  .combo-item .nm { font-weight: 600; }
+  .combo-item .meta { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+  .combo-item.create { color: var(--primary); font-weight: 600; background: var(--surface-2); }
+  .combo-item.create:hover { background: var(--primary-soft); }
+</style>
+</head>
+<body>
+
+<div id="app-root">
+
+<div class="page-head">
+  <div>
+    <h1>Новая заявка рассрочки</h1>
+    <div class="desc">Заполните 4 шага и заявка будет создана</div>
+  </div>
+  <div class="page-head-actions">
+    <a href="zhurnal.html" class="btn">Отмена</a>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="stepper-row">
+    <div class="step-cell current" data-step="1"><div class="step-circle">1</div><div class="lbl">Клиент</div></div>
+    <div class="step-line"></div>
+    <div class="step-cell" data-step="2"><div class="step-circle">2</div><div class="lbl">Товар и условия</div></div>
+    <div class="step-line"></div>
+    <div class="step-cell" data-step="3"><div class="step-circle">3</div><div class="lbl">Документы</div></div>
+    <div class="step-line"></div>
+    <div class="step-cell" data-step="4"><div class="step-circle">4</div><div class="lbl">Подтверждение</div></div>
+  </div>
+</div>
+
+<div class="new-grid">
+
+  <div style="display: flex; flex-direction: column; gap: 16px;">
+
+    <!-- ============ STEP 1: CLIENT ============ -->
+    <div class="step-pane active" data-pane="1">
+      <div class="card">
+        <div class="card-hd"><h3>Клиент</h3></div>
+        <div class="card-bd">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div class="field">
+              <label class="field-label">ФИО клиента</label>
+              <div class="combo">
+                <input class="input" id="cl-name" autocomplete="off" placeholder="Начните вводить — найдём в базе" />
+                <div class="combo-list" id="cl-name-list"></div>
+              </div>
+              <div class="field-help">Если клиент уже есть — выберите из списка, поля заполнятся автоматически</div>
+            </div>
+            <div class="field">
+              <label class="field-label">Телефон</label>
+              <input class="input" id="cl-phone" placeholder="+7 ___ ___-__-__" />
+            </div>
+            <div class="field">
+              <label class="field-label">Паспорт (серия номер)</label>
+              <input class="input" id="cl-passport" placeholder="0000 000000" />
+            </div>
+            <div class="field">
+              <label class="field-label">Адрес регистрации</label>
+              <input class="input" id="cl-address" placeholder="г. Грозный, ул. ..." />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ STEP 2: PRODUCT & TERMS ============ -->
+    <div class="step-pane" data-pane="2">
+      <div class="card">
+        <div class="card-hd"><h3>Товар</h3></div>
+        <div class="card-bd">
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 14px;">
+            <div class="field">
+              <label class="field-label">Наименование товара / услуги</label>
+              <div class="combo">
+                <input class="input" id="pd-name" autocomplete="off" placeholder="Поиск в базе или новое наименование" />
+                <div class="combo-list" id="pd-name-list"></div>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field-label">Цвет / характеристика</label>
+              <input class="input" id="pd-color" placeholder="например: Белый" />
+            </div>
+            <div class="field">
+              <label class="field-label">Цена закупки (₽)</label>
+              <input class="input" id="pd-purchase" type="number" placeholder="0" />
+              <div class="field-help">Сколько вы платите поставщику</div>
+            </div>
+            <div class="field">
+              <label class="field-label">Цена продажи клиенту (₽)</label>
+              <input class="input" id="pd-sale" type="number" placeholder="0" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd"><h3>Параметры рассрочки</h3></div>
+        <div class="card-bd">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+            <div class="field">
+              <label class="field-label">Тариф</label>
+              <select class="select" id="dl-tariff"></select>
+              <div class="field-help" id="tariff-hint">Выбирается тариф по умолчанию</div>
+            </div>
+            <div class="field">
+              <label class="field-label">Тип сделки</label>
+              <select class="select" id="deal-type">
+                <option value="Товар со склада">Товар со склада Payd</option>
+                <option value="Товар от партнёра">Товар у партнёра (резерв)</option>
+                <option value="Под заказ">Под заказ</option>
+                <option value="Услуга">Услуга (Иджара)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="field-label">Срок рассрочки</label>
+              <select class="select" id="dl-term"></select>
+            </div>
+            <div class="field">
+              <label class="field-label">Первоначальный взнос (₽)</label>
+              <input class="input" id="dl-down" type="number" placeholder="0" />
+              <div class="field-help" id="down-hint">Платится в день подписания</div>
+            </div>
+            <div class="field" style="grid-column: 1 / -1;">
+              <label class="field-label">Партнёр / магазин</label>
+              <div class="combo">
+                <input class="input" id="dl-partner" autocomplete="off" placeholder="Выбрать или ввести название" />
+                <div class="combo-list" id="dl-partner-list"></div>
+              </div>
+              <div class="field-help">Если новый партнёр — введите название, он добавится в базу</div>
+            </div>
+          </div>
+
+          <div class="calc-result" id="calc-box">
+            <div class="ttl">Расчёт сделки</div>
+            <div class="row"><span>Цена закупки</span><span class="v" id="r-purchase">0 ₽</span></div>
+            <div class="row"><span>Цена продажи</span><span class="v" id="r-sale">0 ₽</span></div>
+            <div class="row"><span>Раскрытая надбавка</span><span class="v" id="r-margin" style="color: var(--success);">0 ₽</span></div>
+            <div class="row"><span>Первоначальный взнос</span><span class="v" id="r-down">0 ₽</span></div>
+            <div class="row"><span>Платёж в месяц</span><span class="v" id="r-monthly">0 ₽</span></div>
+            <div class="row" style="font-size: 11px; color: var(--text-3);"><span>Штрафные проценты</span><span>не применяются (Шариат)</span></div>
+            <div class="row big"><span>Итого к оплате клиентом</span><span class="v" id="r-total">0 ₽</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ STEP 3: DOCUMENTS ============ -->
+    <div class="step-pane" data-pane="3">
+      <div class="card">
+        <div class="card-hd"><h3>Документы</h3></div>
+        <div class="card-bd">
+          <div class="alert info">
+            <div class="ai">i</div>
+            <div>После создания заявки сгенерируются: договор Мурабаха, акт приёма-передачи, график платежей, SMS клиенту с условиями.</div>
+          </div>
+          <div class="field" style="margin-top: 14px;">
+            <label class="field-label">Комментарий к заявке (необязательно)</label>
+            <textarea class="textarea" id="dl-note" placeholder="Любая дополнительная информация"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ STEP 4: CONFIRM ============ -->
+    <div class="step-pane" data-pane="4">
+      <div class="card">
+        <div class="card-hd"><h3>Подтверждение</h3></div>
+        <div class="card-bd">
+          <div class="alert info">
+            <div class="ai">✓</div>
+            <div>Проверьте сводку справа. После создания заявка попадёт в журнал и далее в работу.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; gap: 8px;">
+      <button class="btn" id="step-back" data-no-handler="true">← Назад</button>
+      <button class="btn primary" id="step-next" data-no-handler="true">Далее →</button>
+    </div>
+  </div>
+
+  <!-- ============ SUMMARY ============ -->
+  <div style="display: flex; flex-direction: column; gap: 16px;">
+    <div class="card summary-card">
+      <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 14px;">Сводка заявки</h3>
+      <div class="summary-row"><span class="l">Клиент</span><span class="v" id="sm-client">—</span></div>
+      <div class="summary-row"><span class="l">Тариф</span><span class="v" id="sm-tariff">—</span></div>
+      <div class="summary-row"><span class="l">Тип сделки</span><span class="v" id="sm-type">—</span></div>
+      <div class="summary-row"><span class="l">Товар</span><span class="v" id="sm-product">—</span></div>
+      <div class="summary-row"><span class="l">Партнёр</span><span class="v" id="sm-partner">—</span></div>
+      <div class="summary-row"><span class="l">Срок</span><span class="v" id="sm-term">—</span></div>
+      <div class="summary-row"><span class="l">Первый взнос</span><span class="v" id="sm-down">0 ₽</span></div>
+      <div class="summary-row"><span class="l">Платёж в месяц</span><span class="v" id="sm-monthly">0 ₽</span></div>
+      <div style="border-top: 1px solid var(--border); margin: 10px 0;"></div>
+      <div class="summary-row" style="font-size: 15px;"><span class="l" style="color: var(--text); font-weight: 600;">Сумма заявки</span><span class="v" style="color: var(--primary); font-size: 18px;" id="sm-total">0 ₽</span></div>
+      <div class="summary-row" style="font-size: 12px;"><span class="l">Маржа</span><span class="v" style="color: var(--success);" id="sm-margin">0 ₽</span></div>
+    </div>
+
+    <div class="card" style="padding: 18px;">
+      <div style="font-size: 13px; font-weight: 700; margin-bottom: 10px;">Что произойдёт после создания</div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; gap: 8px; font-size: 12px; color: var(--text-2);"><span style="color: var(--success);">✓</span> Заявка создана и присвоен номер</div>
+        <div style="display: flex; gap: 8px; font-size: 12px; color: var(--text-2);"><span style="color: var(--success);">✓</span> Сформирован график платежей</div>
+        <div style="display: flex; gap: 8px; font-size: 12px; color: var(--text-2);"><span style="color: var(--success);">✓</span> Подготовлен договор для печати</div>
+        <div style="display: flex; gap: 8px; font-size: 12px; color: var(--text-2);"><span style="color: var(--success);">✓</span> Запись в облаке Supabase</div>
+        <div style="display: flex; gap: 8px; font-size: 12px; color: var(--text-2);"><span style="color: var(--text-3);">○</span> Кассир получит платёж первого взноса</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="db.js"></script>
+<script src="app.js"></script>
+<script>
+  PaydApp.mountShell({
+    active: 'zayavka-new',
+    title: 'Новая заявка',
+    breadcrumbs: [
+      { label: 'Главная', href: 'dashboard.html' },
+      { label: 'Журнал заявок', href: 'zhurnal.html' },
+      { label: 'Новая заявка' }
+    ]
+  });
+
+  const form = {
+    client: { name: '', phone: '', passport: '', address: '' },
+    product: { name: '', color: '', purchase: 0, sale: 0 },
+    deal: { tariffId: '', type: 'Товар со склада', term: 6, down: 0, partner: '', note: '' }
+  };
+  const fmt = (v) => Math.round(+v || 0).toLocaleString('ru-RU').replace(/,/g, ' ') + ' ₽';
+
+  let allTariffs = [];
+  let allPartners = [];
+  let allApps = [];
+
+  // ============ Combobox helper ============
+  function combobox({ inputId, listId, getItems, render, onSelect, allowCreate, createLabel }) {
+    const input = document.getElementById(inputId);
+    const list = document.getElementById(listId);
+    if (!input || !list) return;
+
+    function renderList(items, q) {
+      list.innerHTML = '';
+      const matches = items.slice(0, 8);
+      matches.forEach(item => {
+        const li = document.createElement('div');
+        li.className = 'combo-item';
+        li.innerHTML = render(item);
+        li.addEventListener('mousedown', e => {
+          e.preventDefault();
+          input.value = item._label || item.name || '';
+          onSelect(item);
+          list.classList.remove('open');
+        });
+        list.appendChild(li);
+      });
+      if (allowCreate && q && !items.some(it => (it._label || it.name || '').toLowerCase() === q.toLowerCase())) {
+        const li = document.createElement('div');
+        li.className = 'combo-item create';
+        li.textContent = (createLabel || 'Создать новый: ') + q;
+        li.addEventListener('mousedown', e => {
+          e.preventDefault();
+          input.value = q;
+          onSelect({ _new: true, _label: q });
+          list.classList.remove('open');
+        });
+        list.appendChild(li);
+      }
+      list.classList.toggle('open', list.children.length > 0);
+    }
+
+    function search() {
+      const q = input.value.trim().toLowerCase();
+      const items = getItems();
+      const matches = !q ? items : items.filter(it => (it._label || it.name || '').toLowerCase().includes(q));
+      renderList(matches, input.value.trim());
+    }
+
+    input.addEventListener('input', search);
+    input.addEventListener('focus', search);
+    input.addEventListener('blur', () => setTimeout(() => list.classList.remove('open'), 150));
+  }
+
+  // ============ Bind simple inputs ============
+  function bind(id, path) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', () => {
+      const parts = path.split('.');
+      const isNum = el.type === 'number';
+      let target = form;
+      for (let i = 0; i < parts.length - 1; i++) target = target[parts[i]];
+      target[parts[parts.length - 1]] = isNum ? (+el.value || 0) : el.value;
+      recalc();
+    });
+  }
+  bind('cl-name', 'client.name');
+  bind('cl-phone', 'client.phone');
+  bind('cl-passport', 'client.passport');
+  bind('cl-address', 'client.address');
+  bind('pd-name', 'product.name');
+  bind('pd-color', 'product.color');
+  bind('pd-purchase', 'product.purchase');
+  bind('pd-sale', 'product.sale');
+  bind('deal-type', 'deal.type');
+  bind('dl-down', 'deal.down');
+  bind('dl-note', 'deal.note');
+  bind('dl-partner', 'deal.partner');
+
+  document.getElementById('dl-term')?.addEventListener('change', e => { form.deal.term = +e.target.value; recalc(); });
+  document.getElementById('dl-tariff')?.addEventListener('change', e => {
+    form.deal.tariffId = e.target.value;
+    applyTariff();
+    recalc();
+  });
+
+  function applyTariff() {
+    const t = allTariffs.find(t => t.id === form.deal.tariffId);
+    const termSel = document.getElementById('dl-term');
+    const hint = document.getElementById('tariff-hint');
+    const downHint = document.getElementById('down-hint');
+    termSel.innerHTML = '';
+
+    const terms = (t?.terms?.length ? t.terms : [3, 6, 9, 12, 18, 24, 36]);
+    terms.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = m + ' ' + (m === 1 ? 'месяц' : (m < 5 ? 'месяца' : 'месяцев'));
+      termSel.appendChild(opt);
+    });
+    // Pick a sensible default term within the tariff
+    const defaultTerm = terms.includes(6) ? 6 : terms[0];
+    termSel.value = defaultTerm;
+    form.deal.term = defaultTerm;
+
+    if (t) {
+      hint.textContent = 'Тариф: ' + t.name + (t.description ? ' — ' + t.description : '');
+      const minDp = +t.minDp || +t.min_dp || 0;
+      if (minDp > 0) {
+        downHint.textContent = `Минимальный взнос ${minDp}% от цены`;
+      } else {
+        downHint.textContent = 'Без минимального взноса';
+      }
+    }
+  }
+
+  function recalc() {
+    const sale = +form.product.sale || 0;
+    const purchase = +form.product.purchase || 0;
+    const margin = Math.max(0, sale - purchase);
+    const down = Math.min(+form.deal.down || 0, sale);
+    const remaining = Math.max(0, sale - down);
+    const monthly = form.deal.term ? Math.round(remaining / form.deal.term) : 0;
+    const tariff = allTariffs.find(t => t.id === form.deal.tariffId);
+
+    document.getElementById('r-purchase').textContent = fmt(purchase);
+    document.getElementById('r-sale').textContent = fmt(sale);
+    document.getElementById('r-margin').textContent = '+ ' + fmt(margin) + (sale ? ' (' + (margin / sale * 100).toFixed(1) + '%)' : '');
+    document.getElementById('r-down').textContent = fmt(down);
+    document.getElementById('r-monthly').textContent = fmt(monthly) + ' × ' + form.deal.term;
+    document.getElementById('r-total').textContent = fmt(sale);
+
+    document.getElementById('sm-client').textContent = form.client.name || '—';
+    document.getElementById('sm-tariff').textContent = tariff?.name || '—';
+    document.getElementById('sm-type').textContent = form.deal.type;
+    document.getElementById('sm-product').textContent = (form.product.name + (form.product.color ? ' · ' + form.product.color : '')) || '—';
+    document.getElementById('sm-partner').textContent = form.deal.partner || 'Прямая';
+    document.getElementById('sm-term').textContent = form.deal.term + ' мес';
+    document.getElementById('sm-down').textContent = fmt(down);
+    document.getElementById('sm-monthly').textContent = fmt(monthly);
+    document.getElementById('sm-total').textContent = fmt(sale);
+    document.getElementById('sm-margin').textContent = '+ ' + fmt(margin);
+  }
+
+  // ============ Load data + setup comboboxes ============
+  (async function () {
+    if (!window.PaydDB) return;
+
+    // 1. Tariffs
+    try {
+      allTariffs = await PaydDB.list('tariffs') || [];
+    } catch (_) { allTariffs = []; }
+    const sel = document.getElementById('dl-tariff');
+    if (allTariffs.length === 0) {
+      sel.innerHTML = '<option value="">— нет тарифов в системе —</option>';
+    } else {
+      let activeId = '';
+      try { activeId = localStorage.getItem('payd.tariffs.active') || ''; } catch (_) {}
+      const defaultT = allTariffs.find(t => t.id === activeId) ||
+                       allTariffs.find(t => t.is_default || t.isDefault) ||
+                       allTariffs[0];
+      allTariffs.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.id;
+        opt.textContent = t.name + (t === defaultT ? ' (по умолчанию)' : '');
+        sel.appendChild(opt);
+      });
+      sel.value = defaultT.id;
+      form.deal.tariffId = defaultT.id;
+      applyTariff();
+    }
+
+    // 2. Partners
+    try { allPartners = await PaydDB.list('partners') || []; } catch (_) { allPartners = []; }
+
+    // 3. Applications (used to extract previous clients/products)
+    try { allApps = await PaydDB.list('applications') || []; } catch (_) { allApps = []; }
+
+    // Distinct clients with phone/passport/address from previous apps
+    const clientsMap = {};
+    allApps.forEach(a => {
+      const name = a.client_name || a.client?.name;
+      if (!name) return;
+      if (!clientsMap[name]) clientsMap[name] = {
+        _label: name,
+        name,
+        phone: a.client_phone || a.client?.phone || '',
+        passport: a.client_passport || '',
+        address: a.client_address || ''
+      };
+    });
+    const clients = Object.values(clientsMap);
+
+    // Distinct products
+    const productsMap = {};
+    allApps.forEach(a => {
+      const p = a.product || a.calc?.product;
+      if (!p) return;
+      if (!productsMap[p]) productsMap[p] = { _label: p, name: p, color: a.product_color || '' };
+    });
+    const products = Object.values(productsMap);
+
+    // ===== Client combobox =====
+    combobox({
+      inputId: 'cl-name',
+      listId: 'cl-name-list',
+      getItems: () => clients,
+      render: (c) => `<div class="nm">${escapeHtml(c.name)}</div><div class="meta">${escapeHtml(c.phone || 'без телефона')}</div>`,
+      allowCreate: true,
+      createLabel: 'Создать клиента: ',
+      onSelect: (c) => {
+        form.client.name = c._label;
+        if (!c._new) {
+          form.client.phone = c.phone || '';
+          form.client.passport = c.passport || '';
+          form.client.address = c.address || '';
+          document.getElementById('cl-phone').value = c.phone || '';
+          document.getElementById('cl-passport').value = c.passport || '';
+          document.getElementById('cl-address').value = c.address || '';
+        }
+        recalc();
+      }
+    });
+
+    // ===== Product combobox =====
+    combobox({
+      inputId: 'pd-name',
+      listId: 'pd-name-list',
+      getItems: () => products,
+      render: (p) => `<div class="nm">${escapeHtml(p.name)}</div>${p.color ? `<div class="meta">${escapeHtml(p.color)}</div>` : ''}`,
+      allowCreate: true,
+      createLabel: 'Новое: ',
+      onSelect: (p) => {
+        form.product.name = p._label;
+        if (!p._new && p.color) {
+          form.product.color = p.color;
+          document.getElementById('pd-color').value = p.color;
+        }
+        recalc();
+      }
+    });
+
+    // ===== Partner combobox =====
+    combobox({
+      inputId: 'dl-partner',
+      listId: 'dl-partner-list',
+      getItems: () => allPartners.map(p => ({ _label: p.name, ...p })),
+      render: (p) => `<div class="nm">${escapeHtml(p.name)}</div>${p.address ? `<div class="meta">${escapeHtml(p.address)}</div>` : ''}`,
+      allowCreate: true,
+      createLabel: 'Новый партнёр: ',
+      onSelect: (p) => {
+        form.deal.partner = p._label;
+        recalc();
+      }
+    });
+
+    recalc();
+  })();
+
+  function escapeHtml(s) {
+    return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  }
+
+  // ============ Stepper ============
+  let current = 1;
+  function renderStepper() {
+    document.querySelectorAll('.step-cell').forEach((cell, i) => {
+      cell.classList.remove('done', 'current');
+      const idx = i + 1;
+      const circle = cell.querySelector('.step-circle');
+      if (idx < current) {
+        cell.classList.add('done');
+        circle.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+      } else if (idx === current) {
+        cell.classList.add('current');
+        circle.textContent = idx;
+      } else {
+        circle.textContent = idx;
+      }
+    });
+    document.querySelectorAll('.step-line').forEach((line, i) => line.classList.toggle('done', (i + 1) < current));
+    document.querySelectorAll('.step-pane').forEach(p => p.classList.toggle('active', +p.dataset.pane === current));
+    document.getElementById('step-back').style.visibility = current > 1 ? 'visible' : 'hidden';
+    document.getElementById('step-next').textContent = current === 4 ? '✓ Создать заявку' : 'Далее →';
+  }
+
+  function validate(step) {
+    if (step === 1) {
+      if (!form.client.name?.trim()) return 'Введите ФИО клиента';
+      if (!form.client.phone?.trim()) return 'Введите телефон клиента';
+    }
+    if (step === 2) {
+      if (!form.product.name?.trim()) return 'Введите наименование товара';
+      if (!form.product.sale) return 'Введите цену продажи';
+      if (form.deal.down >= form.product.sale) return 'Первый взнос больше или равен цене';
+      const t = allTariffs.find(t => t.id === form.deal.tariffId);
+      const minDp = (+t?.minDp || +t?.min_dp || 0);
+      if (minDp > 0) {
+        const required = form.product.sale * minDp / 100;
+        if (form.deal.down < required) return `По тарифу нужен взнос минимум ${minDp}% (${Math.round(required)} ₽)`;
+      }
+    }
+    return null;
+  }
+
+  document.getElementById('step-back').addEventListener('click', e => {
+    e.preventDefault();
+    if (current > 1) { current--; renderStepper(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  });
+
+  document.getElementById('step-next').addEventListener('click', async e => {
+    e.preventDefault();
+    if (current < 4) {
+      const err = validate(current);
+      if (err) { PaydApp.toast(err, 'error'); return; }
+      current++;
+      renderStepper();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      // CREATE
+      const number = String(Date.now()).slice(-10).padStart(10, '0');
+      const id = 'app_' + Date.now();
+      const sale = +form.product.sale || 0;
+      const down = +form.deal.down || 0;
+      const remaining = Math.max(0, sale - down);
+      const monthly = form.deal.term ? Math.round(remaining / form.deal.term) : 0;
+
+      // If new partner — create
+      if (form.deal.partner && !allPartners.some(p => p.name === form.deal.partner)) {
+        try { await PaydDB.upsert('partners', { name: form.deal.partner, status: 'active', commission: 4 }); } catch (_) {}
+      }
+
+      const app = {
+        id,
+        number,
+        client_name: form.client.name,
+        client_phone: form.client.phone,
+        client_passport: form.client.passport,
+        client_address: form.client.address,
+        product: form.product.name + (form.product.color ? ' · ' + form.product.color : ''),
+        product_color: form.product.color,
+        type: form.deal.type,
+        amount: sale,
+        down_payment: down,
+        term: form.deal.term,
+        monthly,
+        source: 'manual',
+        ts: new Date().toISOString(),
+        client: { name: form.client.name, phone: form.client.phone },
+        calc: { price: sale, dpAmount: down, term: form.deal.term, monthly, type: form.deal.type, typeLabel: form.deal.type, product: form.product.name },
+        partner: form.deal.partner || null
+      };
+
+      try {
+        await PaydDB.upsert('applications', app);
+        PaydApp.toast('Заявка создана', { type: 'success', subtitle: 'Номер #' + number });
+        setTimeout(() => { location.href = 'zhurnal.html'; }, 900);
+      } catch (err) {
+        console.error(err);
+        PaydApp.toast('Ошибка сохранения: ' + err.message, 'error');
+      }
+    }
+  });
+
+  renderStepper();
+</script>
+</body>
+</html>

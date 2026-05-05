@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(awk '/<!-- =============== CENTER COLUMN/,/^  <\\\\/div>$/' /Users/ibra/Desktop/Payd/zayavka.html)",
+      "Bash(open \"/Users/ibra/Desktop/Payd/zayavka.html?id=142\")",
+      "Bash(open -a \"Google Chrome\" \"file:///Users/ibra/Desktop/Payd/settings.html\")",
+      "Bash(open \"/Users/ibra/Desktop/Payd/inkassator.html\")",
+      "Bash(open \"/Users/ibra/Desktop/Payd/zhurnal.html\")",
+      "Bash(open \"/Users/ibra/Desktop/Payd/kassa.html\")",
+      "Bash(node -e ' *)",
+      "Bash(python3)",
+      "Bash(cat)",
+      "Bash(python3 /tmp/check.py)",
+      "Bash(python3 /tmp/find_unmatched.py)",
+      "Bash(grep -n \"PaydApp.toast\\(\\\\`Платёж\\\\|addRecent\\({\\\\|sel.remove\\(\\)\" /Users/ibra/Desktop/Payd/kassir.html)",
+      "Bash(sed -i '' 's|<a href=\"zayavka.html?id=147&back=partner.html\" class=\"btn sm\" onclick=\"event.stopPropagation\\(\\)\">Открыть</a>|<button class=\"btn primary sm pay-btn\" onclick=\"event.stopPropagation\\(\\)\" data-app=\"147\" data-name=\"Тазуев Р. С.\" data-amount=\"84200\" data-monthly=\"7018\" data-product=\"iPhone 16 Pro 256GB · Натуральный титан\" data-phone=\"+7 928 891-23-45\">💰 Принять оплату</button>|' /Users/ibra/Desktop/Payd/partner.html)",
+      "Bash(sed -i '' 's|<a href=\"zayavka.html?id=148&back=partner.html\" class=\"btn sm\" onclick=\"event.stopPropagation\\(\\)\">Открыть</a>|<button class=\"btn primary sm pay-btn\" onclick=\"event.stopPropagation\\(\\)\" data-app=\"148\" data-name=\"Магомадов Л. Х.\" data-amount=\"145000\" data-monthly=\"12083\" data-product=\"MacBook Air M3 13&quot; 512GB · Серебристый\" data-phone=\"+7 928 776-12-08\">💰 Принять оплату</button>|' /Users/ibra/Desktop/Payd/partner.html)",
+      "Bash(sed -i '' 's|<a href=\"zayavka.html?id=150&back=partner.html\" class=\"btn sm\" onclick=\"event.stopPropagation\\(\\)\">Открыть</a>|<button class=\"btn primary sm pay-btn\" onclick=\"event.stopPropagation\\(\\)\" data-app=\"150\" data-name=\"Исмаилов Х. М.\" data-amount=\"128500\" data-monthly=\"10708\" data-product=\"Samsung QLED 65\\\\\" · Чёрный\" data-phone=\"+7 928 612-08-44\">💰 Принять оплату</button>|' /Users/ibra/Desktop/Payd/partner.html)",
+      "Bash(sed -i '' 's|<a href=\"zayavka.html?id=143&back=partner.html\" class=\"btn sm\" onclick=\"event.stopPropagation\\(\\)\">Открыть</a>|<button class=\"btn primary sm pay-btn\" onclick=\"event.stopPropagation\\(\\)\" data-app=\"143\" data-name=\"Магомедов А. С.\" data-amount=\"12800\" data-monthly=\"3500\" data-product=\"Airpods 4 ANC · Белый\" data-phone=\"+7 989 156-22-44\">💰 Принять оплату</button>|' /Users/ibra/Desktop/Payd/partner.html)",
+      "Bash(sed -i '' 's|<a href=\"zayavka.html?id=142&back=partner.html\" class=\"btn sm\" onclick=\"event.stopPropagation\\(\\)\">Открыть</a>|<button class=\"btn primary sm pay-btn\" onclick=\"event.stopPropagation\\(\\)\" data-app=\"142\" data-name=\"Даурбекова Л. С.\" data-amount=\"12800\" data-monthly=\"3500\" data-product=\"Airpods 4 CASE · Белый\" data-phone=\"+7 989 918-51-58\">💰 Принять оплату</button>|' /Users/ibra/Desktop/Payd/partner.html)",
+      "Bash(open \"/Users/ibra/Desktop/Payd/struktura.html\")",
+      "Bash(xargs -I {} basename {})"
+    ]
+  }
+}

@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Партнёры — Payd</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  /* Partner tariff toggles */
+  .p-toggle-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 11px 14px;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+    transition: all .15s;
+  }
+  .p-toggle-row:has(.p-switch.on) { border-color: var(--primary); background: var(--primary-soft); }
+  .p-toggle-name { font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .p-toggle-desc { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+  .p-tag-zero, .p-tag-islamic {
+    font-size: 9px; padding: 2px 6px; border-radius: 5px;
+    text-transform: uppercase; letter-spacing: .04em; font-weight: 700;
+  }
+  .p-tag-zero { background: var(--success-soft); color: var(--success-2); }
+  .p-tag-islamic { background: #d1fae5; color: #047857; }
+  .p-switch {
+    position: relative; width: 40px; height: 22px;
+    background: var(--border-strong); border-radius: 999px;
+    cursor: pointer; flex-shrink: 0; transition: background .2s;
+  }
+  .p-switch::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 18px; height: 18px; background: white; border-radius: 50%;
+    transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  }
+  .p-switch.on { background: var(--primary); }
+  .p-switch.on::after { transform: translateX(18px); }
+
+  .partner-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+  .partner-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .partner-card:hover { border-color: var(--primary); box-shadow: var(--shadow-md); transform: translateY(-2px); }
+  .partner-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+  .partner-logo {
+    width: 56px; height: 56px;
+    border-radius: 12px;
+    background: linear-gradient(160deg, #1a2942 0%, #0d1730 100%) !important;
+    border: 1px solid rgba(255,255,255,.08);
+    color: #c7d3ec !important;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 4px 10px -4px rgba(15,23,42,.3);
+  }
+  .partner-name { font-size: 15px; font-weight: 700; }
+  .partner-meta { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+
+  .partner-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .ps-item .l { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; }
+  .ps-item .v { font-size: 14px; font-weight: 700; margin-top: 2px; }
+
+  .partner-tags { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+<div id="app-root">
+
+<div class="page-head">
+  <div>
+    <h1>Партнёры</h1>
+    <div class="desc">Магазины-партнёры и торговые точки · 28 партнёров</div>
+  </div>
+  <div class="page-head-actions">
+    <button class="btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Экспорт
+    </button>
+    <button class="btn primary" id="btn-new-partner">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Новый партнёр
+    </button>
+  </div>
+</div>
+
+<div class="stat-grid cols-4 mb-5">
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label">Всего партнёров</div>
+    <div class="stat-value" style="font-size: 22px;">28</div>
+    <div class="stat-sub" style="color: var(--success);">+3 за месяц</div>
+  </div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label">Активные</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--success);">24</div>
+    <div class="stat-sub">приводят сделки</div>
+  </div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label">Сделок через партнёров</div>
+    <div class="stat-value" style="font-size: 22px;">86</div>
+    <div class="stat-sub">58% всех заявок</div>
+  </div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label">Выплачено комиссий</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--purple);">₽ 184 200</div>
+    <div class="stat-sub">за апрель</div>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <div class="filter-search">
+    <span class="si"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+    <input type="text" placeholder="Поиск партнёра, ИНН, контактного лица..." />
+  </div>
+  <div class="filter-extras">
+    <select><option>Все типы</option></select>
+    <select><option>Все города</option></select>
+    <select><option>Сортировка: по обороту</option></select>
+  </div>
+</div>
+
+<div class="partner-grid">
+
+  <div class="partner-card">
+    <div class="partner-head">
+      <div class="partner-logo" style="background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
+      <div style="flex: 1; min-width: 0;">
+        <div class="partner-name">ТехноМир — Грозный</div>
+        <div class="partner-meta">ИП Тагаев Р.А. · Аргун, ул. Шоссейная 144</div>
+        <div class="partner-tags">
+          <span class="badge primary">ТОП партнёр</span>
+          <span class="badge success">Активный</span>
+        </div>
+      </div>
+    </div>
+    <div class="partner-stats">
+      <div class="ps-item"><div class="l">Сделок</div><div class="v">42</div></div>
+      <div class="ps-item"><div class="l">Оборот</div><div class="v">2.4 млн</div></div>
+      <div class="ps-item"><div class="l">Комиссия</div><div class="v" style="color: var(--success);">5%</div></div>
+    </div>
+  </div>
+
+  <div class="partner-card">
+    <div class="partner-head">
+      <div class="partner-logo" style="background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #1d4ed8;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="1.5"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>
+      <div style="flex: 1; min-width: 0;">
+        <div class="partner-name">ДигиМаркет — Грозный Сити</div>
+        <div class="partner-meta">ООО «Альянс» · Грозный, ТЦ Гранд</div>
+        <div class="partner-tags">
+          <span class="badge primary">ТОП партнёр</span>
+          <span class="badge success">Активный</span>
+        </div>
+      </div>
+    </div>
+    <div class="partner-stats">
+      <div class="ps-item"><div class="l">Сделок</div><div class="v">38</div></div>
+      <div class="ps-item"><div class="l">Оборот</div><div class="v">1.8 млн</div></div>
+      <div class="ps-item"><div class="l">Комиссия</div><div class="v" style="color: var(--success);">4%</div></div>
+    </div>
+  </div>
+
+  <div class="partner-card">
+    <div class="partner-head">
+      <div class="partner-logo" style="background: linear-gradient(135deg, #fce7f3, #fbcfe8); color: #be185d;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
+      <div style="flex: 1; min-width: 0;">
+        <div class="partner-name">Электро-Гранд</div>
+        <div class="partner-meta">ООО «РТК» · Грозный, ул. Ахмадова 36</div>
+        <div class="partner-tags">
+          <span class="badge success">Активный</span>
+        </div>
+      </div>
+    </div>
+    <div class="partner-stats">
+      <div class="ps-item"><div class="l">Сделок</div><div class="v">24</div></div>
+      <div class="ps-item"><div class="l">Оборот</div><div class="v">982 К</div></div>
+      <div class="ps-item"><div class="l">Комиссия</div><div class="v" style="color: var(--success);">4%</div></div>
+    </div>
+  </div>
+
+  <div class="partner-card">
+    <div class="partner-head">
+      <div class="partner-logo" style="background: linear-gradient(135deg, #ddd6fe, #c4b5fd); color: #6d28d9;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+      <div style="flex: 1; min-width: 0;">
+        <div class="partner-name">Мебельный мир</div>
+        <div class="partner-meta">ИП Магомадов И.С. · Грозный, ул. Мира 12</div>
+        <div class="partner-tags">
+          <span class="badge success">Активный</span>
+        </div>
+      </div>
+    </div>
+    <div class="partner-stats">
+      <div class="ps-item"><div class="l">Сделок</div><div class="v">18</div></div>
+      <div class="ps-item"><div class="l">Оборот</div><div class="v">748 К</div></div>
+      <div class="ps-item"><div class="l">Комиссия</div><div class="v" style="color: var(--success);">3%</div></div>
+    </div>
+  </div>
+
+  <div class="partner-card">
+    <div class="partner-head">
+      <div class="partner-logo" style="background: linear-gradient(135deg, #d1fae5, #a7f3d0); color: #047857;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+      <div style="flex: 1; min-width: 0;">
+        <div class="partner-name">Фотомаркет</div>
+        <div class="partner-meta">ИП Хадаев М.У. · Грозный, ул. Лорсанова 24</div>
+        <div class="partner-tags">
+          <span class="badge success">Активный</span>
+        </div>
+      </div>
+    </div>
+    <div class="partner-stats">
+      <div class="ps-item"><div class="l">Сделок</div><div class="v">14</div></div>
+      <div class="ps-item"><div class="l">Оборот</div><div class="v">624 К</div></div>
+      <div class="ps-item"><div class="l">Комиссия</div><div class="v" style="color: var(--success);">3%</div></div>
+    </div>
+  </div>
+
+  <div class="partner-card">
+    <div class="partner-head">
+      <div class="partner-logo" style="background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="6"/><polyline points="12 10 12 12 13 13"/><path d="M16.13 7.66l-.81-4.05a2 2 0 0 0-2-1.61h-2.68a2 2 0 0 0-2 1.61l-.78 4.05"/><path d="M7.88 16.36l.8 4a2 2 0 0 0 2 1.61h2.72a2 2 0 0 0 2-1.61l.81-4.05"/></svg></div>
+      <div style="flex: 1; min-width: 0;">
+        <div class="partner-name">Часовой Дом</div>
+        <div class="partner-meta">ИП Идрисов А.Х. · Грозный, ТЦ Беркат</div>
+        <div class="partner-tags">
+          <span class="badge success">Активный</span>
+        </div>
+      </div>
+    </div>
+    <div class="partner-stats">
+      <div class="ps-item"><div class="l">Сделок</div><div class="v">11</div></div>
+      <div class="ps-item"><div class="l">Оборот</div><div class="v">486 К</div></div>
+      <div class="ps-item"><div class="l">Комиссия</div><div class="v" style="color: var(--success);">3%</div></div>
+    </div>
+  </div>
+
+  <div class="partner-card">
+    <div class="partner-head">
+      <div class="partner-logo" style="background: linear-gradient(135deg, #fed7aa, #fdba74); color: #c2410c;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"/></svg></div>
+      <div style="flex: 1; min-width: 0;">
+        <div class="partner-name">Велоспорт-Кавказ</div>
+        <div class="partner-meta">ООО «Спортивные товары» · Грозный</div>
+        <div class="partner-tags">
+          <span class="badge gray">Новый</span>
+        </div>
+      </div>
+    </div>
+    <div class="partner-stats">
+      <div class="ps-item"><div class="l">Сделок</div><div class="v">4</div></div>
+      <div class="ps-item"><div class="l">Оборот</div><div class="v">186 К</div></div>
+      <div class="ps-item"><div class="l">Комиссия</div><div class="v" style="color: var(--success);">3%</div></div>
+    </div>
+  </div>
+
+  <div class="partner-card">
+    <div class="partner-head">
+      <div class="partner-logo" style="background: linear-gradient(135deg, #e0e7ff, #c7d2fe); color: #4338ca;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="17 21 12 17 7 21"/></svg></div>
+      <div style="flex: 1; min-width: 0;">
+        <div class="partner-name">Самсунг-Центр</div>
+        <div class="partner-meta">ИП Висаитов Р.Т. · Грозный, пр. Кадырова</div>
+        <div class="partner-tags">
+          <span class="badge success">Активный</span>
+        </div>
+      </div>
+    </div>
+    <div class="partner-stats">
+      <div class="ps-item"><div class="l">Сделок</div><div class="v">22</div></div>
+      <div class="ps-item"><div class="l">Оборот</div><div class="v">1.2 млн</div></div>
+      <div class="ps-item"><div class="l">Комиссия</div><div class="v" style="color: var(--success);">4%</div></div>
+    </div>
+  </div>
+
+  <div class="partner-card">
+    <div class="partner-head">
+      <div class="partner-logo" style="background: linear-gradient(135deg, #f3e8ff, #e9d5ff); color: #7c3aed;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="11" x2="10" y2="11"/><line x1="8" y1="9" x2="8" y2="13"/><line x1="15" y1="12" x2="15.01" y2="12"/><line x1="18" y1="10" x2="18.01" y2="10"/><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z"/></svg></div>
+      <div style="flex: 1; min-width: 0;">
+        <div class="partner-name">GameZone</div>
+        <div class="partner-meta">ИП Хатуев А.С. · Грозный, ТЦ Гранд</div>
+        <div class="partner-tags">
+          <span class="badge success">Активный</span>
+        </div>
+      </div>
+    </div>
+    <div class="partner-stats">
+      <div class="ps-item"><div class="l">Сделок</div><div class="v">9</div></div>
+      <div class="ps-item"><div class="l">Оборот</div><div class="v">324 К</div></div>
+      <div class="ps-item"><div class="l">Комиссия</div><div class="v" style="color: var(--success);">3%</div></div>
+    </div>
+  </div>
+
+  <div class="partner-card">
+    <div class="partner-head">
+      <div class="partner-logo" style="background: linear-gradient(135deg, #fee2e2, #fecaca); color: #b91c1c;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+      <div style="flex: 1; min-width: 0;">
+        <div class="partner-name">Бытовая Техника+</div>
+        <div class="partner-meta">ООО «БТ-Маркет» · Аргун, ул. Нагорная</div>
+        <div class="partner-tags">
+          <span class="badge warning">Низкая активность</span>
+        </div>
+      </div>
+    </div>
+    <div class="partner-stats">
+      <div class="ps-item"><div class="l">Сделок</div><div class="v">3</div></div>
+      <div class="ps-item"><div class="l">Оборот</div><div class="v">128 К</div></div>
+      <div class="ps-item"><div class="l">Комиссия</div><div class="v" style="color: var(--success);">3%</div></div>
+    </div>
+  </div>
+
+  <div class="partner-card">
+    <div class="partner-head">
+      <div class="partner-logo" style="background: linear-gradient(135deg, #ccfbf1, #99f6e4); color: #0f766e;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
+      <div style="flex: 1; min-width: 0;">
+        <div class="partner-name">МобиПлюс</div>
+        <div class="partner-meta">ИП Алиев С.М. · Гудермес, ул. Ленина 8</div>
+        <div class="partner-tags">
+          <span class="badge success">Активный</span>
+        </div>
+      </div>
+    </div>
+    <div class="partner-stats">
+      <div class="ps-item"><div class="l">Сделок</div><div class="v">7</div></div>
+      <div class="ps-item"><div class="l">Оборот</div><div class="v">412 К</div></div>
+      <div class="ps-item"><div class="l">Комиссия</div><div class="v" style="color: var(--success);">3%</div></div>
+    </div>
+  </div>
+
+  <div class="partner-card">
+    <div class="partner-head">
+      <div class="partner-logo" style="background: linear-gradient(135deg, #f1f5f9, #e2e8f0); color: #475569;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="10" x2="6.01" y2="10"/><line x1="10" y1="10" x2="10.01" y2="10"/><line x1="14" y1="10" x2="14.01" y2="10"/><line x1="18" y1="10" x2="18.01" y2="10"/><line x1="6" y1="14" x2="18" y2="14"/></svg></div>
+      <div style="flex: 1; min-width: 0;">
+        <div class="partner-name">КомпМастер</div>
+        <div class="partner-meta">ИП Тамаев Б.К. · Грозный, ул. Жуковского</div>
+        <div class="partner-tags">
+          <span class="badge danger">Заморожен</span>
+        </div>
+      </div>
+    </div>
+    <div class="partner-stats">
+      <div class="ps-item"><div class="l">Сделок</div><div class="v">2</div></div>
+      <div class="ps-item"><div class="l">Оборот</div><div class="v">86 К</div></div>
+      <div class="ps-item"><div class="l">Комиссия</div><div class="v" style="color: var(--text-3);">—</div></div>
+    </div>
+  </div>
+
+</div>
+
+<div style="text-align: center; padding: 20px;">
+  <button class="btn">Загрузить ещё (16 партнёров)</button>
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="db.js"></script>
+<script src="app.js"></script>
+<script>
+  PaydApp.mountShell({
+    active: 'partners',
+    title: 'Партнёры',
+    breadcrumbs: [{ label: 'Главная', href: 'dashboard.html' }, { label: 'Партнёры' }]
+  });
+
+  // ============================================================
+  // PARTNER CRUD + LOCALSTORAGE SYNC
+  // ============================================================
+  (function () {
+    const STORAGE_KEY = 'payd.partners.v1';
+    const ACTIVE_KEY = 'payd.partners.active';
+
+    function loadAll() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+      catch (_) { return {}; }
+    }
+    function saveAll(map) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+    }
+    function savePartner(data, oldName = null) {
+      const all = loadAll();
+      if (oldName && oldName !== data.name) delete all[oldName];
+      all[data.name] = data;
+      saveAll(all);
+      localStorage.setItem(ACTIVE_KEY, data.name);
+    }
+    function removePartner(name) {
+      const all = loadAll();
+      delete all[name];
+      saveAll(all);
+    }
+    // Expose for use in functions below
+    window._partnerStore = { loadAll, savePartner, removePartner };
+    // Branded SVG icons by category
+    const ICONS = {
+      phone:    '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>',
+      laptop:   '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="1.5"/><line x1="2" y1="20" x2="22" y2="20"/></svg>',
+      tv:       '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="17 21 12 17 7 21"/></svg>',
+      camera:   '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
+      watch:    '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="6"/><polyline points="12 10 12 12 13 13"/><path d="M16.13 7.66l-.81-4.05a2 2 0 0 0-2-1.61h-2.68a2 2 0 0 0-2 1.61l-.78 4.05"/><path d="M7.88 16.36l.8 4a2 2 0 0 0 2 1.61h2.72a2 2 0 0 0 2-1.61l.81-4.05"/></svg>',
+      bike:     '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"/></svg>',
+      game:     '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="11" x2="10" y2="11"/><line x1="8" y1="9" x2="8" y2="13"/><line x1="15" y1="12" x2="15.01" y2="12"/><line x1="18" y1="10" x2="18.01" y2="10"/><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258A4 4 0 0 0 17.32 5z"/></svg>',
+      home:     '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+      sofa:     '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 11v5a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v2H7v-2a2 2 0 0 0-4 0z"/></svg>',
+      keyboard: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="10" x2="6.01" y2="10"/><line x1="10" y1="10" x2="10.01" y2="10"/><line x1="14" y1="10" x2="14.01" y2="10"/><line x1="18" y1="10" x2="18.01" y2="10"/><line x1="6" y1="14" x2="18" y2="14"/></svg>',
+      shop:     '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1-5h16l1 5"/><path d="M5 9v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9"/><path d="M9 21v-6a3 3 0 0 1 6 0v6"/></svg>'
+    };
+
+    // Color presets for icon backgrounds
+    const PALETTES = {
+      yellow: { bg: 'linear-gradient(135deg, #fef3c7, #fde68a)', color: '#92400e' },
+      blue:   { bg: 'linear-gradient(135deg, #dbeafe, #bfdbfe)', color: '#1d4ed8' },
+      pink:   { bg: 'linear-gradient(135deg, #fce7f3, #fbcfe8)', color: '#be185d' },
+      purple: { bg: 'linear-gradient(135deg, #ddd6fe, #c4b5fd)', color: '#6d28d9' },
+      green:  { bg: 'linear-gradient(135deg, #d1fae5, #a7f3d0)', color: '#047857' },
+      orange: { bg: 'linear-gradient(135deg, #fed7aa, #fdba74)', color: '#c2410c' },
+      indigo: { bg: 'linear-gradient(135deg, #e0e7ff, #c7d2fe)', color: '#4338ca' },
+      violet: { bg: 'linear-gradient(135deg, #f3e8ff, #e9d5ff)', color: '#7c3aed' },
+      red:    { bg: 'linear-gradient(135deg, #fee2e2, #fecaca)', color: '#b91c1c' },
+      teal:   { bg: 'linear-gradient(135deg, #ccfbf1, #99f6e4)', color: '#0f766e' },
+      gray:   { bg: 'linear-gradient(135deg, #f1f5f9, #e2e8f0)', color: '#475569' }
+    };
+
+    function makeModal({ title, body, ok = 'Сохранить', cancel = 'Отмена', onOk, danger = false, dangerBtn = null }) {
+      const backdrop = document.createElement('div');
+      backdrop.className = 'payd-modal-backdrop';
+      backdrop.innerHTML = `
+        <div class="payd-modal" style="max-width: 540px;">
+          <h3>${title}</h3>
+          ${body}
+          <div class="payd-modal-actions" style="margin-top: 18px;">
+            ${dangerBtn ? `<button class="btn danger danger-btn" style="margin-right: auto;">${dangerBtn}</button>` : ''}
+            <button class="btn cancel-btn">${cancel}</button>
+            <button class="btn ${danger ? 'danger' : 'primary'} ok-btn">${ok}</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(backdrop);
+      requestAnimationFrame(() => backdrop.classList.add('show'));
+      const close = () => { backdrop.classList.remove('show'); setTimeout(() => backdrop.remove(), 150); };
+      backdrop.querySelector('.cancel-btn').onclick = close;
+      backdrop.onclick = e => { if (e.target === backdrop) close(); };
+      // Wire tariff-type toggle switches inside modal
+      backdrop.querySelectorAll('.p-switch[data-tg]').forEach(sw => {
+        sw.addEventListener('click', () => sw.classList.toggle('on'));
+      });
+      backdrop.querySelector('.ok-btn').onclick = () => {
+        const result = onOk?.(backdrop.querySelector('.payd-modal'));
+        if (result !== false) close();
+      };
+      return backdrop;
+    }
+
+    function partnerForm(data = {}) {
+      const sel = (val, opts) => opts.map(([v, l]) => `<option value="${v}"${v===val?' selected':''}>${l}</option>`).join('');
+      const t = data.tariff || {};
+      const types = t.types || ['standard', 'murabaha'];
+      const terms = t.terms || [3, 6, 12, 18, 24, 36];
+      const rates = t.murabahaRates || { 3:5, 6:8, 12:12, 18:16, 24:20, 36:28 };
+      const ALL_TERMS = [3, 6, 9, 12, 18, 24, 36, 48];
+      const chk = (cond) => cond ? ' checked' : '';
+      const termCheckboxes = ALL_TERMS.map(m => `
+        <label style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 13px;">
+          <input type="checkbox" class="t-term" value="${m}"${chk(terms.includes(m))} />
+          ${m} мес
+        </label>`).join('');
+      const rateRows = ALL_TERMS.map(m => `
+        <div class="field" style="margin: 0;">
+          <label class="field-label" style="font-size: 11px;">${m} мес</label>
+          <input class="input t-rate" data-term="${m}" value="${rates[m] ?? ''}" placeholder="—" style="padding: 8px 10px; font-size: 13px;" />
+        </div>`).join('');
+      return `
+        <div style="display: grid; gap: 14px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div class="field">
+              <label class="field-label">Название магазина *</label>
+              <input class="input" id="p-name" value="${data.name || ''}" placeholder="Например: ТехноМир — Грозный" />
+            </div>
+            <div class="field">
+              <label class="field-label">Юр. лицо</label>
+              <input class="input" id="p-legal" value="${data.legal || ''}" placeholder="ИП Тагаев Р.А. / ООО ..." />
+            </div>
+            <div class="field">
+              <label class="field-label">ИНН</label>
+              <input class="input" id="p-inn" value="${data.inn || ''}" placeholder="200148273912" />
+            </div>
+            <div class="field">
+              <label class="field-label">Контактное лицо</label>
+              <input class="input" id="p-contact" value="${data.contact || ''}" placeholder="Тагаев Руслан Анатольевич" />
+            </div>
+            <div class="field" style="grid-column: span 2;">
+              <label class="field-label">Адрес торговой точки *</label>
+              <input class="input" id="p-address" value="${data.address || ''}" placeholder="Грозный, пр. Путина, 18" />
+            </div>
+            <div class="field">
+              <label class="field-label">Телефон</label>
+              <input class="input" id="p-phone" value="${data.phone || ''}" placeholder="+7 8712 22-44-66" />
+            </div>
+            <div class="field">
+              <label class="field-label">Email</label>
+              <input class="input" id="p-email" value="${data.email || ''}" placeholder="info@partner.ru" />
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
+            <div class="field">
+              <label class="field-label">Категория</label>
+              <select class="select" id="p-category">${sel(data.category || 'phone', [
+                ['phone','Смартфоны'],['laptop','Ноутбуки'],['tv','ТВ / Аудио'],
+                ['camera','Фототехника'],['watch','Часы'],['game','Игровые'],
+                ['home','Бытовая техника'],['sofa','Мебель'],['bike','Транспорт'],
+                ['keyboard','Компьютеры'],['shop','Прочее']
+              ])}</select>
+            </div>
+            <div class="field">
+              <label class="field-label">Цвет иконки</label>
+              <select class="select" id="p-color">${sel(data.color || 'blue', [
+                ['blue','Синий'],['yellow','Жёлтый'],['green','Зелёный'],['purple','Фиолетовый'],
+                ['pink','Розовый'],['orange','Оранжевый'],['red','Красный'],['teal','Бирюзовый'],
+                ['indigo','Индиго'],['violet','Сиреневый'],['gray','Серый']
+              ])}</select>
+            </div>
+            <div class="field">
+              <label class="field-label">Комиссия Payd</label>
+              <input class="input" id="p-commission" value="${data.commission || '4'}" placeholder="4" />
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label">Статус</label>
+            <select class="select" id="p-status">${sel(data.status || 'success', [
+              ['success','Активный'],['gray','Новый'],['warning','Низкая активность'],['danger','Заморожен']
+            ])}</select>
+          </div>
+
+          <div style="border-top: 1px solid var(--border); padding-top: 14px; margin-top: 4px;">
+            <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">Тариф рассрочки</div>
+            <div style="font-size: 12px; color: var(--text-3); margin-bottom: 12px;">Эти параметры подставит калькулятор при ссылке <code style="background: var(--surface-2); padding: 1px 5px; border-radius: 4px; font-size: 11px;">calculator.html?partner=&lt;имя&gt;</code></div>
+
+            <div class="field">
+              <label class="field-label">Доступные продукты</label>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div class="p-toggle-row">
+                  <div>
+                    <div class="p-toggle-name">Стандартная рассрочка <span class="p-tag-zero">0%</span></div>
+                    <div class="p-toggle-desc">Без переплаты</div>
+                  </div>
+                  <div class="p-switch ${types.includes('standard')?'on':''}" data-tg="standard"></div>
+                </div>
+                <div class="p-toggle-row">
+                  <div>
+                    <div class="p-toggle-name">Мурабаха <span class="p-tag-islamic">Шариат</span></div>
+                    <div class="p-toggle-desc">Исламская рассрочка на товар</div>
+                  </div>
+                  <div class="p-switch ${types.includes('murabaha')?'on':''}" data-tg="murabaha"></div>
+                </div>
+                <div class="p-toggle-row">
+                  <div>
+                    <div class="p-toggle-name">Иджара <span class="p-tag-islamic">Шариат</span></div>
+                    <div class="p-toggle-desc">Исламский лизинг услуг</div>
+                  </div>
+                  <div class="p-switch ${types.includes('ijara')?'on':''}" data-tg="ijara"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field-label">Доступные сроки</label>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">${termCheckboxes}</div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+              <div class="field">
+                <label class="field-label">Мин. первый взнос, %</label>
+                <input class="input" id="t-mindp" value="${t.minDp ?? 0}" placeholder="0" />
+              </div>
+              <div class="field">
+                <label class="field-label">Макс. сумма, ₽</label>
+                <input class="input" id="t-maxamount" value="${t.maxAmount ?? 3000000}" placeholder="3000000" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field-label">Ставка Мурабаха (% годовых) по сроку</label>
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">${rateRows}</div>
+              <div style="font-size: 11px; color: var(--text-3); margin-top: 6px;">Оставьте пустым — срок будет недоступен для Мурабахи</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function readForm(modal) {
+      const types = [];
+      if (modal.querySelector('.p-switch[data-tg="standard"]')?.classList.contains('on')) types.push('standard');
+      if (modal.querySelector('.p-switch[data-tg="murabaha"]')?.classList.contains('on')) types.push('murabaha');
+      if (modal.querySelector('.p-switch[data-tg="ijara"]')?.classList.contains('on')) types.push('ijara');
+      const terms = [...modal.querySelectorAll('.t-term:checked')]
+        .map(c => parseInt(c.value, 10))
+        .sort((a, b) => a - b);
+      const murabahaRates = {};
+      modal.querySelectorAll('.t-rate').forEach(inp => {
+        const v = parseFloat(inp.value);
+        if (!isNaN(v) && v >= 0) murabahaRates[parseInt(inp.dataset.term, 10)] = v;
+      });
+      return {
+        name: modal.querySelector('#p-name').value.trim(),
+        legal: modal.querySelector('#p-legal').value.trim(),
+        inn: modal.querySelector('#p-inn').value.trim(),
+        contact: modal.querySelector('#p-contact').value.trim(),
+        address: modal.querySelector('#p-address').value.trim(),
+        phone: modal.querySelector('#p-phone').value.trim(),
+        email: modal.querySelector('#p-email').value.trim(),
+        category: modal.querySelector('#p-category').value,
+        color: modal.querySelector('#p-color').value,
+        commission: modal.querySelector('#p-commission').value.replace(/\D/g, '') || '4',
+        status: modal.querySelector('#p-status').value,
+        tariff: {
+          types,
+          terms: terms.length ? terms : [3, 6, 12, 18, 24, 36],
+          minDp: parseInt(modal.querySelector('#t-mindp').value, 10) || 0,
+          maxAmount: parseInt(String(modal.querySelector('#t-maxamount').value).replace(/\D/g, ''), 10) || 3000000,
+          murabahaRates
+        }
+      };
+    }
+
+    function buildCard(data, isNew = false) {
+      const palette = PALETTES[data.color] || PALETTES.blue;
+      const icon = ICONS[data.category] || ICONS.shop;
+      const STATUS_LABELS = {
+        success: ['success', 'Активный'],
+        gray:    ['gray', 'Новый'],
+        warning: ['warning', 'Низкая активность'],
+        danger:  ['danger', 'Заморожен']
+      };
+      const [statusCls, statusLabel] = STATUS_LABELS[data.status] || STATUS_LABELS.success;
+
+      const card = document.createElement('div');
+      card.className = 'partner-card';
+      card.dataset.partner = JSON.stringify(data);
+      card.innerHTML = `
+        <div class="partner-head">
+          <div class="partner-logo" style="background: ${palette.bg}; color: ${palette.color};">${icon}</div>
+          <div style="flex: 1; min-width: 0;">
+            <div class="partner-name">${data.name}</div>
+            <div class="partner-meta">${data.legal}${data.address ? ' · ' + data.address : ''}</div>
+            <div class="partner-tags">
+              <span class="badge ${statusCls}">${statusLabel}</span>
+            </div>
+          </div>
+        </div>
+        <div class="partner-stats">
+          <div class="ps-item"><div class="l">Сделок</div><div class="v">${isNew ? '0' : (data.deals || '0')}</div></div>
+          <div class="ps-item"><div class="l">Оборот</div><div class="v">${isNew ? '0 ₽' : (data.turnover || '0 ₽')}</div></div>
+          <div class="ps-item"><div class="l">Комиссия</div><div class="v" style="color: var(--success);">${data.commission}%</div></div>
+        </div>
+      `;
+      return card;
+    }
+
+    // ===== NEW PARTNER =====
+    document.getElementById('btn-new-partner')?.addEventListener('click', e => {
+      e.preventDefault(); e.stopImmediatePropagation();
+      makeModal({
+        title: 'Новый партнёр',
+        body: partnerForm(),
+        ok: 'Создать партнёра',
+        onOk: (modal) => {
+          const data = readForm(modal);
+          if (!data.name) { PaydApp.toast('Введите название магазина', 'warning'); return false; }
+          if (!data.address) { PaydApp.toast('Введите адрес торговой точки', 'warning'); return false; }
+          const card = buildCard(data, true);
+          attachCardClick(card);
+          const grid = document.querySelector('.partner-grid');
+          grid.prepend(card);
+          card.style.boxShadow = '0 0 0 3px rgba(37,99,235,.4)';
+          setTimeout(() => { card.style.transition = 'box-shadow .8s'; card.style.boxShadow = ''; }, 100);
+          // Update counter
+          const totalStat = document.querySelectorAll('.stat .stat-value')[0];
+          if (totalStat) totalStat.textContent = String(parseInt(totalStat.textContent, 10) + 1);
+          // Persist to localStorage so partner.html sees it
+          savePartner(data);
+          PaydApp.toast(`Партнёр создан: ${data.name}`, { type: 'success', subtitle: 'Карточка синхронизирована с рабочим местом' });
+          return true;
+        }
+      });
+    }, true);
+
+    // ===== EDIT PARTNER (click on existing card) =====
+    function attachCardClick(card) {
+      card.addEventListener('click', () => {
+        // Read existing data from card
+        let data = {};
+        try { data = JSON.parse(card.dataset.partner || '{}'); } catch(_) {}
+        // If empty (legacy hardcoded cards), try to extract
+        if (!data.name) {
+          data.name = card.querySelector('.partner-name')?.textContent.trim() || '';
+          const meta = card.querySelector('.partner-meta')?.textContent || '';
+          const parts = meta.split(' · ');
+          data.legal = parts[0] || '';
+          data.address = parts[1] || '';
+          // Detect color/category from existing styles (best effort)
+          const logo = card.querySelector('.partner-logo');
+          const bg = logo?.style.background || '';
+          for (const [k, v] of Object.entries(PALETTES)) {
+            if (bg.includes(v.bg.match(/#[0-9a-f]+/i)?.[0] || 'X')) { data.color = k; break; }
+          }
+          // Read commission from stats
+          const comStat = card.querySelectorAll('.ps-item .v')[2]?.textContent.trim();
+          if (comStat) data.commission = comStat.replace(/\D/g, '') || '4';
+          // Read deals/turnover
+          data.deals = card.querySelectorAll('.ps-item .v')[0]?.textContent.trim();
+          data.turnover = card.querySelectorAll('.ps-item .v')[1]?.textContent.trim();
+          // Detect status from badge
+          const badge = card.querySelector('.badge');
+          if (badge?.classList.contains('warning')) data.status = 'warning';
+          else if (badge?.classList.contains('danger')) data.status = 'danger';
+          else if (badge?.classList.contains('gray')) data.status = 'gray';
+          else data.status = 'success';
+          data.category = data.category || 'shop';
+        }
+
+        makeModal({
+          title: `Редактирование: ${data.name}`,
+          body: partnerForm(data),
+          ok: 'Сохранить',
+          dangerBtn: 'Удалить партнёра',
+          onOk: (modal) => {
+            const updated = readForm(modal);
+            if (!updated.name) { PaydApp.toast('Введите название', 'warning'); return false; }
+            updated.deals = data.deals;
+            updated.turnover = data.turnover;
+            const newCard = buildCard(updated);
+            attachCardClick(newCard);
+            card.replaceWith(newCard);
+            newCard.style.boxShadow = '0 0 0 3px rgba(245,158,11,.4)';
+            setTimeout(() => { newCard.style.transition = 'box-shadow .8s'; newCard.style.boxShadow = ''; }, 100);
+            // Persist to localStorage so partner.html sees it
+            savePartner(updated, data.name);
+            PaydApp.toast(`Партнёр обновлён: ${updated.name}`, { type: 'success', subtitle: 'Изменения видны в рабочем месте партнёра' });
+            return true;
+          }
+        });
+
+        // Wire delete button
+        const dangerBtn = document.querySelector('.payd-modal-backdrop.show .danger-btn');
+        if (dangerBtn) {
+          dangerBtn.onclick = () => {
+            // Close edit modal
+            document.querySelector('.payd-modal-backdrop.show')?.classList.remove('show');
+            setTimeout(() => document.querySelector('.payd-modal-backdrop')?.remove(), 150);
+
+            PaydApp.confirmDialog({
+              title: `Удалить партнёра «${data.name}»?`,
+              message: 'Все связанные данные останутся в системе. Партнёр будет удалён только из активного списка.',
+              okText: 'Удалить',
+              onOk: () => {
+                card.style.transition = 'opacity .25s, max-height .25s';
+                card.style.opacity = '0';
+                card.style.maxHeight = '0';
+                setTimeout(() => card.remove(), 250);
+                const totalStat = document.querySelectorAll('.stat .stat-value')[0];
+                if (totalStat) totalStat.textContent = String(Math.max(0, parseInt(totalStat.textContent, 10) - 1));
+                removePartner(data.name);
+                PaydApp.toast('Партнёр удалён', 'error');
+              }
+            });
+          };
+        }
+      });
+    }
+
+    // Wire all existing cards
+    document.querySelectorAll('.partner-card').forEach(attachCardClick);
+
+    // ===== SEED: on first load, capture all hardcoded cards into localStorage =====
+    (function seed() {
+      const all = loadAll();
+      // If we already have data, don't reseed
+      if (Object.keys(all).length >= 5) return;
+      document.querySelectorAll('.partner-card').forEach(card => {
+        const name = card.querySelector('.partner-name')?.textContent.trim();
+        if (!name) return;
+        const meta = card.querySelector('.partner-meta')?.textContent || '';
+        const parts = meta.split(' · ');
+        const legal = parts[0] || '';
+        const address = parts.slice(1).join(' · ') || '';
+        const commission = (card.querySelectorAll('.ps-item .v')[2]?.textContent || '4%').replace(/\D/g, '') || '4';
+        const deals = card.querySelectorAll('.ps-item .v')[0]?.textContent.trim() || '0';
+        const turnover = card.querySelectorAll('.ps-item .v')[1]?.textContent.trim() || '0';
+        // Detect color from logo bg
+        const logoBg = card.querySelector('.partner-logo')?.style.background || '';
+        const colorByHex = {
+          '#fef3c7': 'yellow', '#dbeafe': 'blue', '#fce7f3': 'pink',
+          '#ddd6fe': 'purple', '#d1fae5': 'green', '#fed7aa': 'orange',
+          '#e0e7ff': 'indigo', '#f3e8ff': 'violet', '#fee2e2': 'red',
+          '#ccfbf1': 'teal', '#f1f5f9': 'gray'
+        };
+        let color = 'blue';
+        for (const [hex, c] of Object.entries(colorByHex)) {
+          if (logoBg.toLowerCase().includes(hex.toLowerCase())) { color = c; break; }
+        }
+        // Detect category from icon (best-effort)
+        const iconHTML = card.querySelector('.partner-logo')?.innerHTML || '';
+        let category = 'shop';
+        if (iconHTML.includes('rect x="5" y="2" width="14"')) category = 'phone';
+        else if (iconHTML.includes('rect x="2" y="4" width="20" height="13"')) category = 'laptop';
+        else if (iconHTML.includes('rect x="2" y="3" width="20" height="14"')) category = 'tv';
+        else if (iconHTML.includes('M23 19a2 2')) category = 'camera';
+        else if (iconHTML.includes('cx="12" cy="12" r="6"')) category = 'watch';
+        else if (iconHTML.includes('cx="5.5" cy="17.5"')) category = 'bike';
+        else if (iconHTML.includes('M17.32 5H6.68')) category = 'game';
+        else if (iconHTML.includes('M19 9V6')) category = 'sofa';
+        else if (iconHTML.includes('M3 9l9-7')) category = 'home';
+        else if (iconHTML.includes('rect x="2" y="6" width="20" height="12"')) category = 'keyboard';
+
+        // Detect status from badge
+        const badge = card.querySelector('.partner-tags .badge');
+        let status = 'success';
+        if (badge?.classList.contains('warning')) status = 'warning';
+        else if (badge?.classList.contains('danger')) status = 'danger';
+        else if (badge?.classList.contains('gray')) status = 'gray';
+
+        all[name] = { name, legal, address, inn: '', contact: '', phone: '', email: '', category, color, commission, status, deals, turnover };
+      });
+      saveAll(all);
+      // Set first as default active partner if none
+      if (!localStorage.getItem(ACTIVE_KEY) && Object.keys(all)[0]) {
+        localStorage.setItem(ACTIVE_KEY, Object.keys(all)[0]);
+      }
+    })();
+  })();
+</script>
+</body>
+</html>

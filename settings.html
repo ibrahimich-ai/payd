@@ -1,0 +1,1586 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Настройки — Payd</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .settings-grid { display: grid; grid-template-columns: 240px 1fr; gap: 16px; }
+  @media (max-width: 1100px) { .settings-grid { grid-template-columns: 1fr; } }
+
+  .settings-nav { display: flex; flex-direction: column; }
+  .sn-item { padding: 10px 14px; border-radius: var(--radius-sm); display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13px; color: var(--text-2); margin: 1px 8px; transition: all .12s; }
+  .sn-item:hover { background: var(--surface-2); color: var(--text); }
+  .sn-item.active { background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+
+  .setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border);
+    gap: 24px;
+  }
+  .setting-row:last-child { border-bottom: none; }
+  .setting-row .info { flex: 1; min-width: 0; }
+  .setting-row .name { font-size: 14px; font-weight: 600; }
+  .setting-row .desc { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+  .setting-row .control { flex-shrink: 0; }
+
+  .switch {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    background: var(--border-strong);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background .2s;
+  }
+  .switch::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 18px; height: 18px;
+    background: white;
+    border-radius: 50%;
+    transition: transform .2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,.15);
+  }
+  .switch.on { background: var(--primary); }
+  .switch.on::after { transform: translateX(18px); }
+
+  .integration-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .integration-card:last-child { border-bottom: none; }
+  .int-logo { width: 44px; height: 44px; border-radius: 10px; background: var(--surface-2); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+  .integration-card .info { flex: 1; min-width: 0; }
+  .integration-card .name { font-size: 14px; font-weight: 700; }
+  .integration-card .desc { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<div id="app-root">
+
+<div class="page-head">
+  <div>
+    <h1>Настройки</h1>
+    <div class="desc">Конфигурация платформы, интеграции и доступы</div>
+  </div>
+  <div class="page-head-actions">
+    <button class="btn primary">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>
+      Сохранить изменения
+    </button>
+  </div>
+</div>
+
+<div class="settings-grid">
+  <div class="card" style="padding: 12px 0; align-self: flex-start;">
+    <div style="padding: 8px 20px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); font-weight: 700;">Раздел</div>
+    <div class="settings-nav">
+      <div class="sn-item active" data-sec="general">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Общие
+      </div>
+      <div class="sn-item" data-sec="tariffs">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Тарифы и условия
+      </div>
+      <div class="sn-item" data-sec="scoring">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Скоринг и СБ
+      </div>
+      <div class="sn-item" data-sec="notifications">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        SMS и уведомления
+      </div>
+      <div class="sn-item" data-sec="integrations">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        Интеграции
+      </div>
+      <div class="sn-item" data-sec="roles">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        Роли и доступы
+      </div>
+      <div class="sn-item" data-sec="docs">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Шаблоны документов
+      </div>
+      <div class="sn-item" data-sec="kassa">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="3"/></svg>
+        Кассы и ККТ
+      </div>
+      <div class="sn-item" data-sec="audit">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/></svg>
+        Аудит и журнал
+      </div>
+      <div class="sn-item" data-sec="backup">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Резервные копии
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 16px;" id="settings-content">
+
+    <!-- TARIFFS LIST -->
+    <div class="card" data-sec="tariffs">
+      <div class="card-hd">
+        <div>
+          <h3>Тарифы рассрочки</h3>
+          <div style="font-size: 12px; color: var(--text-3); margin-top: 4px;">Калькулятор использует <b>тариф по умолчанию</b>, когда не указан партнёр. У партнёра можно настроить свой тариф в карточке.</div>
+        </div>
+        <button class="btn primary" id="btn-add-tariff">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Новый тариф
+        </button>
+      </div>
+      <div class="card-bd" style="padding: 0;" id="tariff-list"></div>
+    </div>
+
+    <!-- COMPANY INFO -->
+    <div class="card" data-sec="general">
+      <div class="card-hd">
+        <h3>Информация о компании</h3>
+      </div>
+      <div class="card-bd">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="field">
+            <label class="field-label">Название организации</label>
+            <input class="input" value="ООО «Payd»" />
+          </div>
+          <div class="field">
+            <label class="field-label">Краткое название</label>
+            <input class="input" value="Payd" />
+          </div>
+          <div class="field">
+            <label class="field-label">ИНН</label>
+            <input class="input" value="2014782301" />
+          </div>
+          <div class="field">
+            <label class="field-label">КПП</label>
+            <input class="input" value="201401001" />
+          </div>
+          <div class="field">
+            <label class="field-label">ОГРН</label>
+            <input class="input" value="1212000128456" />
+          </div>
+          <div class="field">
+            <label class="field-label">Юридический адрес</label>
+            <input class="input" value="366300, г. Аргун, ул. Шоссейная, 144" />
+          </div>
+          <div class="field">
+            <label class="field-label">Телефон</label>
+            <input class="input" value="+7 8712 22-44-66" />
+          </div>
+          <div class="field">
+            <label class="field-label">Email</label>
+            <input class="input" value="info@payd.ru" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- NOTIFICATIONS -->
+    <div class="card" data-sec="notifications">
+      <div class="card-hd">
+        <h3>Уведомления клиентам</h3>
+      </div>
+      <div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">SMS за 3 дня до платежа</div>
+            <div class="desc">Напоминание клиенту о приближающемся платеже</div>
+          </div>
+          <div class="control"><div class="switch on"></div></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">SMS в день платежа</div>
+            <div class="desc">Утром в 09:00 в день когда платёж должен быть внесён</div>
+          </div>
+          <div class="control"><div class="switch on"></div></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">SMS при просрочке</div>
+            <div class="desc">Каждый день первые 7 дней просрочки</div>
+          </div>
+          <div class="control"><div class="switch on"></div></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Email-уведомления</div>
+            <div class="desc">Дублировать SMS на email клиента, если указан</div>
+          </div>
+          <div class="control"><div class="switch"></div></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">WhatsApp Business</div>
+            <div class="desc">Отправка уведомлений через WhatsApp вместо SMS</div>
+          </div>
+          <div class="control"><div class="switch"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INTEGRATIONS -->
+    <div class="card" data-sec="integrations">
+      <div class="card-hd">
+        <h3>Интеграции</h3>
+        <a href="#" class="text-sm" style="color: var(--primary); font-weight: 600;">Все интеграции →</a>
+      </div>
+      <div>
+        <div class="integration-card">
+          <div class="int-logo" style="background: linear-gradient(135deg, #ddd6fe, #c4b5fd);">📊</div>
+          <div class="info">
+            <div class="name">1С: Бухгалтерия</div>
+            <div class="desc">Синхронизация платежей, контрагентов и проводок</div>
+          </div>
+          <span class="badge success dot">Подключено</span>
+          <button class="btn sm">Настроить</button>
+        </div>
+        <div class="integration-card">
+          <div class="int-logo" style="background: linear-gradient(135deg, #d1fae5, #a7f3d0);">💬</div>
+          <div class="info">
+            <div class="name">SMS-шлюз (smsc.ru)</div>
+            <div class="desc">Отправка SMS-уведомлений клиентам</div>
+          </div>
+          <span class="badge success dot">Подключено</span>
+          <button class="btn sm">Настроить</button>
+        </div>
+        <div class="integration-card">
+          <div class="int-logo" style="background: linear-gradient(135deg, #dbeafe, #bfdbfe);">🏦</div>
+          <div class="info">
+            <div class="name">НБКИ — Кредитные истории</div>
+            <div class="desc">Запрос кредитных историй для скоринга</div>
+          </div>
+          <span class="badge success dot">Подключено</span>
+          <button class="btn sm">Настроить</button>
+        </div>
+        <div class="integration-card">
+          <div class="int-logo" style="background: linear-gradient(135deg, #fee2e2, #fecaca);">📞</div>
+          <div class="info">
+            <div class="name">Телефония — Mango Office</div>
+            <div class="desc">Звонки клиентам с записью разговоров</div>
+          </div>
+          <span class="badge warning">Не настроено</span>
+          <button class="btn sm primary">Подключить</button>
+        </div>
+        <div class="integration-card">
+          <div class="int-logo" style="background: linear-gradient(135deg, #f3e8ff, #e9d5ff);">💼</div>
+          <div class="info">
+            <div class="name">Bitrix24 CRM</div>
+            <div class="desc">Двусторонняя синхронизация лидов и клиентов</div>
+          </div>
+          <span class="badge gray">Доступно</span>
+          <button class="btn sm">Подключить</button>
+        </div>
+        <div class="integration-card">
+          <div class="int-logo" style="background: linear-gradient(135deg, #ccfbf1, #99f6e4);">🤖</div>
+          <div class="info">
+            <div class="name">Telegram Bot</div>
+            <div class="desc">Уведомления о новых заявках в Telegram</div>
+          </div>
+          <span class="badge success dot">Подключено</span>
+          <button class="btn sm">Настроить</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== SCORING & SB ===================== -->
+    <div class="card" data-sec="scoring">
+      <div class="card-hd">
+        <h3>Скоринг и СБ</h3>
+        <span class="h-sub">Правила автоматического одобрения и проверок</span>
+      </div>
+      <div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Порог автоодобрения</div>
+            <div class="desc">Заявки со скорингом ≥ этого значения одобряются без ручной проверки</div>
+          </div>
+          <div class="control"><input class="input" style="width: 100px;" value="80" /></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Порог автоотказа</div>
+            <div class="desc">Заявки со скорингом ниже этого значения отклоняются автоматически</div>
+          </div>
+          <div class="control"><input class="input" style="width: 100px;" value="40" /></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Интеграция с НБКИ</div>
+            <div class="desc">Автоматическая проверка кредитной истории при создании заявки</div>
+          </div>
+          <div class="control"><div class="switch on"></div></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Проверка ФССП</div>
+            <div class="desc">Проверка наличия исполнительных производств</div>
+          </div>
+          <div class="control"><div class="switch on"></div></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Чёрный список Payd</div>
+            <div class="desc">142 записи · обновлён 28.04.2026</div>
+          </div>
+          <div class="control"><button class="btn">Открыть список</button></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Ручная проверка СБ для сумм</div>
+            <div class="desc">Заявки выше этой суммы всегда направляются службе безопасности</div>
+          </div>
+          <div class="control"><input class="input" style="width: 140px;" value="500 000 ₽" /></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Подтверждение телефона по SMS</div>
+            <div class="desc">Обязательная верификация номера клиента кодом</div>
+          </div>
+          <div class="control"><div class="switch on"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== ROLES & ACCESS ===================== -->
+    <div class="card" data-sec="roles">
+      <div class="card-hd">
+        <div>
+          <h3>Роли и доступы</h3>
+          <span class="h-sub">Права пользователей платформы</span>
+        </div>
+        <button class="btn primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Новая роль
+        </button>
+      </div>
+      <div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Администратор <span class="badge primary" style="margin-left: 6px;">2</span></div>
+            <div class="desc">Полный доступ ко всем разделам и настройкам</div>
+          </div>
+          <div class="control"><button class="btn">Изменить</button></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Менеджер <span class="badge primary" style="margin-left: 6px;">8</span></div>
+            <div class="desc">CRM, журнал заявок, клиенты, договоры</div>
+          </div>
+          <div class="control"><button class="btn">Изменить</button></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Кассир <span class="badge primary" style="margin-left: 6px;">5</span></div>
+            <div class="desc">Касса, приём платежей, выдача товара</div>
+          </div>
+          <div class="control"><button class="btn">Изменить</button></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Служба безопасности <span class="badge primary" style="margin-left: 6px;">3</span></div>
+            <div class="desc">Скоринг, проверка, чёрные списки</div>
+          </div>
+          <div class="control"><button class="btn">Изменить</button></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Взыскание <span class="badge primary" style="margin-left: 6px;">2</span></div>
+            <div class="desc">Должники, контакты, реструктуризация</div>
+          </div>
+          <div class="control"><button class="btn">Изменить</button></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Партнёр <span class="badge primary" style="margin-left: 6px;">28</span></div>
+            <div class="desc">Доступ только к своему рабочему месту</div>
+          </div>
+          <div class="control"><button class="btn">Изменить</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== DOCUMENT TEMPLATES ===================== -->
+    <div class="card" data-sec="docs">
+      <div class="card-hd">
+        <div>
+          <h3>Шаблоны документов</h3>
+          <span class="h-sub">Используются при формировании договоров и актов</span>
+        </div>
+        <button class="btn primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Новый шаблон
+        </button>
+      </div>
+      <div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Договор рассрочки <span class="badge success" style="margin-left: 6px;">v7</span></div>
+            <div class="desc">Стандартный договор · обновлён 12.04.2026</div>
+          </div>
+          <div class="control" style="display: flex; gap: 6px;"><button class="btn">Просмотр</button><button class="btn">Изменить</button></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Договор Мурабаха <span class="badge success" style="margin-left: 6px;">v3</span></div>
+            <div class="desc">Исламская рассрочка · с раскрытой наценкой</div>
+          </div>
+          <div class="control" style="display: flex; gap: 6px;"><button class="btn">Просмотр</button><button class="btn">Изменить</button></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Договор Иджара <span class="badge warning" style="margin-left: 6px;">черновик</span></div>
+            <div class="desc">Лизинг услуг · в разработке</div>
+          </div>
+          <div class="control" style="display: flex; gap: 6px;"><button class="btn">Просмотр</button><button class="btn">Изменить</button></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">График платежей <span class="badge success" style="margin-left: 6px;">v5</span></div>
+            <div class="desc">Приложение №1 к договору</div>
+          </div>
+          <div class="control" style="display: flex; gap: 6px;"><button class="btn">Просмотр</button><button class="btn">Изменить</button></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Акт приёма-передачи <span class="badge success" style="margin-left: 6px;">v2</span></div>
+            <div class="desc">Подписывается при выдаче товара</div>
+          </div>
+          <div class="control" style="display: flex; gap: 6px;"><button class="btn">Просмотр</button><button class="btn">Изменить</button></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Согласие 152-ФЗ <span class="badge success" style="margin-left: 6px;">v4</span></div>
+            <div class="desc">Обработка персональных данных</div>
+          </div>
+          <div class="control" style="display: flex; gap: 6px;"><button class="btn">Просмотр</button><button class="btn">Изменить</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== KASSA & ККТ ===================== -->
+    <div class="card" data-sec="kassa">
+      <div class="card-hd">
+        <div>
+          <h3>Кассы и ККТ</h3>
+          <span class="h-sub">Подключённые онлайн-кассы и ОФД</span>
+        </div>
+        <button class="btn primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Подключить кассу
+        </button>
+      </div>
+      <div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Атол 30Ф · Грозный, центр <span class="badge success dot" style="margin-left: 6px;">Активна</span></div>
+            <div class="desc">Заводской № 00109876541234 · ФН до 22.07.2026</div>
+          </div>
+          <div class="control" style="display: flex; gap: 6px;"><button class="btn">Тест чек</button><button class="btn">Настройки</button></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Эвотор 7.2 · Аргун <span class="badge success dot" style="margin-left: 6px;">Активна</span></div>
+            <div class="desc">Заводской № 00112233445566 · ФН до 14.09.2026</div>
+          </div>
+          <div class="control" style="display: flex; gap: 6px;"><button class="btn">Тест чек</button><button class="btn">Настройки</button></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Меркурий 185Ф · Гудермес <span class="badge warning dot" style="margin-left: 6px;">Нет связи</span></div>
+            <div class="desc">Последняя синхронизация 2 дня назад</div>
+          </div>
+          <div class="control" style="display: flex; gap: 6px;"><button class="btn">Переподключить</button></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">ОФД-провайдер</div>
+            <div class="desc">Куда отправляются фискальные чеки</div>
+          </div>
+          <div class="control"><select class="select" style="width: 200px;"><option>Платформа ОФД</option><option>Такском</option><option>Первый ОФД</option><option>Контур.ОФД</option></select></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Автоотправка чеков по email</div>
+            <div class="desc">При оформлении заявки клиент получает копию чека</div>
+          </div>
+          <div class="control"><div class="switch on"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== AUDIT LOG ===================== -->
+    <div class="card" data-sec="audit">
+      <div class="card-hd">
+        <div>
+          <h3>Аудит и журнал</h3>
+          <span class="h-sub">История действий пользователей платформы</span>
+        </div>
+        <a href="audit.html" class="btn">Открыть полный журнал →</a>
+      </div>
+      <div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Хранить журнал</div>
+            <div class="desc">Срок хранения событий аудита</div>
+          </div>
+          <div class="control"><select class="select" style="width: 180px;"><option>3 года</option><option>1 год</option><option>5 лет</option><option>Бессрочно</option></select></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Логировать вход и выход</div>
+            <div class="desc">Каждая сессия пользователя записывается с IP и устройством</div>
+          </div>
+          <div class="control"><div class="switch on"></div></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Логировать просмотр заявок</div>
+            <div class="desc">Кто открывал какую заявку и когда</div>
+          </div>
+          <div class="control"><div class="switch on"></div></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Уведомлять о подозрительной активности</div>
+            <div class="desc">Множественные неудачные попытки входа, экспорт данных, отмена операций</div>
+          </div>
+          <div class="control"><div class="switch on"></div></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Экспорт журнала</div>
+            <div class="desc">Скачать все события за период</div>
+          </div>
+          <div class="control"><button class="btn">Скачать CSV</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== BACKUPS ===================== -->
+    <div class="card" data-sec="backup">
+      <div class="card-hd">
+        <h3>Резервные копии</h3>
+        <span class="h-sub">Облачное и локальное резервирование</span>
+      </div>
+      <div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Последний бэкап</div>
+            <div class="desc">Сегодня 03:00 · 2.4 GB · S3</div>
+          </div>
+          <div class="control"><span class="badge success dot">Успешно</span></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Расписание</div>
+            <div class="desc">Когда автоматически делать резервные копии</div>
+          </div>
+          <div class="control"><select class="select" style="width: 180px;"><option>Каждый день в 03:00</option><option>Каждые 6 часов</option><option>Каждый час</option><option>Только вручную</option></select></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Хранить копии</div>
+            <div class="desc">Срок хранения старых бэкапов</div>
+          </div>
+          <div class="control"><select class="select" style="width: 180px;"><option>30 дней</option><option>90 дней</option><option>1 год</option></select></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Шифрование AES-256</div>
+            <div class="desc">Все бэкапы хранятся в зашифрованном виде</div>
+          </div>
+          <div class="control"><div class="switch on"></div></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Создать копию сейчас</div>
+            <div class="desc">Внеплановый бэкап текущего состояния</div>
+          </div>
+          <div class="control"><button class="btn primary">Создать</button></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Восстановить из копии</div>
+            <div class="desc">Откатить состояние платформы к выбранной точке</div>
+          </div>
+          <div class="control"><button class="btn">Восстановить</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLOUD (Supabase) -->
+    <div class="card" data-sec="general" style="border-color: #c7d2fe; background: linear-gradient(135deg, #faf5ff 0%, #f0f7ff 100%);">
+      <div class="card-hd" style="border-bottom-color: #c7d2fe;">
+        <h3 style="color: var(--purple);">☁️ Облако (Supabase)</h3>
+        <span class="h-sub" id="cloud-status">Не подключено</span>
+      </div>
+      <div>
+        <div class="setting-row" id="cloud-row-login">
+          <div class="info">
+            <div class="name">Войти в облако</div>
+            <div class="desc">Подключитесь чтобы все сотрудники видели одни и те же данные в реальном времени</div>
+          </div>
+          <div class="control"><button class="btn primary" id="btn-cloud-login">☁ Войти</button></div>
+        </div>
+        <div class="setting-row" id="cloud-row-info" style="display: none;">
+          <div class="info">
+            <div class="name">Подключено к облаку</div>
+            <div class="desc" id="cloud-user-email">—</div>
+          </div>
+          <div class="control"><button class="btn" id="btn-cloud-logout">Выйти</button></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">⬆ Залить локальные данные в облако</div>
+            <div class="desc">Отправит всё что сейчас в браузере (заявки, кассы, выплаты) на сервер. Безопасно если в облаке пусто.</div>
+          </div>
+          <div class="control"><button class="btn" id="btn-cloud-push" disabled>Залить</button></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">⬇ Скачать данные из облака</div>
+            <div class="desc">Заменит локальные данные на актуальные из облака. Используется на новом устройстве.</div>
+          </div>
+          <div class="control"><button class="btn" id="btn-cloud-pull" disabled>Скачать</button></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Панель управления Supabase</div>
+            <div class="desc"><code style="font-family: 'SF Mono', monospace; font-size: 11px; color: var(--text-3);">ehxfjvcyqvpjtahkmncf.supabase.co</code></div>
+          </div>
+          <div class="control"><a href="https://supabase.com/dashboard/project/ehxfjvcyqvpjtahkmncf" target="_blank" class="btn">Открыть →</a></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BACKUP & DATA -->
+    <div class="card" data-sec="general" style="border-color: #bfdbfe; background: linear-gradient(135deg, #f0f9ff 0%, white 60%);">
+      <div class="card-hd" style="border-bottom-color: #bfdbfe;">
+        <h3 style="color: var(--primary-2);">💾 Резервное копирование данных</h3>
+        <span class="h-sub" id="backup-last">—</span>
+      </div>
+      <div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Скачать все данные платформы</div>
+            <div class="desc">Скачивает один JSON-файл со всеми заявками, кассами, тарифами, партнёрами, проводками. Восстанавливается на любом компьютере.</div>
+          </div>
+          <div class="control"><button class="btn primary" id="btn-export-all">⬇ Скачать бэкап</button></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Восстановить из файла</div>
+            <div class="desc">Загрузить ранее сохранённый JSON-бэкап. Заменит текущие данные.</div>
+          </div>
+          <div class="control"><button class="btn" id="btn-import-all">⬆ Загрузить</button></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Авто-напоминание о бэкапе</div>
+            <div class="desc">Если бэкапа не было больше 24 часов — при открытии настроек платформа покажет напоминание</div>
+          </div>
+          <div class="control"><div class="switch on" id="sw-backup-remind"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DATA OVERVIEW -->
+    <div class="card" data-sec="general">
+      <div class="card-hd">
+        <h3>Объём данных</h3>
+        <span class="h-sub" id="data-total">—</span>
+      </div>
+      <div id="data-keys-host" style="padding: 6px 0;"></div>
+    </div>
+
+    <!-- DANGER ZONE -->
+    <div class="card" data-sec="general" style="border-color: #fecaca;">
+      <div class="card-hd" style="border-bottom-color: #fecaca;">
+        <h3 style="color: var(--danger);">Опасная зона</h3>
+      </div>
+      <div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Экспортировать все данные</div>
+            <div class="desc">Скачать полный архив платформы (заявки, клиенты, операции)</div>
+          </div>
+          <div class="control"><button class="btn">Экспортировать</button></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Сбросить состояние платформы</div>
+            <div class="desc">Очистить весь кэш: маршруты инкассатора, состояние касс, прогресс заявок, выплаты партнёрам. Тарифы и партнёры сохранятся.</div>
+          </div>
+          <div class="control"><button class="btn" id="btn-reset-state">Сбросить</button></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name">Очистить тестовые данные</div>
+            <div class="desc">Удалить все записи с признаком «тестовая»</div>
+          </div>
+          <div class="control"><button class="btn">Очистить</button></div>
+        </div>
+        <div class="setting-row">
+          <div class="info">
+            <div class="name" style="color: var(--danger);">Удалить организацию</div>
+            <div class="desc">Безвозвратно удалить все данные. Это действие нельзя отменить.</div>
+          </div>
+          <div class="control"><button class="btn danger">Удалить</button></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="db.js"></script>
+<script src="app.js"></script>
+<script>
+  PaydApp.mountShell({
+    active: 'settings',
+    title: 'Настройки',
+    breadcrumbs: [{ label: 'Главная', href: 'dashboard.html' }, { label: 'Настройки' }]
+  });
+</script>
+
+<style>
+  /* Tariff list */
+  .tariff-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    transition: background .12s;
+  }
+  .tariff-row:last-child { border-bottom: none; }
+  .tariff-row.is-default { background: linear-gradient(90deg, rgba(37,99,235,.05), transparent 40%); }
+  .tariff-row .ic {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: var(--primary-soft); color: var(--primary);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .tariff-row.is-default .ic { background: var(--primary); color: white; }
+  .tariff-row .info { flex: 1; min-width: 0; }
+  .tariff-row .name {
+    font-size: 14px; font-weight: 700;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .tariff-row .badge-default {
+    font-size: 10px; padding: 2px 7px; border-radius: 999px;
+    background: var(--primary); color: white; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+  .tariff-row .meta {
+    font-size: 12px; color: var(--text-3); margin-top: 3px;
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .tariff-row .meta b { color: var(--text-2); font-weight: 600; }
+  .tariff-row .actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .tariff-row .actions .btn { padding: 6px 12px; font-size: 12px; }
+
+  .tariff-empty {
+    padding: 40px 20px; text-align: center; color: var(--text-3); font-size: 13px;
+  }
+
+  /* Tariff editor */
+  .tariff-editor {
+    padding: 22px;
+    background: var(--surface-2);
+    border-top: 1px solid var(--border);
+  }
+  .tariff-editor h4 {
+    font-size: 14px; font-weight: 700; margin-bottom: 12px;
+  }
+  .tf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .tf-row { display: flex; gap: 18px; flex-wrap: wrap; padding: 8px 0; }
+  .tf-check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }
+  .tf-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tf-chip {
+    padding: 6px 11px; font-size: 12px; border-radius: 8px;
+    background: white; border: 1px solid var(--border);
+    cursor: pointer; user-select: none; font-weight: 600; color: var(--text-2);
+  }
+  .tf-chip.active { background: var(--primary-soft); color: var(--primary); border-color: var(--primary); }
+  .tf-rates { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .tf-rates .field { margin: 0; }
+  .tf-rates .field label { font-size: 11px; }
+  .tf-rates .field input { padding: 7px 10px; font-size: 13px; }
+  .tf-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+
+  .tf-toggle-list { display: flex; flex-direction: column; gap: 8px; }
+  .tf-toggle-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 12px 14px;
+    background: white; border: 1px solid var(--border); border-radius: 10px;
+    transition: all .15s;
+  }
+  .tf-toggle-row:has(.switch.on) { border-color: var(--primary); background: var(--primary-soft); }
+  .tf-toggle-info { flex: 1; min-width: 0; }
+  .tf-toggle-name { font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .tf-toggle-desc { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+  .tag-zero, .tag-islamic {
+    font-size: 9px; padding: 2px 6px; border-radius: 5px;
+    text-transform: uppercase; letter-spacing: .04em; font-weight: 700;
+  }
+  .tag-zero { background: var(--success-soft); color: var(--success-2); }
+  .tag-islamic { background: #d1fae5; color: #047857; }
+</style>
+
+<script>
+  // ============================================================
+  //  TARIFFS — global tariff presets used by calculator
+  // ============================================================
+  (function () {
+    const STORAGE = 'payd.tariffs.v1';
+    const ACTIVE  = 'payd.tariffs.active';
+    const ALL_TERMS = [3, 6, 9, 12, 18, 24, 36, 48];
+
+    function seedDefaults() {
+      return [
+        {
+          id: 't_basic',
+          name: 'Базовый',
+          desc: 'Стандартный тариф для всех партнёров',
+          types: ['standard', 'murabaha'],
+          terms: [3, 6, 12, 18, 24, 36],
+          minDp: 0,
+          maxAmount: 3000000,
+          murabahaRates: { 3:5, 6:8, 12:12, 18:16, 24:20, 36:28 }
+        },
+        {
+          id: 't_promo',
+          name: 'Акция 0% на 6 мес',
+          desc: 'Ограниченное предложение',
+          types: ['standard'],
+          terms: [3, 6],
+          minDp: 0,
+          maxAmount: 500000,
+          murabahaRates: {}
+        },
+        {
+          id: 't_vip',
+          name: 'ВИП',
+          desc: 'Большие суммы, длинный срок',
+          types: ['standard', 'murabaha'],
+          terms: [12, 24, 36, 48],
+          minDp: 20,
+          maxAmount: 10000000,
+          murabahaRates: { 12:10, 24:18, 36:24, 48:30 }
+        }
+      ];
+    }
+
+    function loadAll() {
+      try {
+        const raw = localStorage.getItem(STORAGE);
+        if (raw) return JSON.parse(raw);
+      } catch (_) {}
+      const seed = seedDefaults();
+      saveAll(seed);
+      localStorage.setItem(ACTIVE, 't_basic');
+      return seed;
+    }
+    function saveAll(list) { localStorage.setItem(STORAGE, JSON.stringify(list)); }
+    function getActiveId() { return localStorage.getItem(ACTIVE) || 't_basic'; }
+    function setActiveId(id) { localStorage.setItem(ACTIVE, id); }
+
+    let editingId = null;
+
+    function render() {
+      const list = loadAll();
+      const activeId = getActiveId();
+      const host = document.getElementById('tariff-list');
+      if (!list.length) {
+        host.innerHTML = '<div class="tariff-empty">Нет тарифов. Создайте первый — он станет тарифом по умолчанию.</div>';
+        return;
+      }
+      const TYPE_LABEL = { standard: 'Стандартная', murabaha: 'Мурабаха', ijara: 'Иджара' };
+      host.innerHTML = list.map(t => {
+        const isDefault = t.id === activeId;
+        const typeLabels = (t.types || []).map(x => TYPE_LABEL[x] || x).join(' + ');
+        const termsLabel = (t.terms || []).join('/') + ' мес';
+        const dpLabel = `мин. взнос ${t.minDp || 0}%`;
+        const maxLabel = `до ${(t.maxAmount || 0).toLocaleString('ru-RU')} ₽`;
+        const editing = editingId === t.id;
+        return `
+          <div class="tariff-row ${isDefault ? 'is-default' : ''}" data-id="${t.id}">
+            <div class="ic">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                ${isDefault
+                  ? '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>'
+                  : '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'}
+              </svg>
+            </div>
+            <div class="info">
+              <div class="name">${t.name}${isDefault ? '<span class="badge-default">По умолчанию</span>' : ''}</div>
+              <div class="meta">
+                <span><b>${typeLabels || '—'}</b></span>
+                <span>·</span>
+                <span>${termsLabel}</span>
+                <span>·</span>
+                <span>${dpLabel}</span>
+                <span>·</span>
+                <span>${maxLabel}</span>
+              </div>
+            </div>
+            <div class="actions">
+              ${!isDefault ? `<button class="btn" data-act="default">По умолчанию</button>` : ''}
+              <button class="btn" data-act="edit">${editing ? 'Свернуть' : 'Изменить'}</button>
+              ${!isDefault && list.length > 1 ? `<button class="btn danger" data-act="delete" data-no-handler="true">Удалить</button>` : ''}
+            </div>
+          </div>
+          ${editing ? renderEditor(t) : ''}
+        `;
+      }).join('');
+
+      // Wire row buttons
+      host.querySelectorAll('.tariff-row').forEach(row => {
+        const id = row.dataset.id;
+        row.querySelector('[data-act="default"]')?.addEventListener('click', () => {
+          setActiveId(id);
+          if (window.PaydApp?.toast) PaydApp.toast('Тариф по умолчанию изменён', 'success');
+          render();
+        });
+        row.querySelector('[data-act="edit"]')?.addEventListener('click', () => {
+          editingId = (editingId === id) ? null : id;
+          render();
+        });
+        row.querySelector('[data-act="delete"]')?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const tariffName = loadAll().find(x => x.id === id)?.name || '';
+          const doDelete = () => {
+            const all = loadAll().filter(x => x.id !== id);
+            saveAll(all);
+            // Удаляем из облака если онлайн
+            if (window.PaydDB?.cloud?.isOnline?.()) {
+              window.PaydDB.cloud.sb()?.from('tariffs').delete().eq('id', id).then(() => {});
+            }
+            if (window.PaydApp?.toast) PaydApp.toast('Тариф удалён', 'success');
+            render();
+          };
+          if (window.PaydApp?.confirmDialog) {
+            PaydApp.confirmDialog({
+              title: 'Удалить тариф?',
+              message: 'Тариф «' + tariffName + '» будет удалён без возможности восстановления.',
+              okText: 'Удалить',
+              onOk: doDelete
+            });
+          } else if (confirm('Удалить тариф «' + tariffName + '»?')) {
+            doDelete();
+          }
+        });
+      });
+
+      // Wire editor
+      if (editingId) wireEditor();
+    }
+
+    function renderEditor(t) {
+      const has = (arr, v) => (arr || []).includes(v);
+      const r = t.murabahaRates || {};
+      return `
+        <div class="tariff-editor" data-editor-for="${t.id}">
+          <h4>Редактирование тарифа</h4>
+          <div class="tf-grid">
+            <div class="field">
+              <label class="field-label">Название тарифа</label>
+              <input class="input" data-fld="name" value="${t.name || ''}" placeholder="Например: Стандартный" />
+            </div>
+            <div class="field">
+              <label class="field-label">Описание (необязательно)</label>
+              <input class="input" data-fld="desc" value="${t.desc || ''}" placeholder="Кратко о тарифе" />
+            </div>
+          </div>
+
+          <div class="field" style="margin-top: 14px;">
+            <label class="field-label">Доступные продукты</label>
+            <div class="tf-toggle-list">
+              <div class="tf-toggle-row">
+                <div class="tf-toggle-info">
+                  <div class="tf-toggle-name">Стандартная рассрочка <span class="tag-zero">0%</span></div>
+                  <div class="tf-toggle-desc">Без переплаты, ежемесячный платёж = тело / срок</div>
+                </div>
+                <div class="switch ${has(t.types,'standard')?'on':''}" data-toggle="standard"></div>
+              </div>
+              <div class="tf-toggle-row">
+                <div class="tf-toggle-info">
+                  <div class="tf-toggle-name">Мурабаха <span class="tag-islamic">Шариат</span></div>
+                  <div class="tf-toggle-desc">Исламская рассрочка на товар — с фиксированной наценкой</div>
+                </div>
+                <div class="switch ${has(t.types,'murabaha')?'on':''}" data-toggle="murabaha"></div>
+              </div>
+              <div class="tf-toggle-row">
+                <div class="tf-toggle-info">
+                  <div class="tf-toggle-name">Иджара <span class="tag-islamic">Шариат</span></div>
+                  <div class="tf-toggle-desc">Исламский лизинг услуг — арендная плата вместо процентов</div>
+                </div>
+                <div class="switch ${has(t.types,'ijara')?'on':''}" data-toggle="ijara"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Доступные сроки</label>
+            <div class="tf-chips">
+              ${ALL_TERMS.map(m => `<div class="tf-chip${has(t.terms,m)?' active':''}" data-term="${m}">${m} мес</div>`).join('')}
+            </div>
+          </div>
+
+          <div class="tf-grid" style="margin-top: 6px;">
+            <div class="field">
+              <label class="field-label">Мин. первый взнос, %</label>
+              <input class="input" data-fld="minDp" value="${t.minDp ?? 0}" />
+            </div>
+            <div class="field">
+              <label class="field-label">Макс. сумма, ₽</label>
+              <input class="input" data-fld="maxAmount" value="${t.maxAmount ?? 3000000}" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Ставка Мурабаха (% годовых) по сроку</label>
+            <div class="tf-rates">
+              ${ALL_TERMS.map(m => `
+                <div class="field">
+                  <label>${m} мес</label>
+                  <input class="input" data-rate="${m}" value="${r[m] ?? ''}" placeholder="—" />
+                </div>
+              `).join('')}
+            </div>
+            <div style="font-size: 11px; color: var(--text-3); margin-top: 6px;">Пустое поле = срок недоступен для Мурабахи</div>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Ставка Иджара (% годовых) по сроку</label>
+            <div class="tf-rates">
+              ${ALL_TERMS.map(m => `
+                <div class="field">
+                  <label>${m} мес</label>
+                  <input class="input" data-irate="${m}" value="${(t.ijaraRates || {})[m] ?? ''}" placeholder="—" />
+                </div>
+              `).join('')}
+            </div>
+            <div style="font-size: 11px; color: var(--text-3); margin-top: 6px;">Пустое поле = срок недоступен для Иджары</div>
+          </div>
+
+          <div class="tf-actions">
+            <button class="btn" data-act="cancel">Отмена</button>
+            <button class="btn primary" data-act="save">Сохранить</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function wireEditor() {
+      const ed = document.querySelector('.tariff-editor');
+      if (!ed) return;
+      const id = ed.dataset.editorFor;
+      // Event delegation — clicks anywhere inside editor
+      ed.addEventListener('click', e => {
+        const sw = e.target.closest('.switch[data-toggle]');
+        if (sw) {
+          e.preventDefault(); e.stopPropagation();
+          sw.classList.toggle('on');
+          return;
+        }
+        const ch = e.target.closest('.tf-chip');
+        if (ch && ed.contains(ch)) {
+          e.preventDefault(); e.stopPropagation();
+          ch.classList.toggle('active');
+        }
+      });
+      ed.querySelector('[data-act="cancel"]').addEventListener('click', () => {
+        editingId = null; render();
+      });
+      ed.querySelector('[data-act="save"]').addEventListener('click', () => {
+        const types = [];
+        if (ed.querySelector('[data-toggle="standard"]').classList.contains('on')) types.push('standard');
+        if (ed.querySelector('[data-toggle="murabaha"]').classList.contains('on')) types.push('murabaha');
+        if (ed.querySelector('[data-toggle="ijara"]').classList.contains('on')) types.push('ijara');
+        if (!types.length) {
+          if (window.PaydApp?.toast) PaydApp.toast('Выберите хотя бы один тип', { type: 'warning', subtitle: 'Стандартная, Мурабаха или Иджара' });
+          else alert('Выберите хотя бы один тип рассрочки');
+          return;
+        }
+        const terms = [...ed.querySelectorAll('.tf-chip.active')]
+          .map(c => parseInt(c.dataset.term, 10))
+          .sort((a,b) => a-b);
+        const murabahaRates = {};
+        ed.querySelectorAll('[data-rate]').forEach(inp => {
+          const v = parseFloat(inp.value);
+          if (!isNaN(v) && v >= 0) murabahaRates[parseInt(inp.dataset.rate, 10)] = v;
+        });
+        const ijaraRates = {};
+        ed.querySelectorAll('[data-irate]').forEach(inp => {
+          const v = parseFloat(inp.value);
+          if (!isNaN(v) && v >= 0) ijaraRates[parseInt(inp.dataset.irate, 10)] = v;
+        });
+        const updated = {
+          id,
+          name: ed.querySelector('[data-fld="name"]').value.trim() || 'Тариф',
+          desc: ed.querySelector('[data-fld="desc"]').value.trim(),
+          types,
+          terms: terms.length ? terms : [12],
+          minDp: Math.max(0, parseInt(ed.querySelector('[data-fld="minDp"]').value, 10) || 0),
+          maxAmount: Math.max(10000, parseInt(String(ed.querySelector('[data-fld="maxAmount"]').value).replace(/\D/g,''), 10) || 0),
+          murabahaRates,
+          ijaraRates
+        };
+        const all = loadAll().map(t => t.id === id ? updated : t);
+        saveAll(all);
+        editingId = null;
+        if (window.PaydApp?.toast) PaydApp.toast('Тариф сохранён', { type: 'success', subtitle: updated.name });
+        render();
+      });
+    }
+
+    // Add new tariff
+    document.getElementById('btn-add-tariff').addEventListener('click', () => {
+      const all = loadAll();
+      const newT = {
+        id: 't_' + Date.now(),
+        name: 'Новый тариф',
+        desc: '',
+        types: ['standard', 'murabaha'],
+        terms: [3, 6, 12, 24],
+        minDp: 0,
+        maxAmount: 1000000,
+        murabahaRates: { 3: 5, 6: 8, 12: 12, 24: 20 }
+      };
+      all.push(newT);
+      saveAll(all);
+      editingId = newT.id;
+      render();
+      // Scroll to editor
+      setTimeout(() => {
+        document.querySelector('.tariff-editor')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 50);
+    });
+
+    render();
+  })();
+
+  // ============================================================
+  //  Danger zone — reset platform state
+  // ============================================================
+  document.getElementById('btn-reset-state')?.addEventListener('click', () => {
+    // Force backup-first protection
+    const lastBackup = localStorage.getItem('payd.lastBackup');
+    if (!lastBackup || (Date.now() - parseInt(lastBackup, 10)) > 7 * 24 * 60 * 60 * 1000) {
+      if (!confirm('⚠️ Бэкапа данных давно не было!\n\nРекомендуем сначала скачать резервную копию (кнопка «⬇ Скачать бэкап» выше). Продолжить без бэкапа?')) {
+        return;
+      }
+    }
+    // Double confirmation: type word
+    const word = prompt('Это действие необратимо. Чтобы подтвердить, введите слово СБРОСИТЬ заглавными буквами:');
+    if (word !== 'СБРОСИТЬ') {
+      if (window.PaydApp?.toast) PaydApp.toast('Сброс отменён', 'info');
+      return;
+    }
+    [
+      'payd.inkassator.state.v1',
+      'payd.zayavka.wf.v1',
+      'payd.kassir.shift.v1',
+      'payd.cash.ops.v1',
+      'payd.partner.payouts.v1',
+      'payd.partner.reserv.stages.v1',
+      'payd.partner.mfCollapsed',
+      'payd.calc.applications',
+      'payd.tabs.v1',
+      'payd.kanban.v1',
+      'payd.settings.section'
+    ].forEach(k => { try { localStorage.removeItem(k); } catch (_) {} });
+    if (window.PaydApp?.toast) PaydApp.toast('Состояние платформы сброшено', { type: 'success', subtitle: 'Партнёры и тарифы сохранены · перезагрузка…' });
+    setTimeout(() => location.reload(), 1200);
+  });
+
+  // ============================================================
+  //  BACKUP / RESTORE / DATA OVERVIEW
+  // ============================================================
+  const PAYD_KEYS = [
+    'payd.partners.v1',
+    'payd.partners.active',
+    'payd.tariffs.v1',
+    'payd.tariffs.active',
+    'payd.cashes.v1',
+    'payd.cash.ops.v1',
+    'payd.cash.articles.v1',
+    'payd.calc.applications',
+    'payd.zayavka.wf.v1',
+    'payd.kassir.shift.v1',
+    'payd.inkassator.state.v1',
+    'payd.partner.payouts.v1',
+    'payd.partner.reserv.stages.v1',
+    'payd.partner.mfCollapsed',
+    'payd.partner.demoSeeded',
+    'payd.kanban.v1',
+    'payd.tabs.v1',
+    'payd.settings.section',
+    'payd.lastBackup'
+  ];
+
+  const KEY_DESC = {
+    'payd.partners.v1':              { name: 'Партнёры',              role: 'partners' },
+    'payd.partners.active':          { name: 'Активный партнёр',      role: 'partners' },
+    'payd.tariffs.v1':               { name: 'Тарифы',                role: 'settings' },
+    'payd.tariffs.active':           { name: 'Активный тариф',        role: 'settings' },
+    'payd.cashes.v1':                { name: 'Кассы',                 role: 'kassa' },
+    'payd.cash.ops.v1':              { name: 'Кассовые проводки',     role: 'kassa' },
+    'payd.cash.articles.v1':         { name: 'Статьи ДДС',            role: 'kassa' },
+    'payd.calc.applications':        { name: 'Заявки из калькулятора',role: 'apps' },
+    'payd.zayavka.wf.v1':            { name: 'Состояние workflow',    role: 'apps' },
+    'payd.kassir.shift.v1':          { name: 'Смена кассира',         role: 'kassir' },
+    'payd.inkassator.state.v1':      { name: 'Маршрут инкассатора',   role: 'inkassator' },
+    'payd.partner.payouts.v1':       { name: 'Выплаты партнёрам',     role: 'partner' },
+    'payd.partner.reserv.stages.v1': { name: 'Этапы Мурабаха-цепочки',role: 'partner' },
+    'payd.partner.mfCollapsed':      { name: 'UI: свёрнут блок',      role: 'ui' },
+    'payd.partner.demoSeeded':       { name: 'UI: demo создан',       role: 'ui' },
+    'payd.kanban.v1':                { name: 'CRM канбан',            role: 'manager' },
+    'payd.tabs.v1':                  { name: 'Вкладки топбара',       role: 'ui' },
+    'payd.settings.section':         { name: 'Активный раздел',       role: 'ui' },
+    'payd.lastBackup':               { name: 'Метка последнего бэкапа',role: 'meta' }
+  };
+
+  function bytesFmt(n) {
+    if (n < 1024) return n + ' Б';
+    if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' КБ';
+    return (n / 1024 / 1024).toFixed(2) + ' МБ';
+  }
+
+  function refreshBackupBadge() {
+    const last = parseInt(localStorage.getItem('payd.lastBackup') || '0', 10);
+    const el = document.getElementById('backup-last');
+    if (!el) return;
+    if (!last) {
+      el.textContent = 'Бэкапа ещё не было';
+      el.style.color = 'var(--danger)';
+    } else {
+      const ago = Date.now() - last;
+      const days = Math.floor(ago / (24 * 60 * 60 * 1000));
+      const hours = Math.floor((ago % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+      const txt = days > 0 ? `Последний бэкап: ${days} дн назад` : `Последний бэкап: ${hours} ч назад`;
+      el.textContent = txt;
+      el.style.color = days > 1 ? 'var(--warning)' : 'var(--success-2)';
+    }
+  }
+
+  function refreshDataOverview() {
+    const host = document.getElementById('data-keys-host');
+    const totalEl = document.getElementById('data-total');
+    if (!host) return;
+    let totalBytes = 0;
+    let totalKeys = 0;
+    const groups = {};
+    PAYD_KEYS.forEach(k => {
+      const v = localStorage.getItem(k);
+      if (v == null) return;
+      const size = new Blob([v]).size;
+      totalBytes += size;
+      totalKeys++;
+      const desc = KEY_DESC[k] || { name: k, role: 'meta' };
+      const role = desc.role;
+      groups[role] = groups[role] || { items: [], bytes: 0 };
+      let count = '—';
+      try {
+        const parsed = JSON.parse(v);
+        if (Array.isArray(parsed)) count = parsed.length + ' зап.';
+        else if (parsed && typeof parsed === 'object') count = Object.keys(parsed).length + ' зап.';
+        else count = '1 знач.';
+      } catch (_) { count = '1 знач.'; }
+      groups[role].items.push({ key: k, name: desc.name, size, count });
+      groups[role].bytes += size;
+    });
+    if (totalEl) totalEl.textContent = `${totalKeys} ключей · ${bytesFmt(totalBytes)}`;
+
+    const ROLE_LABELS = {
+      partners: 'Партнёры', settings: 'Настройки', kassa: 'Кассы', apps: 'Заявки',
+      kassir: 'Касса смены', inkassator: 'Инкассация', partner: 'Партнёр (рабочее место)',
+      manager: 'Менеджер', ui: 'UI / интерфейс', meta: 'Служебные'
+    };
+    let html = '';
+    Object.entries(groups).forEach(([role, g]) => {
+      html += `
+        <div style="padding: 8px 18px; border-bottom: 1px solid var(--border);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-3);">${ROLE_LABELS[role] || role}</div>
+            <div style="font-size: 11px; color: var(--text-3);">${bytesFmt(g.bytes)}</div>
+          </div>
+          ${g.items.map(it => `
+            <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 12px; padding: 4px 0; font-size: 12px; align-items: center;">
+              <div>
+                <span style="font-weight: 600;">${it.name}</span>
+                <code style="font-family: 'SF Mono',monospace; font-size: 10px; color: var(--text-3); margin-left: 6px;">${it.key}</code>
+              </div>
+              <span style="color: var(--text-3);">${it.count}</span>
+              <span style="color: var(--text-3); min-width: 60px; text-align: right;">${bytesFmt(it.size)}</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    });
+    if (!html) html = '<div style="padding: 30px; text-align: center; color: var(--text-3);">Данных пока нет</div>';
+    host.innerHTML = html;
+  }
+
+  // Export all data to a single JSON file
+  document.getElementById('btn-export-all')?.addEventListener('click', () => {
+    const data = { _meta: { exportedAt: new Date().toISOString(), version: 1, app: 'Payd' } };
+    PAYD_KEYS.forEach(k => {
+      const v = localStorage.getItem(k);
+      if (v != null) data[k] = v;
+    });
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    const ts = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
+    a.download = `payd-backup-${ts}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    localStorage.setItem('payd.lastBackup', String(Date.now()));
+    refreshBackupBadge();
+    if (window.PaydApp?.toast) PaydApp.toast('Бэкап скачан', { type: 'success', subtitle: a.download });
+  });
+
+  // Import from JSON file
+  document.getElementById('btn-import-all')?.addEventListener('click', () => {
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = 'application/json,.json';
+    inp.onchange = () => {
+      const file = inp.files[0];
+      if (!file) return;
+      const fr = new FileReader();
+      fr.onload = () => {
+        try {
+          const data = JSON.parse(fr.result);
+          if (!data || typeof data !== 'object') throw new Error('not object');
+          const exported = data._meta?.exportedAt;
+          const keysToImport = Object.keys(data).filter(k => k.startsWith('payd.'));
+          if (!keysToImport.length) { alert('В файле не найдено данных Payd'); return; }
+          if (!confirm(`Загрузить ${keysToImport.length} ключей из бэкапа${exported ? ' от ' + new Date(exported).toLocaleString('ru-RU') : ''}?\n\nТекущие данные будут заменены.`)) return;
+          keysToImport.forEach(k => {
+            try { localStorage.setItem(k, data[k]); } catch (_) {}
+          });
+          if (window.PaydApp?.toast) PaydApp.toast('Данные восстановлены', { type: 'success', subtitle: `${keysToImport.length} ключей · перезагрузка…` });
+          setTimeout(() => location.reload(), 1200);
+        } catch (e) {
+          alert('Файл повреждён или не является бэкапом Payd: ' + e.message);
+        }
+      };
+      fr.readAsText(file);
+    };
+    inp.click();
+  });
+
+  // Backup reminder switch
+  const swBackupRemind = document.getElementById('sw-backup-remind');
+  if (swBackupRemind) {
+    if (localStorage.getItem('payd.backupRemindOff') === '1') swBackupRemind.classList.remove('on');
+    swBackupRemind.addEventListener('click', () => {
+      swBackupRemind.classList.toggle('on');
+      const off = !swBackupRemind.classList.contains('on');
+      localStorage.setItem('payd.backupRemindOff', off ? '1' : '0');
+    });
+  }
+
+  // Init backup info
+  refreshBackupBadge();
+  refreshDataOverview();
+
+  // ============================================================
+  //  CLOUD (Supabase) — login / push / pull
+  // ============================================================
+  function refreshCloudUI() {
+    const online = window.PaydDB?.cloud?.isOnline?.() || false;
+    const user = window.PaydDB?.cloud?.user?.();
+    const status = document.getElementById('cloud-status');
+    const rowLogin = document.getElementById('cloud-row-login');
+    const rowInfo = document.getElementById('cloud-row-info');
+    const userEmail = document.getElementById('cloud-user-email');
+    const btnPush = document.getElementById('btn-cloud-push');
+    const btnPull = document.getElementById('btn-cloud-pull');
+    if (online && user) {
+      if (status) { status.textContent = '✓ Подключено как ' + user.email; status.style.color = 'var(--success)'; }
+      if (rowLogin) rowLogin.style.display = 'none';
+      if (rowInfo) rowInfo.style.display = '';
+      if (userEmail) userEmail.textContent = user.email;
+      if (btnPush) btnPush.disabled = false;
+      if (btnPull) btnPull.disabled = false;
+    } else {
+      if (status) { status.textContent = 'Не подключено'; status.style.color = 'var(--text-3)'; }
+      if (rowLogin) rowLogin.style.display = '';
+      if (rowInfo) rowInfo.style.display = 'none';
+      if (btnPush) btnPush.disabled = true;
+      if (btnPull) btnPull.disabled = true;
+    }
+  }
+
+  function openCloudLoginModal() {
+    const back = document.createElement('div');
+    back.style.cssText = 'position: fixed; inset: 0; background: rgba(15,23,42,.55); backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 24px;';
+    back.innerHTML = `
+      <div style="background: white; border-radius: 16px; max-width: 420px; width: 100%; box-shadow: 0 30px 80px rgba(0,0,0,.35);">
+        <div style="padding: 18px 22px; border-bottom: 1px solid var(--border);"><h3 style="margin: 0;">☁ Вход в облако Payd</h3><div style="font-size: 12px; color: var(--text-3); margin-top: 4px;">Supabase · все сотрудники видят одни данные</div></div>
+        <div style="padding: 18px 22px;">
+          <div style="display: flex; gap: 4px; padding: 4px; background: var(--surface-2); border-radius: 10px; margin-bottom: 14px;">
+            <button class="btn cloud-tab active" data-tab="signin" style="flex: 1; justify-content: center;">Вход</button>
+            <button class="btn cloud-tab" data-tab="signup" style="flex: 1; justify-content: center;">Регистрация</button>
+          </div>
+          <div class="cloud-pane" data-pane="signin">
+            <div class="field"><label class="field-label">Email</label><input class="input" id="cl-email" type="email" placeholder="i.dzhabrailov@payd.ru" /></div>
+            <div class="field"><label class="field-label">Пароль</label><input class="input" id="cl-pwd" type="password" placeholder="••••••••" /></div>
+          </div>
+          <div class="cloud-pane" data-pane="signup" style="display: none;">
+            <div class="field"><label class="field-label">ФИО</label><input class="input" id="cl-name" placeholder="Иванов И.И." /></div>
+            <div class="field"><label class="field-label">Email</label><input class="input" id="cl-email2" type="email" placeholder="email@payd.ru" /></div>
+            <div class="field"><label class="field-label">Пароль (минимум 6 символов)</label><input class="input" id="cl-pwd2" type="password" placeholder="••••••••" /></div>
+            <div style="font-size: 11px; color: var(--text-3); margin-top: 6px;">⚠️ Создание пользователей лучше делать в Supabase Dashboard → Authentication → Users (с авто-подтверждением email)</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; justify-content: flex-end; padding: 14px 22px; border-top: 1px solid var(--border); background: var(--surface-2);">
+          <button class="btn" data-act="cancel">Отмена</button>
+          <button class="btn primary" data-act="ok">Войти</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(back);
+    let tab = 'signin';
+    back.querySelectorAll('.cloud-tab').forEach(t => t.onclick = () => {
+      tab = t.dataset.tab;
+      back.querySelectorAll('.cloud-tab').forEach(x => x.classList.toggle('active', x === t));
+      back.querySelectorAll('.cloud-pane').forEach(p => p.style.display = p.dataset.pane === tab ? '' : 'none');
+      back.querySelector('[data-act="ok"]').textContent = tab === 'signin' ? 'Войти' : 'Зарегистрироваться';
+    });
+    const close = () => back.remove();
+    back.querySelector('[data-act="cancel"]').onclick = close;
+    back.addEventListener('click', e => { if (e.target === back) close(); });
+    back.querySelector('[data-act="ok"]').onclick = async () => {
+      try {
+        if (tab === 'signin') {
+          const email = back.querySelector('#cl-email').value.trim();
+          const pwd = back.querySelector('#cl-pwd').value;
+          if (!email || !pwd) { PaydApp.toast('Введите email и пароль', 'warning'); return; }
+          await window.PaydDB.cloud.signIn(email, pwd);
+          PaydApp.toast('Вход выполнен', { type: 'success', subtitle: email });
+        } else {
+          const name = back.querySelector('#cl-name').value.trim();
+          const email = back.querySelector('#cl-email2').value.trim();
+          const pwd = back.querySelector('#cl-pwd2').value;
+          if (!email || !pwd) { PaydApp.toast('Введите email и пароль', 'warning'); return; }
+          await window.PaydDB.cloud.signUp(email, pwd, name);
+          PaydApp.toast('Регистрация прошла', { type: 'success', subtitle: 'Подтвердите email если необходимо · потом войдите' });
+        }
+        close();
+        refreshCloudUI();
+      } catch (e) {
+        PaydApp.toast('Ошибка: ' + e.message, 'warning');
+      }
+    };
+  }
+
+  document.getElementById('btn-cloud-login')?.addEventListener('click', openCloudLoginModal);
+
+  document.getElementById('btn-cloud-logout')?.addEventListener('click', async () => {
+    await window.PaydDB.cloud.signOut();
+    PaydApp.toast('Вы вышли из облака', 'info');
+    refreshCloudUI();
+  });
+
+  document.getElementById('btn-cloud-push')?.addEventListener('click', async () => {
+    if (!confirm('Залить ВСЕ локальные данные в облако? Существующие записи будут обновлены.')) return;
+    try {
+      PaydApp.toast('Загружаю в облако…', 'info');
+      const r = await window.PaydDB.sync.push();
+      const total = Object.values(r.uploaded).reduce((s, n) => s + n, 0);
+      const errs = r.errors.length;
+      PaydApp.toast(`Загружено ${total} записей в облако`, {
+        type: errs ? 'warning' : 'success',
+        subtitle: errs ? `${errs} ошибок (см. консоль)` : 'Все данные синхронизированы'
+      });
+    } catch (e) {
+      PaydApp.toast('Ошибка: ' + e.message, 'warning');
+    }
+  });
+
+  document.getElementById('btn-cloud-pull')?.addEventListener('click', async () => {
+    if (!confirm('Скачать данные из облака? Локальные данные будут заменены.')) return;
+    try {
+      PaydApp.toast('Скачиваю из облака…', 'info');
+      const r = await window.PaydDB.sync.pull();
+      const total = Object.values(r.downloaded).reduce((s, n) => s + n, 0);
+      PaydApp.toast(`Скачано ${total} записей`, { type: 'success', subtitle: 'Перезагрузка через 2 сек…' });
+      setTimeout(() => location.reload(), 2000);
+    } catch (e) {
+      PaydApp.toast('Ошибка: ' + e.message, 'warning');
+    }
+  });
+
+  // React to cloud events
+  window.addEventListener('payd:cloud:connected', refreshCloudUI);
+  window.addEventListener('payd:cloud:disconnected', refreshCloudUI);
+  setTimeout(refreshCloudUI, 500); // initial check after Supabase auto-connect
+
+  // Auto reminder (only once per session, only if enabled)
+  (function backupReminder() {
+    if (localStorage.getItem('payd.backupRemindOff') === '1') return;
+    const last = parseInt(localStorage.getItem('payd.lastBackup') || '0', 10);
+    const ago = Date.now() - last;
+    const ONE_DAY = 24 * 60 * 60 * 1000;
+    if (!last || ago > ONE_DAY) {
+      // Show non-blocking toast on settings page
+      setTimeout(() => {
+        if (window.PaydApp?.toast) PaydApp.toast(
+          last ? 'Не забудьте сделать бэкап' : 'Сделайте первый бэкап',
+          { type: 'warning', subtitle: 'Опуститесь в раздел «Резервное копирование» и нажмите «Скачать»' }
+        );
+      }, 1500);
+    }
+  })();
+
+  // ============================================================
+  //  SECTION SWITCHER — show only the active section's cards
+  // ============================================================
+  (function () {
+    const navItems = document.querySelectorAll('.sn-item[data-sec]');
+    const cards = document.querySelectorAll('[data-sec]:not(.sn-item)');
+
+    function showSection(sec) {
+      navItems.forEach(n => n.classList.toggle('active', n.dataset.sec === sec));
+      cards.forEach(c => {
+        c.style.display = (c.dataset.sec === sec) ? '' : 'none';
+      });
+      try { localStorage.setItem('payd.settings.section', sec); } catch (_) {}
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    navItems.forEach(n => n.addEventListener('click', () => showSection(n.dataset.sec)));
+
+    const saved = (() => { try { return localStorage.getItem('payd.settings.section'); } catch (_) { return null; } })();
+    const valid = saved && document.querySelector(`.sn-item[data-sec="${saved}"]`);
+    showSection(valid ? saved : 'general');
+  })();
+</script>
+</body>
+</html>
