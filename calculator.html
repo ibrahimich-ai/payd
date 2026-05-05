@@ -969,18 +969,13 @@
       const t = globals.byId[tariffId];
       return { name: null, tariff: normalizeTariff(t), tariffName: t.name };
     }
-    // 2) Partner-specific tariff
+    // 2) Partner — используется только для отметки источника, тариф всегда глобальный
     if (partnerName) {
       let all = {};
       try { all = JSON.parse(localStorage.getItem('payd.partners.v1') || '{}'); } catch (_) {}
       const p = all[partnerName] || all[decodeURIComponent(partnerName)];
-      if (!p) {
-        const fallbackTariff = globals.active ? normalizeTariff(globals.active) : FALLBACK_TARIFF;
-        return { name: decodeURIComponent(partnerName), tariff: fallbackTariff, missing: true };
-      }
-      // Partner has its own tariff? use it; else inherit global default
-      const partnerHasTariff = p.tariff && (p.tariff.types?.length || p.tariff.terms?.length);
-      const base = partnerHasTariff ? p.tariff : (globals.active || FALLBACK_TARIFF);
+      const base = globals.active || FALLBACK_TARIFF;
+      if (!p) return { name: decodeURIComponent(partnerName), tariff: normalizeTariff(base), missing: true };
       return { name: p.name, partnerData: p, tariff: normalizeTariff(base) };
     }
     // 3) No partner → global default tariff

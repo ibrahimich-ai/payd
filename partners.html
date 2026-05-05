@@ -77,7 +77,7 @@
 <div class="page-head">
   <div>
     <h1>Партнёры</h1>
-    <div class="desc">Магазины-партнёры и торговые точки · 28 партнёров</div>
+    <div class="desc" id="pn-desc">Магазины-партнёры и торговые точки</div>
   </div>
   <div class="page-head-actions">
     <button class="btn">
@@ -94,23 +94,23 @@
 <div class="stat-grid cols-4 mb-5">
   <div class="stat" style="padding: 14px 16px;">
     <div class="stat-label">Всего партнёров</div>
-    <div class="stat-value" style="font-size: 22px;">28</div>
-    <div class="stat-sub" style="color: var(--success);">+3 за месяц</div>
+    <div class="stat-value" style="font-size: 22px;" id="kpi-total">0</div>
+    <div class="stat-sub">в базе</div>
   </div>
   <div class="stat" style="padding: 14px 16px;">
     <div class="stat-label">Активные</div>
-    <div class="stat-value" style="font-size: 22px; color: var(--success);">24</div>
-    <div class="stat-sub">приводят сделки</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--success);" id="kpi-active">0</div>
+    <div class="stat-sub">статус «Активный»</div>
   </div>
   <div class="stat" style="padding: 14px 16px;">
     <div class="stat-label">Сделок через партнёров</div>
-    <div class="stat-value" style="font-size: 22px;">86</div>
-    <div class="stat-sub">58% всех заявок</div>
+    <div class="stat-value" style="font-size: 22px;" id="kpi-deals">0</div>
+    <div class="stat-sub">из заявок</div>
   </div>
   <div class="stat" style="padding: 14px 16px;">
-    <div class="stat-label">Выплачено комиссий</div>
-    <div class="stat-value" style="font-size: 22px; color: var(--purple);">₽ 184 200</div>
-    <div class="stat-sub">за апрель</div>
+    <div class="stat-label">Заморожены</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--text-3);" id="kpi-frozen">0</div>
+    <div class="stat-sub">статус «Заморожен»</div>
   </div>
 </div>
 
@@ -127,230 +127,9 @@
 </div>
 
 <div class="partner-grid">
-
-  <div class="partner-card">
-    <div class="partner-head">
-      <div class="partner-logo" style="background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
-      <div style="flex: 1; min-width: 0;">
-        <div class="partner-name">ТехноМир — Грозный</div>
-        <div class="partner-meta">ИП Тагаев Р.А. · Аргун, ул. Шоссейная 144</div>
-        <div class="partner-tags">
-          <span class="badge primary">ТОП партнёр</span>
-          <span class="badge success">Активный</span>
-        </div>
-      </div>
-    </div>
-    <div class="partner-stats">
-      <div class="ps-item"><div class="l">Сделок</div><div class="v">42</div></div>
-      <div class="ps-item"><div class="l">Оборот</div><div class="v">2.4 млн</div></div>
-      <div class="ps-item"><div class="l">Комиссия</div><div class="v" style="color: var(--success);">5%</div></div>
-    </div>
-  </div>
-
-  <div class="partner-card">
-    <div class="partner-head">
-      <div class="partner-logo" style="background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #1d4ed8;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="1.5"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>
-      <div style="flex: 1; min-width: 0;">
-        <div class="partner-name">ДигиМаркет — Грозный Сити</div>
-        <div class="partner-meta">ООО «Альянс» · Грозный, ТЦ Гранд</div>
-        <div class="partner-tags">
-          <span class="badge primary">ТОП партнёр</span>
-          <span class="badge success">Активный</span>
-        </div>
-      </div>
-    </div>
-    <div class="partner-stats">
-      <div class="ps-item"><div class="l">Сделок</div><div class="v">38</div></div>
-      <div class="ps-item"><div class="l">Оборот</div><div class="v">1.8 млн</div></div>
-      <div class="ps-item"><div class="l">Комиссия</div><div class="v" style="color: var(--success);">4%</div></div>
-    </div>
-  </div>
-
-  <div class="partner-card">
-    <div class="partner-head">
-      <div class="partner-logo" style="background: linear-gradient(135deg, #fce7f3, #fbcfe8); color: #be185d;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
-      <div style="flex: 1; min-width: 0;">
-        <div class="partner-name">Электро-Гранд</div>
-        <div class="partner-meta">ООО «РТК» · Грозный, ул. Ахмадова 36</div>
-        <div class="partner-tags">
-          <span class="badge success">Активный</span>
-        </div>
-      </div>
-    </div>
-    <div class="partner-stats">
-      <div class="ps-item"><div class="l">Сделок</div><div class="v">24</div></div>
-      <div class="ps-item"><div class="l">Оборот</div><div class="v">982 К</div></div>
-      <div class="ps-item"><div class="l">Комиссия</div><div class="v" style="color: var(--success);">4%</div></div>
-    </div>
-  </div>
-
-  <div class="partner-card">
-    <div class="partner-head">
-      <div class="partner-logo" style="background: linear-gradient(135deg, #ddd6fe, #c4b5fd); color: #6d28d9;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
-      <div style="flex: 1; min-width: 0;">
-        <div class="partner-name">Мебельный мир</div>
-        <div class="partner-meta">ИП Магомадов И.С. · Грозный, ул. Мира 12</div>
-        <div class="partner-tags">
-          <span class="badge success">Активный</span>
-        </div>
-      </div>
-    </div>
-    <div class="partner-stats">
-      <div class="ps-item"><div class="l">Сделок</div><div class="v">18</div></div>
-      <div class="ps-item"><div class="l">Оборот</div><div class="v">748 К</div></div>
-      <div class="ps-item"><div class="l">Комиссия</div><div class="v" style="color: var(--success);">3%</div></div>
-    </div>
-  </div>
-
-  <div class="partner-card">
-    <div class="partner-head">
-      <div class="partner-logo" style="background: linear-gradient(135deg, #d1fae5, #a7f3d0); color: #047857;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
-      <div style="flex: 1; min-width: 0;">
-        <div class="partner-name">Фотомаркет</div>
-        <div class="partner-meta">ИП Хадаев М.У. · Грозный, ул. Лорсанова 24</div>
-        <div class="partner-tags">
-          <span class="badge success">Активный</span>
-        </div>
-      </div>
-    </div>
-    <div class="partner-stats">
-      <div class="ps-item"><div class="l">Сделок</div><div class="v">14</div></div>
-      <div class="ps-item"><div class="l">Оборот</div><div class="v">624 К</div></div>
-      <div class="ps-item"><div class="l">Комиссия</div><div class="v" style="color: var(--success);">3%</div></div>
-    </div>
-  </div>
-
-  <div class="partner-card">
-    <div class="partner-head">
-      <div class="partner-logo" style="background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="6"/><polyline points="12 10 12 12 13 13"/><path d="M16.13 7.66l-.81-4.05a2 2 0 0 0-2-1.61h-2.68a2 2 0 0 0-2 1.61l-.78 4.05"/><path d="M7.88 16.36l.8 4a2 2 0 0 0 2 1.61h2.72a2 2 0 0 0 2-1.61l.81-4.05"/></svg></div>
-      <div style="flex: 1; min-width: 0;">
-        <div class="partner-name">Часовой Дом</div>
-        <div class="partner-meta">ИП Идрисов А.Х. · Грозный, ТЦ Беркат</div>
-        <div class="partner-tags">
-          <span class="badge success">Активный</span>
-        </div>
-      </div>
-    </div>
-    <div class="partner-stats">
-      <div class="ps-item"><div class="l">Сделок</div><div class="v">11</div></div>
-      <div class="ps-item"><div class="l">Оборот</div><div class="v">486 К</div></div>
-      <div class="ps-item"><div class="l">Комиссия</div><div class="v" style="color: var(--success);">3%</div></div>
-    </div>
-  </div>
-
-  <div class="partner-card">
-    <div class="partner-head">
-      <div class="partner-logo" style="background: linear-gradient(135deg, #fed7aa, #fdba74); color: #c2410c;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"/></svg></div>
-      <div style="flex: 1; min-width: 0;">
-        <div class="partner-name">Велоспорт-Кавказ</div>
-        <div class="partner-meta">ООО «Спортивные товары» · Грозный</div>
-        <div class="partner-tags">
-          <span class="badge gray">Новый</span>
-        </div>
-      </div>
-    </div>
-    <div class="partner-stats">
-      <div class="ps-item"><div class="l">Сделок</div><div class="v">4</div></div>
-      <div class="ps-item"><div class="l">Оборот</div><div class="v">186 К</div></div>
-      <div class="ps-item"><div class="l">Комиссия</div><div class="v" style="color: var(--success);">3%</div></div>
-    </div>
-  </div>
-
-  <div class="partner-card">
-    <div class="partner-head">
-      <div class="partner-logo" style="background: linear-gradient(135deg, #e0e7ff, #c7d2fe); color: #4338ca;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="17 21 12 17 7 21"/></svg></div>
-      <div style="flex: 1; min-width: 0;">
-        <div class="partner-name">Самсунг-Центр</div>
-        <div class="partner-meta">ИП Висаитов Р.Т. · Грозный, пр. Кадырова</div>
-        <div class="partner-tags">
-          <span class="badge success">Активный</span>
-        </div>
-      </div>
-    </div>
-    <div class="partner-stats">
-      <div class="ps-item"><div class="l">Сделок</div><div class="v">22</div></div>
-      <div class="ps-item"><div class="l">Оборот</div><div class="v">1.2 млн</div></div>
-      <div class="ps-item"><div class="l">Комиссия</div><div class="v" style="color: var(--success);">4%</div></div>
-    </div>
-  </div>
-
-  <div class="partner-card">
-    <div class="partner-head">
-      <div class="partner-logo" style="background: linear-gradient(135deg, #f3e8ff, #e9d5ff); color: #7c3aed;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="11" x2="10" y2="11"/><line x1="8" y1="9" x2="8" y2="13"/><line x1="15" y1="12" x2="15.01" y2="12"/><line x1="18" y1="10" x2="18.01" y2="10"/><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z"/></svg></div>
-      <div style="flex: 1; min-width: 0;">
-        <div class="partner-name">GameZone</div>
-        <div class="partner-meta">ИП Хатуев А.С. · Грозный, ТЦ Гранд</div>
-        <div class="partner-tags">
-          <span class="badge success">Активный</span>
-        </div>
-      </div>
-    </div>
-    <div class="partner-stats">
-      <div class="ps-item"><div class="l">Сделок</div><div class="v">9</div></div>
-      <div class="ps-item"><div class="l">Оборот</div><div class="v">324 К</div></div>
-      <div class="ps-item"><div class="l">Комиссия</div><div class="v" style="color: var(--success);">3%</div></div>
-    </div>
-  </div>
-
-  <div class="partner-card">
-    <div class="partner-head">
-      <div class="partner-logo" style="background: linear-gradient(135deg, #fee2e2, #fecaca); color: #b91c1c;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
-      <div style="flex: 1; min-width: 0;">
-        <div class="partner-name">Бытовая Техника+</div>
-        <div class="partner-meta">ООО «БТ-Маркет» · Аргун, ул. Нагорная</div>
-        <div class="partner-tags">
-          <span class="badge warning">Низкая активность</span>
-        </div>
-      </div>
-    </div>
-    <div class="partner-stats">
-      <div class="ps-item"><div class="l">Сделок</div><div class="v">3</div></div>
-      <div class="ps-item"><div class="l">Оборот</div><div class="v">128 К</div></div>
-      <div class="ps-item"><div class="l">Комиссия</div><div class="v" style="color: var(--success);">3%</div></div>
-    </div>
-  </div>
-
-  <div class="partner-card">
-    <div class="partner-head">
-      <div class="partner-logo" style="background: linear-gradient(135deg, #ccfbf1, #99f6e4); color: #0f766e;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
-      <div style="flex: 1; min-width: 0;">
-        <div class="partner-name">МобиПлюс</div>
-        <div class="partner-meta">ИП Алиев С.М. · Гудермес, ул. Ленина 8</div>
-        <div class="partner-tags">
-          <span class="badge success">Активный</span>
-        </div>
-      </div>
-    </div>
-    <div class="partner-stats">
-      <div class="ps-item"><div class="l">Сделок</div><div class="v">7</div></div>
-      <div class="ps-item"><div class="l">Оборот</div><div class="v">412 К</div></div>
-      <div class="ps-item"><div class="l">Комиссия</div><div class="v" style="color: var(--success);">3%</div></div>
-    </div>
-  </div>
-
-  <div class="partner-card">
-    <div class="partner-head">
-      <div class="partner-logo" style="background: linear-gradient(135deg, #f1f5f9, #e2e8f0); color: #475569;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="10" x2="6.01" y2="10"/><line x1="10" y1="10" x2="10.01" y2="10"/><line x1="14" y1="10" x2="14.01" y2="10"/><line x1="18" y1="10" x2="18.01" y2="10"/><line x1="6" y1="14" x2="18" y2="14"/></svg></div>
-      <div style="flex: 1; min-width: 0;">
-        <div class="partner-name">КомпМастер</div>
-        <div class="partner-meta">ИП Тамаев Б.К. · Грозный, ул. Жуковского</div>
-        <div class="partner-tags">
-          <span class="badge danger">Заморожен</span>
-        </div>
-      </div>
-    </div>
-    <div class="partner-stats">
-      <div class="ps-item"><div class="l">Сделок</div><div class="v">2</div></div>
-      <div class="ps-item"><div class="l">Оборот</div><div class="v">86 К</div></div>
-      <div class="ps-item"><div class="l">Комиссия</div><div class="v" style="color: var(--text-3);">—</div></div>
-    </div>
-  </div>
-
+  <div class="empty-state" id="pn-empty" style="grid-column:1/-1;padding:60px 20px;text-align:center;color:var(--text-3);font-size:14px;"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 12px;opacity:.4;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><div>Партнёров пока нет</div><div style="font-size:12px;margin-top:6px;">Нажми «Новый партнёр» чтобы добавить</div></div>
 </div>
 
-<div style="text-align: center; padding: 20px;">
-  <button class="btn">Загрузить ещё (16 партнёров)</button>
-</div>
 
 </div>
 
@@ -454,22 +233,6 @@
 
     function partnerForm(data = {}) {
       const sel = (val, opts) => opts.map(([v, l]) => `<option value="${v}"${v===val?' selected':''}>${l}</option>`).join('');
-      const t = data.tariff || {};
-      const types = t.types || ['standard', 'murabaha'];
-      const terms = t.terms || [3, 6, 12, 18, 24, 36];
-      const rates = t.murabahaRates || { 3:5, 6:8, 12:12, 18:16, 24:20, 36:28 };
-      const ALL_TERMS = [3, 6, 9, 12, 18, 24, 36, 48];
-      const chk = (cond) => cond ? ' checked' : '';
-      const termCheckboxes = ALL_TERMS.map(m => `
-        <label style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 13px;">
-          <input type="checkbox" class="t-term" value="${m}"${chk(terms.includes(m))} />
-          ${m} мес
-        </label>`).join('');
-      const rateRows = ALL_TERMS.map(m => `
-        <div class="field" style="margin: 0;">
-          <label class="field-label" style="font-size: 11px;">${m} мес</label>
-          <input class="input t-rate" data-term="${m}" value="${rates[m] ?? ''}" placeholder="—" style="padding: 8px 10px; font-size: 13px;" />
-        </div>`).join('');
       return `
         <div style="display: grid; gap: 14px;">
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
@@ -533,56 +296,8 @@
           </div>
 
           <div style="border-top: 1px solid var(--border); padding-top: 14px; margin-top: 4px;">
-            <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">Тариф рассрочки</div>
-            <div style="font-size: 12px; color: var(--text-3); margin-bottom: 12px;">Эти параметры подставит калькулятор при ссылке <code style="background: var(--surface-2); padding: 1px 5px; border-radius: 4px; font-size: 11px;">calculator.html?partner=&lt;имя&gt;</code></div>
-
-            <div class="field">
-              <label class="field-label">Доступные продукты</label>
-              <div style="display: flex; flex-direction: column; gap: 8px;">
-                <div class="p-toggle-row">
-                  <div>
-                    <div class="p-toggle-name">Стандартная рассрочка <span class="p-tag-zero">0%</span></div>
-                    <div class="p-toggle-desc">Без переплаты</div>
-                  </div>
-                  <div class="p-switch ${types.includes('standard')?'on':''}" data-tg="standard"></div>
-                </div>
-                <div class="p-toggle-row">
-                  <div>
-                    <div class="p-toggle-name">Мурабаха <span class="p-tag-islamic">Шариат</span></div>
-                    <div class="p-toggle-desc">Исламская рассрочка на товар</div>
-                  </div>
-                  <div class="p-switch ${types.includes('murabaha')?'on':''}" data-tg="murabaha"></div>
-                </div>
-                <div class="p-toggle-row">
-                  <div>
-                    <div class="p-toggle-name">Иджара <span class="p-tag-islamic">Шариат</span></div>
-                    <div class="p-toggle-desc">Исламский лизинг услуг</div>
-                  </div>
-                  <div class="p-switch ${types.includes('ijara')?'on':''}" data-tg="ijara"></div>
-                </div>
-              </div>
-            </div>
-
-            <div class="field">
-              <label class="field-label">Доступные сроки</label>
-              <div style="display: flex; gap: 8px; flex-wrap: wrap;">${termCheckboxes}</div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-              <div class="field">
-                <label class="field-label">Мин. первый взнос, %</label>
-                <input class="input" id="t-mindp" value="${t.minDp ?? 0}" placeholder="0" />
-              </div>
-              <div class="field">
-                <label class="field-label">Макс. сумма, ₽</label>
-                <input class="input" id="t-maxamount" value="${t.maxAmount ?? 3000000}" placeholder="3000000" />
-              </div>
-            </div>
-
-            <div class="field">
-              <label class="field-label">Ставка Мурабаха (% годовых) по сроку</label>
-              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">${rateRows}</div>
-              <div style="font-size: 11px; color: var(--text-3); margin-top: 6px;">Оставьте пустым — срок будет недоступен для Мурабахи</div>
+            <div style="font-size: 12px; color: var(--text-3); line-height: 1.5;">
+              Тарифы единые для всех партнёров — настраиваются в разделе <a href="settings.html" style="color: var(--primary); font-weight: 600;">Настройки → Тарифы</a>.
             </div>
           </div>
         </div>
@@ -590,18 +305,6 @@
     }
 
     function readForm(modal) {
-      const types = [];
-      if (modal.querySelector('.p-switch[data-tg="standard"]')?.classList.contains('on')) types.push('standard');
-      if (modal.querySelector('.p-switch[data-tg="murabaha"]')?.classList.contains('on')) types.push('murabaha');
-      if (modal.querySelector('.p-switch[data-tg="ijara"]')?.classList.contains('on')) types.push('ijara');
-      const terms = [...modal.querySelectorAll('.t-term:checked')]
-        .map(c => parseInt(c.value, 10))
-        .sort((a, b) => a - b);
-      const murabahaRates = {};
-      modal.querySelectorAll('.t-rate').forEach(inp => {
-        const v = parseFloat(inp.value);
-        if (!isNaN(v) && v >= 0) murabahaRates[parseInt(inp.dataset.term, 10)] = v;
-      });
       return {
         name: modal.querySelector('#p-name').value.trim(),
         legal: modal.querySelector('#p-legal').value.trim(),
@@ -613,14 +316,7 @@
         category: modal.querySelector('#p-category').value,
         color: modal.querySelector('#p-color').value,
         commission: modal.querySelector('#p-commission').value.replace(/\D/g, '') || '4',
-        status: modal.querySelector('#p-status').value,
-        tariff: {
-          types,
-          terms: terms.length ? terms : [3, 6, 12, 18, 24, 36],
-          minDp: parseInt(modal.querySelector('#t-mindp').value, 10) || 0,
-          maxAmount: parseInt(String(modal.querySelector('#t-maxamount').value).replace(/\D/g, ''), 10) || 3000000,
-          murabahaRates
-        }
+        status: modal.querySelector('#p-status').value
       };
     }
 
@@ -770,65 +466,71 @@
       });
     }
 
-    // Wire all existing cards
-    document.querySelectorAll('.partner-card').forEach(attachCardClick);
+    // ===== Render existing partners from storage =====
+    function renderAll() {
+      const grid = document.querySelector('.partner-grid');
+      const empty = document.getElementById('pn-empty');
+      // Remove all current partner-card nodes (keep empty placeholder)
+      grid.querySelectorAll('.partner-card').forEach(c => c.remove());
 
-    // ===== SEED: on first load, capture all hardcoded cards into localStorage =====
-    (function seed() {
       const all = loadAll();
-      // If we already have data, don't reseed
-      if (Object.keys(all).length >= 5) return;
+      const items = Object.values(all);
+
+      if (items.length === 0) {
+        if (empty) empty.style.display = '';
+      } else {
+        if (empty) empty.style.display = 'none';
+        items.forEach(data => {
+          const card = buildCard(data);
+          attachCardClick(card);
+          grid.appendChild(card);
+        });
+      }
+
+      // Update KPIs
+      const total = items.length;
+      const active = items.filter(p => (p.status || 'success') === 'success').length;
+      const frozen = items.filter(p => p.status === 'danger').length;
+      document.getElementById('kpi-total').textContent = total;
+      document.getElementById('kpi-active').textContent = active;
+      document.getElementById('kpi-frozen').textContent = frozen;
+
+      const desc = document.getElementById('pn-desc');
+      if (desc) desc.textContent = total ? 'Магазины-партнёры · ' + total + ' шт.' : 'Магазины-партнёры и торговые точки';
+    }
+
+    // Load deals count from applications
+    async function refreshDealsCount() {
+      if (!window.PaydDB) return;
+      const apps = await PaydDB.list('applications').catch(() => []);
+      const all = loadAll();
+      const dealsByPartner = {};
+      apps.forEach(a => {
+        const pname = a.partner || a.partner_name;
+        if (pname) dealsByPartner[pname] = (dealsByPartner[pname] || 0) + 1;
+      });
+      // Update each card stats
       document.querySelectorAll('.partner-card').forEach(card => {
         const name = card.querySelector('.partner-name')?.textContent.trim();
         if (!name) return;
-        const meta = card.querySelector('.partner-meta')?.textContent || '';
-        const parts = meta.split(' · ');
-        const legal = parts[0] || '';
-        const address = parts.slice(1).join(' · ') || '';
-        const commission = (card.querySelectorAll('.ps-item .v')[2]?.textContent || '4%').replace(/\D/g, '') || '4';
-        const deals = card.querySelectorAll('.ps-item .v')[0]?.textContent.trim() || '0';
-        const turnover = card.querySelectorAll('.ps-item .v')[1]?.textContent.trim() || '0';
-        // Detect color from logo bg
-        const logoBg = card.querySelector('.partner-logo')?.style.background || '';
-        const colorByHex = {
-          '#fef3c7': 'yellow', '#dbeafe': 'blue', '#fce7f3': 'pink',
-          '#ddd6fe': 'purple', '#d1fae5': 'green', '#fed7aa': 'orange',
-          '#e0e7ff': 'indigo', '#f3e8ff': 'violet', '#fee2e2': 'red',
-          '#ccfbf1': 'teal', '#f1f5f9': 'gray'
-        };
-        let color = 'blue';
-        for (const [hex, c] of Object.entries(colorByHex)) {
-          if (logoBg.toLowerCase().includes(hex.toLowerCase())) { color = c; break; }
-        }
-        // Detect category from icon (best-effort)
-        const iconHTML = card.querySelector('.partner-logo')?.innerHTML || '';
-        let category = 'shop';
-        if (iconHTML.includes('rect x="5" y="2" width="14"')) category = 'phone';
-        else if (iconHTML.includes('rect x="2" y="4" width="20" height="13"')) category = 'laptop';
-        else if (iconHTML.includes('rect x="2" y="3" width="20" height="14"')) category = 'tv';
-        else if (iconHTML.includes('M23 19a2 2')) category = 'camera';
-        else if (iconHTML.includes('cx="12" cy="12" r="6"')) category = 'watch';
-        else if (iconHTML.includes('cx="5.5" cy="17.5"')) category = 'bike';
-        else if (iconHTML.includes('M17.32 5H6.68')) category = 'game';
-        else if (iconHTML.includes('M19 9V6')) category = 'sofa';
-        else if (iconHTML.includes('M3 9l9-7')) category = 'home';
-        else if (iconHTML.includes('rect x="2" y="6" width="20" height="12"')) category = 'keyboard';
-
-        // Detect status from badge
-        const badge = card.querySelector('.partner-tags .badge');
-        let status = 'success';
-        if (badge?.classList.contains('warning')) status = 'warning';
-        else if (badge?.classList.contains('danger')) status = 'danger';
-        else if (badge?.classList.contains('gray')) status = 'gray';
-
-        all[name] = { name, legal, address, inn: '', contact: '', phone: '', email: '', category, color, commission, status, deals, turnover };
+        const dealsEl = card.querySelectorAll('.ps-item .v')[0];
+        if (dealsEl) dealsEl.textContent = dealsByPartner[name] || 0;
       });
-      saveAll(all);
-      // Set first as default active partner if none
-      if (!localStorage.getItem(ACTIVE_KEY) && Object.keys(all)[0]) {
-        localStorage.setItem(ACTIVE_KEY, Object.keys(all)[0]);
-      }
-    })();
+      const totalDealsViaPartners = Object.values(dealsByPartner).reduce((s, n) => s + n, 0);
+      document.getElementById('kpi-deals').textContent = totalDealsViaPartners;
+    }
+
+    renderAll();
+    refreshDealsCount();
+
+    // Listen for changes from other tabs
+    window.addEventListener('storage', e => {
+      if (e.key === STORAGE_KEY) renderAll();
+    });
+    if (window.PaydDB?.subscribe) {
+      PaydDB.subscribe('partners', renderAll);
+      PaydDB.subscribe('applications', refreshDealsCount);
+    }
   })();
 </script>
 </body>
