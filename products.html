@@ -151,40 +151,19 @@
 <div class="modal-bg" id="prod-modal">
   <div class="modal">
     <h3 id="prod-modal-title">Новый товар</h3>
-    <div class="modal-row">
-      <div class="field">
-        <label class="field-label">Название *</label>
-        <input class="input" id="m-name" placeholder="Например: iPhone 16 Pro 256GB" />
-      </div>
-      <div class="field">
-        <label class="field-label">Цвет / характеристика</label>
-        <input class="input" id="m-color" placeholder="Натуральный титан" />
-      </div>
+    <div class="field" style="margin-bottom: 12px;">
+      <label class="field-label">Категория *</label>
+      <select class="select" id="m-cat"></select>
+    </div>
+    <div id="m-fields-container"></div>
+    <div id="m-name-preview" style="margin: 12px 0; padding: 10px 12px; background: var(--surface-2); border-radius: 8px; font-size: 12px; color: var(--text-3); display: none;">
+      <div style="margin-bottom: 4px;">Название будет сохранено как:</div>
+      <div id="m-name-out" style="color: var(--text); font-weight: 700; font-size: 14px;">—</div>
     </div>
     <div class="modal-row">
-      <div class="field">
-        <label class="field-label">Артикул / код</label>
-        <input class="input" id="m-code" placeholder="000001234" />
-      </div>
-      <div class="field">
-        <label class="field-label">Категория</label>
-        <select class="select" id="m-cat"></select>
-      </div>
-    </div>
-    <div class="modal-row">
-      <div class="field">
-        <label class="field-label">Цена закупки (₽)</label>
-        <input class="input" id="m-purchase" type="number" placeholder="0" />
-      </div>
       <div class="field">
         <label class="field-label">Цена продажи (₽) *</label>
         <input class="input" id="m-price" type="number" placeholder="0" />
-      </div>
-    </div>
-    <div class="modal-row">
-      <div class="field">
-        <label class="field-label">Количество (шт)</label>
-        <input class="input" id="m-stock" type="number" placeholder="0" value="0" />
       </div>
       <div class="field">
         <label class="field-label">Статус</label>
@@ -199,6 +178,25 @@
       <button class="btn danger" id="m-delete" data-no-handler="true" style="display:none;">Удалить</button>
       <button class="btn" id="m-cancel" data-no-handler="true" style="margin-left:auto;">Отмена</button>
       <button class="btn primary" id="m-save" data-no-handler="true">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FIELDS EDITOR MODAL ============ -->
+<div class="modal-bg" id="fields-modal">
+  <div class="modal" style="max-width: 480px;">
+    <h3>Поля категории</h3>
+    <div style="font-size: 12px; color: var(--text-3); margin-bottom: 12px; line-height: 1.5;">
+      <span id="fm-cat-info"></span><br>
+      Из значений этих полей автоматически формируется название товара.
+    </div>
+    <div id="fm-list"></div>
+    <div class="cat-manage-row" style="border: none; padding-top: 14px;">
+      <input class="input" id="fm-new" placeholder="Например: Память, Цвет, Размер" />
+      <button class="btn primary" id="fm-add" data-no-handler="true">+ Добавить</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn primary" id="fm-close" data-no-handler="true">Готово</button>
     </div>
   </div>
 </div>
@@ -264,27 +262,38 @@
   function saveProducts(map) {
     localStorage.setItem(PRODUCTS_KEY, JSON.stringify(map));
   }
-  // Categories: array of { id, name, parent }
+  // Categories: array of { id, name, parent, fields:[label,...] }
   function loadCats() {
     try {
       const raw = JSON.parse(localStorage.getItem(CATEGORIES_KEY) || 'null');
       if (!raw) {
-        // First-time defaults
+        // First-time defaults with field schemas
         return [
-          { id: 'cat_phones',  name: 'Смартфоны',       parent: null },
-          { id: 'cat_laptops', name: 'Ноутбуки',         parent: null },
-          { id: 'cat_tv',      name: 'Телевизоры',       parent: null },
-          { id: 'cat_audio',   name: 'Аудио',            parent: null },
-          { id: 'cat_watch',   name: 'Часы',             parent: null },
-          { id: 'cat_appl',    name: 'Бытовая техника',  parent: null }
+          { id: 'cat_phones',  name: 'Смартфоны',      parent: null, fields: ['Модель', 'Память', 'Цвет'] },
+          { id: 'cat_laptops', name: 'Ноутбуки',        parent: null, fields: ['Модель', 'Память', 'RAM', 'Цвет'] },
+          { id: 'cat_tv',      name: 'Телевизоры',      parent: null, fields: ['Модель', 'Диагональ', 'Цвет'] },
+          { id: 'cat_audio',   name: 'Аудио',           parent: null, fields: ['Модель', 'Цвет'] },
+          { id: 'cat_watch',   name: 'Часы',            parent: null, fields: ['Модель', 'Размер', 'Цвет'] },
+          { id: 'cat_appl',    name: 'Бытовая техника', parent: null, fields: ['Тип', 'Модель', 'Цвет'] }
         ];
       }
       // Migrate from old flat string array
       if (raw.length && typeof raw[0] === 'string') {
-        return raw.map(name => ({ id: 'cat_' + Math.random().toString(36).slice(2, 8), name, parent: null }));
+        return raw.map(name => ({ id: 'cat_' + Math.random().toString(36).slice(2, 8), name, parent: null, fields: [] }));
       }
       return raw;
     } catch (_) { return []; }
+  }
+  // Get fields for a category — walks up to parent if empty
+  function getCatFields(catId) {
+    if (!catId) return null;
+    const cats = loadCats();
+    let cur = cats.find(c => c.id === catId);
+    while (cur) {
+      if (Array.isArray(cur.fields) && cur.fields.length) return cur.fields;
+      cur = cur.parent ? cats.find(c => c.id === cur.parent) : null;
+    }
+    return null;
   }
   function saveCats(arr) {
     localStorage.setItem(CATEGORIES_KEY, JSON.stringify(arr));
@@ -458,16 +467,74 @@
   const prodModal = document.getElementById('prod-modal');
   let editingId = null;
 
+  function renderProductFields(catId, values = {}) {
+    const container = document.getElementById('m-fields-container');
+    const preview = document.getElementById('m-name-preview');
+    const fields = getCatFields(catId);
+    if (!fields) {
+      container.innerHTML = `
+        <div class="field" style="margin-bottom: 12px;">
+          <label class="field-label">Название *</label>
+          <input class="input" data-pf="__name__" value="${escapeHtml(values.__name__ || '')}" placeholder="Введите название" />
+        </div>
+      `;
+      preview.style.display = 'none';
+    } else {
+      container.innerHTML = `
+        <div class="modal-row" style="grid-template-columns: repeat(${Math.min(2, fields.length)}, 1fr);">
+          ${fields.map(f => `
+            <div class="field">
+              <label class="field-label">${escapeHtml(f)}</label>
+              <input class="input" data-pf="${escapeHtml(f)}" value="${escapeHtml(values[f] || '')}" placeholder="Например..." />
+            </div>
+          `).join('')}
+        </div>
+      `;
+      preview.style.display = '';
+      updateNamePreview();
+    }
+    container.querySelectorAll('[data-pf]').forEach(inp => {
+      inp.addEventListener('input', updateNamePreview);
+    });
+  }
+  function updateNamePreview() {
+    const out = document.getElementById('m-name-out');
+    const inputs = document.querySelectorAll('#m-fields-container [data-pf]');
+    const parts = [...inputs].map(i => i.value.trim()).filter(Boolean);
+    out.textContent = parts.join(' ') || '—';
+  }
+  function buildProductName(catId) {
+    const fields = getCatFields(catId);
+    if (!fields) {
+      return document.querySelector('#m-fields-container [data-pf="__name__"]')?.value.trim() || '';
+    }
+    const parts = fields.map(f =>
+      document.querySelector(`#m-fields-container [data-pf="${CSS.escape(f)}"]`)?.value.trim()
+    ).filter(Boolean);
+    return parts.join(' ');
+  }
+  function readFieldValues(catId) {
+    const fields = getCatFields(catId);
+    if (!fields) return {};
+    const obj = {};
+    fields.forEach(f => {
+      const v = document.querySelector(`#m-fields-container [data-pf="${CSS.escape(f)}"]`)?.value.trim();
+      if (v) obj[f] = v;
+    });
+    return obj;
+  }
+
   function openNew() {
     editingId = null;
     document.getElementById('prod-modal-title').textContent = 'Новый товар';
     document.getElementById('m-delete').style.display = 'none';
-    ['m-name','m-color','m-code','m-purchase','m-price'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('m-stock').value = '0';
+    document.getElementById('m-price').value = '';
     document.getElementById('m-status').value = 'instock';
     populateCatSelect();
+    const catId = document.getElementById('m-cat').value;
+    renderProductFields(catId);
     prodModal.classList.add('open');
-    setTimeout(() => document.getElementById('m-name').focus(), 50);
+    setTimeout(() => document.querySelector('#m-fields-container [data-pf]')?.focus(), 50);
   }
   function openEdit(id) {
     const products = loadProducts();
@@ -476,16 +543,19 @@
     editingId = id;
     document.getElementById('prod-modal-title').textContent = 'Товар: ' + p.name;
     document.getElementById('m-delete').style.display = '';
-    document.getElementById('m-name').value = p.name || '';
-    document.getElementById('m-color').value = p.color || '';
-    document.getElementById('m-code').value = p.code || '';
-    document.getElementById('m-purchase').value = p.purchase || '';
     document.getElementById('m-price').value = p.price || '';
-    document.getElementById('m-stock').value = p.stock || 0;
     document.getElementById('m-status').value = p.status || 'instock';
     populateCatSelect(p.category);
+    const values = p.fieldValues || {};
+    if (!getCatFields(p.category)) values.__name__ = p.name;
+    renderProductFields(p.category, values);
     prodModal.classList.add('open');
   }
+
+  // Re-render fields when category changes
+  document.getElementById('m-cat').addEventListener('change', e => {
+    renderProductFields(e.target.value);
+  });
   function populateCatSelect(selected) {
     const sel = document.getElementById('m-cat');
     const cats = loadCats();
@@ -505,24 +575,23 @@
   prodModal.addEventListener('click', e => { if (e.target === prodModal) closeProdModal(); });
 
   document.getElementById('m-save').addEventListener('click', () => {
-    const name = document.getElementById('m-name').value.trim();
+    const catId = document.getElementById('m-cat').value;
+    const name = buildProductName(catId);
     const price = +document.getElementById('m-price').value || 0;
-    if (!name) { PaydApp.toast('Укажите название', 'error'); return; }
-    if (!price) { PaydApp.toast('Укажите цену продажи', 'error'); return; }
+    if (!name) { PaydApp.toast('Заполните поля для названия товара', 'error'); return; }
+    if (!price) { PaydApp.toast('Укажите цену', 'error'); return; }
 
     const products = loadProducts();
     const id = editingId || ('p_' + Date.now());
+    const prev = products[id] || {};
     products[id] = {
       id,
       name,
-      color: document.getElementById('m-color').value.trim(),
-      code: document.getElementById('m-code').value.trim(),
-      category: document.getElementById('m-cat').value,
-      purchase: +document.getElementById('m-purchase').value || 0,
+      category: catId,
+      fieldValues: readFieldValues(catId),
       price,
-      stock: +document.getElementById('m-stock').value || 0,
       status: document.getElementById('m-status').value,
-      created_at: products[id]?.created_at || new Date().toISOString()
+      created_at: prev.created_at || new Date().toISOString()
     };
     saveProducts(products);
     PaydApp.toast(editingId ? 'Товар обновлён' : 'Товар добавлен', 'success');
@@ -554,9 +623,15 @@
     const cats = loadCats();
     const rows = [];
     function addRow(c, depth) {
+      const fieldCount = (c.fields || []).length;
+      const inheritedCount = !fieldCount && getCatFields(c.id) ? getCatFields(c.id).length : 0;
+      const fieldsLabel = fieldCount ? `Поля (${fieldCount})`
+                       : inheritedCount ? `Поля (${inheritedCount}) ↑`
+                       : 'Поля';
       rows.push(`
         <div class="cat-manage-row" style="padding-left:${depth * 18}px;">
           <input class="input" data-edit="${escapeHtml(c.id)}" value="${escapeHtml(c.name)}" />
+          <button class="btn sm" data-fields="${escapeHtml(c.id)}" data-no-handler="true" title="Настроить поля">${fieldsLabel}</button>
           <button class="btn sm" data-add-sub="${escapeHtml(c.id)}" data-no-handler="true" title="Добавить подкатегорию">+ подкат</button>
           <button class="btn danger sm" data-del="${escapeHtml(c.id)}" data-no-handler="true">Удалить</button>
         </div>
@@ -576,13 +651,16 @@
         if (c) { c.name = newName; saveCats(cats); refresh(); }
       });
     });
+    list.querySelectorAll('[data-fields]').forEach(btn => {
+      btn.addEventListener('click', () => openFieldsEditor(btn.dataset.fields));
+    });
     list.querySelectorAll('[data-add-sub]').forEach(btn => {
       btn.addEventListener('click', () => {
         const parentId = btn.dataset.addSub;
         const name = prompt('Название подкатегории:');
         if (!name?.trim()) return;
         const cats = loadCats();
-        cats.push({ id: newCatId(), name: name.trim(), parent: parentId });
+        cats.push({ id: newCatId(), name: name.trim(), parent: parentId, fields: [] });
         saveCats(cats);
         expandedCats.add(parentId);
         renderCatManage();
@@ -616,6 +694,108 @@
       });
     });
   }
+
+  // ============ Fields editor ============
+  const fieldsModal = document.getElementById('fields-modal');
+  let fmCurrentCatId = null;
+
+  function openFieldsEditor(catId) {
+    fmCurrentCatId = catId;
+    const cats = loadCats();
+    const c = cats.find(x => x.id === catId);
+    if (!c) return;
+    document.getElementById('fm-cat-info').textContent = 'Категория: «' + c.name + '»';
+    renderFmList();
+    fieldsModal.classList.add('open');
+    setTimeout(() => document.getElementById('fm-new').focus(), 50);
+  }
+
+  function renderFmList() {
+    const cats = loadCats();
+    const c = cats.find(x => x.id === fmCurrentCatId);
+    if (!c) return;
+    const list = document.getElementById('fm-list');
+    const fields = c.fields || [];
+    const inherited = !fields.length ? getCatFields(c.id) : null;
+
+    if (fields.length) {
+      list.innerHTML = fields.map((f, i) => `
+        <div class="cat-manage-row">
+          <span style="font-size: 12px; color: var(--text-3); width: 18px;">${i + 1}.</span>
+          <input class="input" data-fm-edit="${i}" value="${escapeHtml(f)}" />
+          <button class="btn sm" data-fm-up="${i}" data-no-handler="true" ${i === 0 ? 'disabled' : ''}>↑</button>
+          <button class="btn sm" data-fm-down="${i}" data-no-handler="true" ${i === fields.length - 1 ? 'disabled' : ''}>↓</button>
+          <button class="btn danger sm" data-fm-del="${i}" data-no-handler="true">×</button>
+        </div>
+      `).join('');
+    } else if (inherited) {
+      list.innerHTML = `
+        <div style="padding: 14px; background: var(--surface-2); border-radius: 8px; font-size: 12px; color: var(--text-2);">
+          Сейчас наследует от родительской категории: <b>${inherited.join(' · ')}</b>
+        </div>
+      `;
+    } else {
+      list.innerHTML = '<div style="padding:14px;text-align:center;color:var(--text-3);font-size:13px;">Полей пока нет — добавь ниже</div>';
+    }
+
+    list.querySelectorAll('[data-fm-edit]').forEach(inp => {
+      inp.addEventListener('change', () => {
+        const cats = loadCats();
+        const c = cats.find(x => x.id === fmCurrentCatId);
+        const i = +inp.dataset.fmEdit;
+        const v = inp.value.trim();
+        if (v && c.fields) { c.fields[i] = v; saveCats(cats); }
+      });
+    });
+    list.querySelectorAll('[data-fm-del]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cats = loadCats();
+        const c = cats.find(x => x.id === fmCurrentCatId);
+        c.fields.splice(+btn.dataset.fmDel, 1);
+        saveCats(cats);
+        renderFmList();
+      });
+    });
+    list.querySelectorAll('[data-fm-up]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cats = loadCats();
+        const c = cats.find(x => x.id === fmCurrentCatId);
+        const i = +btn.dataset.fmUp;
+        [c.fields[i-1], c.fields[i]] = [c.fields[i], c.fields[i-1]];
+        saveCats(cats); renderFmList();
+      });
+    });
+    list.querySelectorAll('[data-fm-down]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cats = loadCats();
+        const c = cats.find(x => x.id === fmCurrentCatId);
+        const i = +btn.dataset.fmDown;
+        [c.fields[i+1], c.fields[i]] = [c.fields[i], c.fields[i+1]];
+        saveCats(cats); renderFmList();
+      });
+    });
+  }
+
+  document.getElementById('fm-add').addEventListener('click', () => {
+    const inp = document.getElementById('fm-new');
+    const name = inp.value.trim();
+    if (!name) return;
+    const cats = loadCats();
+    const c = cats.find(x => x.id === fmCurrentCatId);
+    if (!c.fields) c.fields = [];
+    c.fields.push(name);
+    saveCats(cats);
+    inp.value = '';
+    renderFmList();
+  });
+  document.getElementById('fm-new').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('fm-add').click();
+  });
+  document.getElementById('fm-close').addEventListener('click', () => {
+    fieldsModal.classList.remove('open');
+    renderCatManage();
+  });
+  fieldsModal.addEventListener('click', e => { if (e.target === fieldsModal) { fieldsModal.classList.remove('open'); renderCatManage(); }});
 
   document.getElementById('cat-manage-btn').addEventListener('click', () => {
     renderCatManage();
