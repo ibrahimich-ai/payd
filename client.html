@@ -51,6 +51,13 @@
   .empty-block { padding: 40px 20px; text-align: center; color: var(--text-3); }
   .empty-block .em-title { font-size: 14px; margin-bottom: 6px; }
   .empty-block .em-sub { font-size: 12px; }
+
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, .55); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+  .modal-bg.open { display: flex; }
+  .modal { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-lg); max-width: 540px; width: 100%; padding: 24px; max-height: 90vh; overflow-y: auto; }
+  .modal h3 { font-size: 17px; font-weight: 700; margin-bottom: 16px; }
+  .modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 </style>
 </head>
 <body>
@@ -125,6 +132,46 @@
   </div>
 </div>
 
+</div>
+
+<!-- ============ EDIT CLIENT MODAL ============ -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <h3>Редактировать клиента</h3>
+    <div class="modal-row">
+      <div class="field">
+        <label class="field-label">ФИО *</label>
+        <input class="input" id="m-name" />
+      </div>
+      <div class="field">
+        <label class="field-label">Телефон *</label>
+        <input class="input" id="m-phone" />
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="field">
+        <label class="field-label">Дата рождения</label>
+        <input class="input" id="m-dob" type="date" />
+      </div>
+      <div class="field">
+        <label class="field-label">Паспорт (серия номер)</label>
+        <input class="input" id="m-passport" />
+      </div>
+    </div>
+    <div class="field" style="margin-bottom: 12px;">
+      <label class="field-label">Адрес регистрации</label>
+      <input class="input" id="m-address" />
+    </div>
+    <div class="field">
+      <label class="field-label">Заметка</label>
+      <textarea class="textarea" id="m-note"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn danger" id="m-delete" data-no-handler="true">Удалить</button>
+      <button class="btn" id="m-cancel" data-no-handler="true" style="margin-left:auto;">Отмена</button>
+      <button class="btn primary" id="m-save" data-no-handler="true">Сохранить</button>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -312,6 +359,106 @@
 
   load();
   if (window.PaydDB?.subscribe) PaydDB.subscribe('applications', load);
+
+  // ============ Edit modal ============
+  let currentClient = null;
+  function setCurrentClient(c) { currentClient = c; }
+
+  // Hook into renderClient to capture current client
+  const _origRender = renderClient;
+  window.renderClient = function (c, apps) {
+    setCurrentClient(c);
+    return _origRender(c, apps);
+  };
+
+  const modalBg = document.getElementById('modal-bg');
+  function openEdit() {
+    if (!currentClient) {
+      // Re-load if not yet ready
+      PaydApp.toast('Карточка ещё загружается, попробуйте снова', 'info');
+      return;
+    }
+    document.getElementById('m-name').value = currentClient.name || '';
+    document.getElementById('m-phone').value = currentClient.phone || '';
+    document.getElementById('m-dob').value = currentClient.dob || '';
+    document.getElementById('m-passport').value = currentClient.passport || '';
+    document.getElementById('m-address').value = currentClient.address || '';
+    document.getElementById('m-note').value = currentClient.note || '';
+    modalBg.classList.add('open');
+  }
+  function closeEdit() { modalBg.classList.remove('open'); }
+
+  document.getElementById('cl-edit').addEventListener('click', e => {
+    e.preventDefault();
+    openEdit();
+  });
+  document.getElementById('m-cancel').addEventListener('click', closeEdit);
+  modalBg.addEventListener('click', e => { if (e.target === modalBg) closeEdit(); });
+
+  document.getElementById('m-save').addEventListener('click', async () => {
+    const name = document.getElementById('m-name').value.trim();
+    const phone = document.getElementById('m-phone').value.trim();
+    if (!name) { PaydApp.toast('Укажите ФИО', 'error'); return; }
+    if (!phone) { PaydApp.toast('Укажите телефон', 'error'); return; }
+
+    const updated = {
+      name,
+      phone,
+      dob: document.getElementById('m-dob').value,
+      passport: document.getElementById('m-passport').value.trim(),
+      address: document.getElementById('m-address').value.trim(),
+      note: document.getElementById('m-note').value.trim(),
+      created_at: currentClient?.created_at || new Date().toISOString()
+    };
+
+    // Save to manual clients map (key by phone, fallback to name)
+    let map = {};
+    try { map = JSON.parse(localStorage.getItem('payd.clients.v1') || '{}'); } catch (_) {}
+
+    // If old key existed, remove it (in case phone changed)
+    const oldPhone = currentClient?.phone;
+    const oldName = currentClient?.name;
+    if (oldPhone && map[oldPhone]) delete map[oldPhone];
+    else if (oldName && map[oldName]) delete map[oldName];
+
+    map[phone || name] = updated;
+    localStorage.setItem('payd.clients.v1', JSON.stringify(map));
+    PaydApp.toast('Изменения сохранены', 'success');
+    closeEdit();
+
+    // Update URL with new params and reload
+    const url = new URL(location.href);
+    url.searchParams.set('phone', phone);
+    url.searchParams.set('name', name);
+    history.replaceState(null, '', url);
+    load();
+  });
+
+  document.getElementById('m-delete').addEventListener('click', () => {
+    PaydApp.confirmDialog({
+      title: 'Удалить клиента?',
+      message: 'Запись клиента будет удалена. Связанные заявки останутся в системе.',
+      okText: 'Удалить',
+      onOk: () => {
+        let map = {};
+        try { map = JSON.parse(localStorage.getItem('payd.clients.v1') || '{}'); } catch (_) {}
+        const oldPhone = currentClient?.phone;
+        const oldName = currentClient?.name;
+        if (oldPhone) delete map[oldPhone];
+        if (oldName) delete map[oldName];
+        localStorage.setItem('payd.clients.v1', JSON.stringify(map));
+        PaydApp.toast('Клиент удалён', 'success');
+        setTimeout(() => location.href = 'clients.html', 600);
+      }
+    });
+  });
+
+  // ============ SMS button ============
+  document.getElementById('cl-sms').addEventListener('click', () => {
+    if (!currentClient?.phone) { PaydApp.toast('У клиента нет номера телефона', 'error'); return; }
+    const phone = currentClient.phone.replace(/\D/g, '');
+    location.href = 'sms:' + phone;
+  });
 </script>
 </body>
 </html>
