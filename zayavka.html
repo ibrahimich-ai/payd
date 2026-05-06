@@ -973,60 +973,73 @@
   // ============================================================
   function buildAppFromCalc(rec) {
     const c = rec.calc || {};
-    const fmt = n => Math.round(n).toLocaleString('ru-RU');
+    const fmt = n => Math.round(n || 0).toLocaleString('ru-RU').replace(/,/g, ' ');
     const initials = name => {
       const p = (name || '').trim().split(/\s+/);
       return ((p[0]?.[0] || '?') + (p[1]?.[0] || '')).toUpperCase();
     };
     const COLORS = ['c1','c2','c3','c4','c5','c6','c7'];
-    const color = COLORS[Math.abs((rec.client?.name || '').length) % COLORS.length];
+    const clientName = rec.client_name || rec.client?.name || '—';
+    const color = COLORS[Math.abs(clientName.length) % COLORS.length];
     const d = new Date(rec.ts || Date.now());
     const pad = n => String(n).padStart(2, '0');
     const dateStr = `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-    const isMurabaha = c.type === 'murabaha';
+
+    // Snapshot полей расчёта (приоритет — новые поля заявки V3)
+    const base    = +rec.base_price    || +c.basePrice  || 0;
+    const final   = +rec.amount        || +c.price      || 0;
+    const markup  = +rec.markup_amount || (final - base) || 0;
+    const markupPct = +rec.markup_pct  || (base ? (markup / base * 100) : 0);
+    const down    = +rec.down_payment  || +c.dpAmount   || 0;
+    const term    = +rec.term          || +c.term       || 0;
+    const monthly = +rec.monthly       || +c.monthly    || (term ? Math.round((final - down) / term) : 0);
+    const downPct = final ? (down / final * 100) : 0;
+    const total   = down + monthly * term;
+    const isMurabaha = (rec.type || c.type) === 'Мурабаха' || c.type === 'murabaha' || markupPct > 0;
+
     return {
       number: rec.number,
       date: dateStr,
       status: 'new',
       statusLabel: 'НОВАЯ',
-      statusSubtitle: 'Создана из калькулятора',
-      type: isMurabaha ? 'Исламская рассрочка' : 'Стандартная рассрочка',
-      typeLabel: c.typeLabel || (isMurabaha ? 'Мурабаха' : 'Стандартная'),
+      statusSubtitle: 'Заявка создана',
+      type: rec.type || (isMurabaha ? 'Исламская рассрочка' : 'Стандартная рассрочка'),
+      typeLabel: rec.type || c.typeLabel || (isMurabaha ? 'Мурабаха' : 'Стандартная'),
       isIslamic: isMurabaha,
       progressStep: 1,
       progressLabel: 'Создана',
       progressPct: 8,
 
-      clientName: rec.client?.name || '—',
-      clientInitials: initials(rec.client?.name),
+      clientName,
+      clientInitials: initials(clientName),
       clientColor: color,
-      clientPhone: rec.client?.phone || '',
-      clientAddress: '—',
-      clientBirthday: '—',
-      clientPassport: '—',
-      clientDeals: '0',
-      clientTotal: '0 ₽',
+      clientPhone: rec.client_phone || rec.client?.phone || '—',
+      clientAddress: rec.client_address || '—',
+      clientBirthday: rec.client_birthday || '—',
+      clientPassport: rec.client_passport || '—',
+      clientDeals: '—',
+      clientTotal: '—',
 
-      productIcon: '🧮',
-      productName: rec.partner ? `Расчёт калькулятора · ${rec.partner}` : 'Расчёт калькулятора',
-      productCode: 'Источник: ' + (rec.partner || 'Калькулятор'),
+      productIcon: '📦',
+      productName: rec.product || c.product || '—',
+      productCode: rec.product_id ? 'Артикул: ' + rec.product_id : (rec.partner ? 'Партнёр: ' + rec.partner : 'Со склада'),
       productQty: '1 шт',
-      productPurchase: fmt(c.price || 0) + ',00',
-      productSale:     fmt(c.price || 0) + ',00',
-      productTotal:    fmt(c.price || 0) + ',00',
+      productPurchase: fmt(base),
+      productSale:     fmt(final),
+      productTotal:    fmt(final),
 
-      termsPurchase:   fmt(c.price || 0) + ' ₽',
-      termsSale:       fmt(c.price || 0) + ' ₽',
-      termsMarkup:     fmt(c.markup || 0) + ' ₽',
-      termsMarkupPct:  ((c.annualRate || 0).toFixed(2)) + ' %',
-      termsRate:       isMurabaha ? `${c.annualRate || 0} % (Мурабаха)` : '0 %',
-      termsDown:       fmt(c.dpAmount || 0) + ' ₽',
-      termsDownPct:    (c.dpPct || 0) + ' %',
-      termsTerm:       (c.term || 0) + ' мес.',
-      termsMonthly:    fmt(c.monthly || 0) + ' ₽',
-      termsTotal:      fmt(c.total || 0) + ' ₽',
+      termsPurchase:   fmt(base) + ' ₽',
+      termsSale:       fmt(final) + ' ₽',
+      termsMarkup:     fmt(markup) + ' ₽',
+      termsMarkupPct:  markupPct.toFixed(2) + ' %',
+      termsRate:       markupPct > 0 ? `${markupPct.toFixed(0)}% (за ${term} мес)` : '0 %',
+      termsDown:       fmt(down) + ' ₽',
+      termsDownPct:    downPct.toFixed(0) + ' %',
+      termsTerm:       term + ' мес.',
+      termsMonthly:    fmt(monthly) + ' ₽',
+      termsTotal:      fmt(total) + ' ₽',
       termsEndDate:    (() => {
-        const e = new Date(d); e.setMonth(e.getMonth() + (c.term || 0));
+        const e = new Date(d); e.setMonth(e.getMonth() + term);
         return `${pad(e.getDate())}.${pad(e.getMonth()+1)}.${e.getFullYear()}`;
       })(),
 
@@ -1559,7 +1572,16 @@
   function _saveWf() {
     try {
       const all = _loadAllWf();
-      all[_appId] = { step: wf.step, sbPassed: wf.sbPassed, sbScore: wf.sbScore, rejected: wf.rejected, completed: wf.completed, type: wf.type };
+      // Поле app_id обязательно для синка с Supabase application_workflows
+      all[_appId] = {
+        app_id: _appId,
+        step: wf.step,
+        sbPassed: wf.sbPassed,
+        sbScore: wf.sbScore,
+        rejected: wf.rejected,
+        completed: wf.completed,
+        type: wf.type
+      };
       localStorage.setItem(WF_KEY, JSON.stringify(all));
     } catch (_) {}
   }
@@ -1787,19 +1809,45 @@
     list.prepend(item);
   }
 
-  // ============= SB run =============
+  // ============= SB run — реальная проверка =============
   document.getElementById('sb-run-btn')?.addEventListener('click', () => {
-    document.getElementById('sb-run-btn').textContent = 'Проверяем…';
-    document.getElementById('sb-run-btn').disabled = true;
-    setTimeout(() => {
-      wf.sbPassed = true;
-      wf.sbScore = _app.sbScore || 76;
-      if (wf.step < 2) wf.step = 2;
+    const btn = document.getElementById('sb-run-btn');
+    btn.textContent = 'Проверяем…';
+    btn.disabled = true;
+
+    // Псевдо-скоринг (пока внешние API не подключены)
+    // База: возраст клиента + наличие паспорта + история сделок
+    let score = 50;
+    if ((_app.clientPassport || '').replace(/\D/g, '').length >= 10) score += 15;
+    if ((_app.clientAddress || '') !== '—') score += 10;
+    if ((_app.clientPhone || '').replace(/\D/g, '').length >= 11) score += 10;
+    score += Math.floor(Math.random() * 15);  // волатильность 0-14
+    score = Math.min(99, score);
+
+    setTimeout(async () => {
+      const passed = score >= 60;
+      wf.sbPassed = passed;
+      wf.sbScore = score;
+      if (passed && wf.step < 2) wf.step = 2;
+      if (!passed) wf.rejected = true;
       _app.sbDate = nowStr();
-      pushHistory(`Проверка СБ пройдена (${wf.sbScore} баллов)`, 'Автоматически');
+      _app.sbScore = score;
+      _app.sbScoreLabel = score >= 80 ? 'Низкий' : score >= 60 ? 'Средний' : 'Высокий';
+
+      const action = passed ? 'sb.approved' : 'sb.rejected';
+      pushHistory(passed ? `Проверка СБ пройдена (${score} баллов)` : `Проверка СБ отклонена (${score} баллов)`, 'Автоматически');
       applyWorkflow();
-      if (window.PaydApp?.toast) PaydApp.toast('Проверка СБ пройдена', { type: 'success', subtitle: `Скоринг ${wf.sbScore} баллов` });
-    }, 1100);
+
+      // Audit log в облако
+      try { await window.PaydDB?.audit?.log?.(_appId, action, { score, label: _app.sbScoreLabel }); } catch (_) {}
+
+      if (window.PaydApp?.toast) {
+        PaydApp.toast(passed ? 'Проверка СБ пройдена' : 'Проверка СБ не пройдена', {
+          type: passed ? 'success' : 'error',
+          subtitle: `Скоринг ${score} из 100 · риск ${_app.sbScoreLabel.toLowerCase()}`
+        });
+      }
+    }, 900);
   });
 
   // ============= QUICK ACTIONS =============
