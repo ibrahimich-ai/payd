@@ -298,12 +298,12 @@
     workflows:     ['app_id','step','sb_passed','sb_score','rejected','completed','type','updated_at'],
     payouts:       ['id','partner_id','amount','description','inkassator_id','recipient','sign','note','delivered_at','confirmed_at','status','dispute_reason','created_at'],
     reserv_stages: ['id','app_id','partner_id','product','purchase_amt','sale_amt','stage','ts','updated_at'],
-    // V2 collections
-    clients:           ['id','full_name','phone','passport','address','dob','email','note','is_blacklisted','created_at','updated_at'],
-    product_categories:['id','name','parent_id','fields','position','is_active','created_at','updated_at'],
-    products:          ['id','name','category_id','field_values','price','purchase_price','status','is_active','stock','sku','created_at','updated_at'],
-    contracts:         ['id','number','app_id','type','signed_at','signed_by','status','terminated_at','termination_reason','created_at','updated_at'],
-    promo_campaigns:   ['id','name','code','description','type','value','start_at','end_at','partner_id','is_active','created_at','updated_at']
+    // V2 collections — created_at/updated_at сервер сам выставит из default
+    clients:           ['id','full_name','phone','passport','address','dob','email','note','is_blacklisted'],
+    product_categories:['id','name','parent_id','fields','position','is_active'],
+    products:          ['id','name','category_id','field_values','price','purchase_price','status','is_active','stock','sku'],
+    contracts:         ['id','number','app_id','type','signed_at','signed_by','status','terminated_at','termination_reason'],
+    promo_campaigns:   ['id','name','code','description','type','value','start_at','end_at','partner_id','is_active']
   };
 
   function normalizeForCloud(coll, item) {
@@ -388,6 +388,16 @@
       out.category_id   = item.category_id ?? item.category;
       // Пустая строка → null (FK не матчит '')
       if (!out.category_id || out.category_id === '') out.category_id = null;
+      // Validate category exists locally — иначе FK violation
+      if (out.category_id) {
+        try {
+          const cats = JSON.parse(localStorage.getItem('payd.products.categories.v1') || '[]');
+          if (!cats.find(c => c.id === out.category_id)) {
+            console.warn('[PaydDB] product references missing category, nulling:', out.category_id);
+            out.category_id = null;
+          }
+        } catch (_) {}
+      }
       out.field_values  = item.field_values ?? item.fieldValues ?? {};
       out.purchase_price = item.purchase_price ?? item.purchase ?? null;
       out.is_active     = item.is_active ?? (item.status !== 'archived');
