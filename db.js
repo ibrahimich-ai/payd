@@ -210,8 +210,8 @@
   }
 
   // ============================================================
-  //  BACKGROUND PULL — при заходе на страницу подтягивает данные из БД,
-  //  чтобы локальный кэш не отставал от облака
+  //  BACKGROUND PULL — merge cloud data into localStorage без потери
+  //  локально созданных записей, которые ещё не доехали до облака
   // ============================================================
   let _pullDone = false;
   async function backgroundPull() {
@@ -224,18 +224,32 @@
       try {
         const { data, error } = await sb.from(def.table).select('*');
         if (error) throw error;
-        const items = (data || []).map(it => denormalizeFromCloud(coll, it));
+        const cloudItems = (data || []).map(it => denormalizeFromCloud(coll, it));
+        const local = loadLocal(coll);
+
+        // MERGE: локальные данные имеют приоритет (они могут быть свежее
+        // и ещё не доехали до облака). Из облака берём только то, что
+        // ОТСУТСТВУЕТ локально.
         if (def.type === 'list') {
-          // Перезаписываем без notify, чтобы не было двойного рендера
-          localStorage.setItem(def.ls, JSON.stringify(items));
+          const localArr = Array.isArray(local) ? local : [];
+          const localKeys = new Set(localArr.map(it => it[def.pk]).filter(Boolean));
+          const merged = [...localArr];
+          cloudItems.forEach(it => {
+            const k = it[def.pk];
+            if (k && !localKeys.has(k)) merged.push(it);
+          });
+          _origSetItem.call(localStorage, def.ls, JSON.stringify(merged));
         } else {
-          const map = {};
-          items.forEach(it => { map[it[def.pk]] = it; });
-          localStorage.setItem(def.ls, JSON.stringify(map));
+          const localMap = (local && typeof local === 'object') ? { ...local } : {};
+          cloudItems.forEach(it => {
+            const k = it[def.pk];
+            // Не перезаписываем локальную версию — она может быть свежее
+            if (k && !localMap[k]) localMap[k] = it;
+          });
+          _origSetItem.call(localStorage, def.ls, JSON.stringify(localMap));
         }
         notify(coll);
       } catch (e) {
-        // Тихо — например, если RLS не пускает (нет роли) — пропускаем
         console.warn('[PaydDB] pull ' + coll, e.message);
       }
     }
