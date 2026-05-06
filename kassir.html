@@ -9,267 +9,45 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <style>
-  .kassir-grid { display: grid; grid-template-columns: 380px 1fr 360px; gap: 16px; }
-  @media (max-width: 1400px) { .kassir-grid { grid-template-columns: 1fr; } }
+  .kk-grid { display: grid; grid-template-columns: 380px 1fr 340px; gap: 16px; }
+  @media (max-width: 1300px) { .kk-grid { grid-template-columns: 1fr; } }
 
-  .pay-input-wrap { padding: 24px; text-align: center; }
-  .pay-amount {
-    font-size: 56px;
-    font-weight: 800;
-    color: var(--text);
-    border: none;
-    outline: none;
-    text-align: center;
-    width: 100%;
-    background: transparent;
-    letter-spacing: -.03em;
-    font-variant-numeric: tabular-nums;
-    font-family: inherit;
-  }
-  .pay-currency { font-size: 22px; color: var(--text-3); margin-left: 6px; }
-  .pay-sub { font-size: 13px; color: var(--text-2); margin-top: 4px; }
+  .search-card { padding: 20px; }
+  .search-card .lbl { font-size: 12px; color: var(--text-2); margin-bottom: 8px; font-weight: 600; }
+  .search-card input { font-size: 16px; padding: 14px 16px; }
 
-  .num-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 24px 18px; }
-  .num-key {
-    padding: 16px 0;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--text);
-    cursor: pointer;
-    transition: all .12s;
-    font-family: inherit;
-  }
-  .num-key:hover { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); }
-  .num-key:active { transform: scale(.96); }
-  .num-key.del { color: var(--danger); }
+  .pay-card { padding: 24px; }
+  .pay-empty { padding: 60px 20px; text-align: center; color: var(--text-3); }
+  .pay-app-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .pay-app-head .num { font-size: 13px; color: var(--text-3); }
+  .pay-app-head .client { font-size: 18px; font-weight: 700; margin-top: 2px; }
+  .pay-app-head .product { font-size: 12px; color: var(--text-2); margin-top: 4px; }
 
-  .pay-method { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 24px 18px; }
-  .pay-method-btn {
-    padding: 12px 8px;
-    background: var(--surface);
-    border: 2px solid var(--border);
-    border-radius: var(--radius-sm);
-    text-align: center;
-    cursor: pointer;
-    transition: all .15s;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-  }
-  .pay-method-btn svg { color: var(--text-2); }
-  .pay-method-btn .pname { font-size: 11px; font-weight: 600; color: var(--text-2); }
-  .pay-method-btn:hover { border-color: var(--primary); }
-  .pay-method-btn.active { border-color: var(--primary); background: var(--primary-soft); }
-  .pay-method-btn.active svg, .pay-method-btn.active .pname { color: var(--primary); }
+  .pay-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
+  .pay-row .l { color: var(--text-2); }
+  .pay-row .v { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .pay-row.big { font-size: 17px; padding: 12px 0; border-top: 1px dashed var(--border); margin-top: 8px; }
+  .pay-row.big .v { color: var(--primary); font-size: 22px; font-weight: 800; }
 
-  .quick-amounts { display: flex; gap: 6px; padding: 0 24px 18px; flex-wrap: wrap; }
-  .qa-btn {
-    flex: 1;
-    padding: 8px 6px;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-2);
-    cursor: pointer;
-    font-family: inherit;
-    min-width: 60px;
-  }
-  .qa-btn:hover { background: var(--primary-soft); color: var(--primary); border-color: var(--primary); }
+  .amount-input { font-size: 28px; font-weight: 800; padding: 16px 20px; text-align: right; font-variant-numeric: tabular-nums; }
 
-  .due-list { display: flex; flex-direction: column; max-height: 600px; overflow-y: auto; }
-  .due-item {
-    display: flex;
-    gap: 12px;
-    padding: 14px 18px;
-    border-bottom: 1px solid var(--border);
-    cursor: pointer;
-    transition: background .12s;
-  }
-  .due-item:hover { background: var(--surface-2); }
-  .due-item.selected { background: var(--primary-soft); border-left: 3px solid var(--primary); padding-left: 15px; }
-  .due-item.overdue { background: var(--danger-soft); }
-  .due-item .info { flex: 1; min-width: 0; }
-  .due-item .name { font-size: 13px; font-weight: 600; }
-  .due-item .doc { font-size: 11px; color: var(--text-3); }
-  .due-item .right { text-align: right; }
-  .due-item .amount { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .due-item .when { font-size: 11px; color: var(--text-3); margin-top: 2px; }
-  .due-item.overdue .when { color: var(--danger); font-weight: 600; }
+  .method-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 14px 0; }
+  .method-btn { padding: 12px; text-align: center; border: 2px solid var(--border); border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all .12s; background: var(--surface); }
+  .method-btn:hover { border-color: var(--primary); }
+  .method-btn.selected { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
 
-  .recent-list { display: flex; flex-direction: column; max-height: 460px; overflow-y: auto; }
-  .recent-item {
-    display: flex;
-    gap: 10px;
-    padding: 10px 18px;
-    border-bottom: 1px solid var(--border);
-  }
-  .recent-item .ic { width: 30px; height: 30px; border-radius: 8px; background: var(--success-soft); color: var(--success); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .recent-item .info { flex: 1; min-width: 0; }
-  .recent-item .name { font-size: 12px; font-weight: 600; }
-  .recent-item .when { font-size: 10px; color: var(--text-3); }
-  .recent-item .amount { font-size: 13px; font-weight: 700; color: var(--success); font-variant-numeric: tabular-nums; }
+  .shift-card { padding: 18px; }
+  .shift-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; border-bottom: 1px solid var(--border); }
+  .shift-row:last-child { border-bottom: none; }
+  .shift-row .v { font-weight: 700; font-variant-numeric: tabular-nums; }
 
-  .summary-row { display: flex; justify-content: space-between; padding: 8px 18px; font-size: 13px; }
-  .summary-row .l { color: var(--text-2); }
-  .summary-row .v { font-weight: 700; font-variant-numeric: tabular-nums; }
-  .summary-divider { border-top: 1px dashed var(--border-strong); margin: 6px 18px; }
-
-  /* ============ Action buttons in head ============ */
-  .btn.success { background: var(--success); color: white; border-color: var(--success); }
-  .btn.success:hover { background: var(--success-2); border-color: var(--success-2); }
-  .btn.warning { background: var(--warning); color: white; border-color: var(--warning); }
-  .btn.warning:hover { background: #d97706; border-color: #d97706; }
-  .btn.dark {
-    background: linear-gradient(160deg, #14264e, #0a1429);
-    color: white; border-color: rgba(47,123,255,.4);
-    box-shadow: 0 4px 14px -4px rgba(15,23,42,.4);
-  }
-  .btn.dark:hover { border-color: var(--primary); transform: translateY(-1px); }
-  .btn.dark svg { color: #4a92ff; }
-
-  /* Recent — color income/expense differently */
-  .recent-item.expense .ic { background: var(--danger-soft); color: var(--danger); }
-  .recent-item.expense .amount { color: var(--danger); }
-  .recent-item.income .ic { background: var(--primary-soft); color: var(--primary); }
-  .recent-item.income .amount { color: var(--primary); }
-  .recent-item { cursor: pointer; transition: background .12s; }
-  .recent-item:hover { background: var(--surface-2); }
-
-  /* ============ Generic modal ============ */
-  .km-backdrop {
-    position: fixed; inset: 0;
-    background: rgba(15, 23, 42, .55);
-    backdrop-filter: blur(4px);
-    z-index: 200;
-    display: flex; align-items: center; justify-content: center;
-    padding: 24px;
-    opacity: 0;
-    transition: opacity .18s;
-    pointer-events: none;
-  }
-  .km-backdrop.show { opacity: 1; pointer-events: auto; }
-  .km-modal {
-    background: white;
-    border-radius: 16px;
-    width: 100%;
-    max-width: 460px;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 30px 80px rgba(0,0,0,.35);
-    transform: translateY(8px);
-    transition: transform .2s;
-  }
-  .km-backdrop.show .km-modal { transform: translateY(0); }
-  .km-head {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 18px 22px;
-    border-bottom: 1px solid var(--border);
-  }
-  .km-head h3 { font-size: 17px; font-weight: 800; letter-spacing: -.01em; }
-  .km-close {
-    width: 30px; height: 30px;
-    border-radius: 8px; border: 1px solid var(--border); background: white;
-    color: var(--text-2); cursor: pointer;
-    display: inline-flex; align-items: center; justify-content: center;
-  }
-  .km-close:hover { color: var(--danger); border-color: var(--danger); }
-  .km-body { padding: 18px 22px; }
-  .km-foot {
-    display: flex; gap: 8px; justify-content: flex-end;
-    padding: 14px 22px; border-top: 1px solid var(--border);
-    background: var(--surface-2);
-  }
-  .km-row { margin-bottom: 14px; }
-  .km-row label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-3); font-weight: 700; margin-bottom: 6px; }
-  .km-row .input, .km-row .select { width: 100%; }
-  .km-row textarea {
-    width: 100%; padding: 10px 12px;
-    border: 1px solid var(--border); border-radius: 8px;
-    font-family: inherit; font-size: 13px; outline: none; resize: vertical; min-height: 70px;
-  }
-  .km-row textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
-
-  .km-amount-big {
-    font-size: 38px; font-weight: 900; letter-spacing: -.03em;
-    text-align: center;
-    padding: 18px 0 10px;
-    color: var(--text);
-  }
-  .km-amount-big.income { color: var(--success); }
-  .km-amount-big.expense { color: var(--danger); }
-  .km-amount-big input {
-    font: inherit; color: inherit;
-    border: none; outline: none; background: transparent;
-    text-align: center; width: 100%;
-  }
-
-  /* ============ QR scanner ============ */
-  .qr-frame {
-    aspect-ratio: 1;
-    background: linear-gradient(160deg, #0a1429, #050913);
-    border-radius: 14px;
-    position: relative;
-    overflow: hidden;
-    margin-bottom: 14px;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .qr-frame video, .qr-frame canvas {
-    width: 100%; height: 100%; object-fit: cover;
-  }
-  .qr-frame .qr-fallback {
-    color: rgba(255,255,255,.7); text-align: center; padding: 30px;
-  }
-  .qr-frame .qr-fallback svg { color: #4a92ff; margin-bottom: 12px; }
-  .qr-frame .qr-fallback .t { font-size: 14px; font-weight: 700; color: white; }
-  .qr-frame .qr-fallback .s { font-size: 12px; margin-top: 6px; opacity: .8; }
-  .qr-corner {
-    position: absolute;
-    width: 28px; height: 28px;
-    border: 3px solid #4a92ff;
-  }
-  .qr-corner.tl { top: 14px; left: 14px; border-right: none; border-bottom: none; border-radius: 4px 0 0 0; }
-  .qr-corner.tr { top: 14px; right: 14px; border-left: none; border-bottom: none; border-radius: 0 4px 0 0; }
-  .qr-corner.bl { bottom: 14px; left: 14px; border-right: none; border-top: none; border-radius: 0 0 0 4px; }
-  .qr-corner.br { bottom: 14px; right: 14px; border-left: none; border-top: none; border-radius: 0 0 4px 0; }
-
-  /* ============ Receipt ============ */
-  .receipt {
-    font-family: 'SF Mono', 'Menlo', 'Courier New', monospace;
-    font-size: 12px;
-    line-height: 1.55;
-    background: white;
-    border: 1px dashed var(--border-strong);
-    padding: 22px 18px;
-    border-radius: 8px;
-    color: #1a2332;
-  }
-  .receipt h4 { font-family: 'Inter', sans-serif; font-size: 16px; text-align: center; font-weight: 800; margin-bottom: 8px; letter-spacing: .03em; }
-  .receipt .r-line { display: flex; justify-content: space-between; padding: 2px 0; }
-  .receipt .r-divider { border-top: 1px dashed #1a2332; margin: 8px 0; }
-  .receipt .r-total {
-    display: flex; justify-content: space-between;
-    font-family: 'Inter', sans-serif; font-weight: 800; font-size: 15px;
-    padding: 6px 0;
-  }
-  .receipt .r-foot {
-    text-align: center;
-    font-size: 10px;
-    color: #5a6478;
-    margin-top: 10px;
-    border-top: 1px dashed #1a2332;
-    padding-top: 8px;
-  }
-  @media print {
-    body * { visibility: hidden; }
-    .receipt, .receipt * { visibility: visible; }
-    .receipt { position: absolute; left: 0; top: 0; width: 80mm; border: none; }
-  }
+  .recent-list { display: flex; flex-direction: column; max-height: 380px; overflow-y: auto; }
+  .recent-item { padding: 12px 18px; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .recent-item:last-child { border-bottom: none; }
+  .recent-item .head { display: flex; justify-content: space-between; }
+  .recent-item .head .name { font-weight: 700; font-size: 13px; }
+  .recent-item .head .amt { font-weight: 800; color: var(--success); }
+  .recent-item .meta { color: var(--text-3); font-size: 11px; margin-top: 2px; }
 </style>
 </head>
 <body>
@@ -278,310 +56,49 @@
 
 <div class="page-head">
   <div>
-    <h1>Касса</h1>
-    <div class="desc">Смена открыта в 09:00 · кассир Бекуев Муслим Д.</div>
+    <h1>Касса · Приём платежей</h1>
+    <div class="desc" id="kk-desc">Принимайте оплаты по заявкам</div>
   </div>
   <div class="page-head-actions">
-    <button class="btn dark" id="btn-qr-scan" title="Сканировать QR клиента">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="17"/><line x1="14" y1="21" x2="17" y2="21"/><line x1="17" y1="14" x2="17" y2="14.01"/><line x1="21" y1="14" x2="21" y2="14.01"/><line x1="21" y1="18" x2="21" y2="21"/></svg>
-      QR-скан
-    </button>
-    <button class="btn success" id="btn-income">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Приход
-    </button>
-    <button class="btn warning" id="btn-expense">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Расход
-    </button>
-    <button class="btn" id="btn-z-report">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-      Z-отчёт
-    </button>
-    <button class="btn" id="btn-x-report">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/></svg>
-      X-отчёт
-    </button>
-    <button class="btn danger" id="btn-close-shift">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-      Закрыть смену
-    </button>
+    <select class="select" id="kk-cash" style="padding: 8px 30px 8px 12px;"></select>
   </div>
 </div>
 
-<!-- ====================== STATS ====================== -->
-<div class="stat-grid cols-4 mb-5">
-  <div class="stat" style="padding: 14px 16px;">
-    <div class="stat-label">Принято за смену</div>
-    <div class="stat-value" style="font-size: 22px; color: var(--success);">₽ 184 200</div>
-    <div class="stat-sub">12 платежей</div>
-  </div>
-  <div class="stat" style="padding: 14px 16px;">
-    <div class="stat-label">Ожидается сегодня</div>
-    <div class="stat-value" style="font-size: 22px;">₽ 86 400</div>
-    <div class="stat-sub">5 платежей · до 18:00</div>
-  </div>
-  <div class="stat" style="padding: 14px 16px;">
-    <div class="stat-label">Остаток в кассе</div>
-    <div class="stat-value" style="font-size: 22px;">₽ 312 800</div>
-    <div class="stat-sub">Наличные</div>
-  </div>
-  <div class="stat" style="padding: 14px 16px;">
-    <div class="stat-label" style="color: var(--danger);">Просрочка</div>
-    <div class="stat-value" style="font-size: 22px; color: var(--danger);">₽ 28 600</div>
-    <div class="stat-sub">3 платежа · до взыскания</div>
-  </div>
-</div>
+<div class="kk-grid">
 
-<!-- ====================== MAIN GRID ====================== -->
-<div class="kassir-grid">
-
-  <!-- ====================== DUE TODAY ====================== -->
-  <div class="card">
-    <div class="card-hd">
-      <h3>График на сегодня</h3>
-      <span class="badge primary">5 платежей</span>
-    </div>
-    <div class="due-list">
-      <div class="due-item overdue">
-        <div class="avatar c7 sm">ИЯ</div>
-        <div class="info">
-          <div class="name">Исраилов Я. А.</div>
-          <div class="doc">Заявка #140 · 4/9 платёж</div>
-        </div>
-        <div class="right">
-          <div class="amount">10 511 ₽</div>
-          <div class="when">Просрочка 5 дн</div>
-        </div>
-      </div>
-      <div class="due-item selected">
-        <div class="avatar c1 sm">ДЛ</div>
-        <div class="info">
-          <div class="name">Даурбекова Л. С.</div>
-          <div class="doc">Заявка #142 · 1/3 платёж</div>
-        </div>
-        <div class="right">
-          <div class="amount">3 500 ₽</div>
-          <div class="when">Сегодня · 14:00</div>
-        </div>
-      </div>
-      <div class="due-item">
-        <div class="avatar c2 sm">ХА</div>
-        <div class="info">
-          <div class="name">Хасиев А. Х.</div>
-          <div class="doc">Заявка #144 · 4/4 платёж</div>
-        </div>
-        <div class="right">
-          <div class="amount">10 500 ₽</div>
-          <div class="when">Сегодня · 16:00</div>
-        </div>
-      </div>
-      <div class="due-item">
-        <div class="avatar c5 sm">АЗ</div>
-        <div class="info">
-          <div class="name">Абдулаева З. М.</div>
-          <div class="doc">Заявка #139 · 4/6 платёж</div>
-        </div>
-        <div class="right">
-          <div class="amount">9 700 ₽</div>
-          <div class="when">Сегодня · 17:00</div>
-        </div>
-      </div>
-      <div class="due-item">
-        <div class="avatar c6 sm">ВА</div>
-        <div class="info">
-          <div class="name">Вагапов А. Р.</div>
-          <div class="doc">Заявка #138 · 6/6 финал</div>
-        </div>
-        <div class="right">
-          <div class="amount">8 700 ₽</div>
-          <div class="when">Сегодня · 18:00</div>
-        </div>
-      </div>
-      <div class="due-item">
-        <div class="avatar c4 sm">ИИ</div>
-        <div class="info">
-          <div class="name">Иналов И. У.</div>
-          <div class="doc">Заявка #135 · 7/12 платёж</div>
-        </div>
-        <div class="right">
-          <div class="amount">6 200 ₽</div>
-          <div class="when">Сегодня · 18:00</div>
-        </div>
-      </div>
-      <div class="due-item">
-        <div class="avatar c3 sm">МА</div>
-        <div class="info">
-          <div class="name">Магомадов Р. С.</div>
-          <div class="doc">Заявка #131 · 5/9 платёж</div>
-        </div>
-        <div class="right">
-          <div class="amount">11 400 ₽</div>
-          <div class="when">Завтра</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ====================== PAYMENT INPUT ====================== -->
-  <div class="card">
-    <div style="padding: 18px 24px; border-bottom: 1px solid var(--border); background: var(--primary-soft);">
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <div class="avatar c1 lg">ДЛ</div>
-        <div style="flex: 1;">
-          <div style="font-size: 13px; color: var(--text-2);">Приём платежа от клиента</div>
-          <div style="font-size: 16px; font-weight: 700;">Даурбекова Луиза Саид-Усмановна</div>
-          <div style="font-size: 12px; color: var(--text-3); margin-top: 2px;">Заявка #0000000142 · iPhone Airpods 4 · платёж 1/3</div>
-        </div>
-        <a href="zayavka.html?back=kassir.html" class="btn sm">Открыть →</a>
-      </div>
-    </div>
-
-    <div class="pay-input-wrap">
-      <div style="font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px;">Сумма платежа</div>
-      <div>
-        <input class="pay-amount num" value="3 500" />
-        <span class="pay-currency">₽</span>
-      </div>
-      <div class="pay-sub">К оплате по графику: <b>3 500 ₽</b> · Остаток после: 5 800 ₽</div>
-    </div>
-
-    <div class="quick-amounts">
-      <button class="qa-btn">+ 100</button>
-      <button class="qa-btn">+ 500</button>
-      <button class="qa-btn">+ 1 000</button>
-      <button class="qa-btn">+ 5 000</button>
-      <button class="qa-btn">+ 10 000</button>
-      <button class="qa-btn" style="color: var(--primary); border-color: var(--primary);">По графику</button>
-    </div>
-
-    <div class="num-pad">
-      <button class="num-key">1</button>
-      <button class="num-key">2</button>
-      <button class="num-key">3</button>
-      <button class="num-key">4</button>
-      <button class="num-key">5</button>
-      <button class="num-key">6</button>
-      <button class="num-key">7</button>
-      <button class="num-key">8</button>
-      <button class="num-key">9</button>
-      <button class="num-key">.</button>
-      <button class="num-key">0</button>
-      <button class="num-key del"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto;"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg></button>
-    </div>
-
-    <div style="padding: 0 24px 12px;">
-      <label class="field-label">Способ оплаты</label>
-    </div>
-    <div class="pay-method">
-      <div class="pay-method-btn active">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-        <div class="pname">Наличные</div>
-      </div>
-      <div class="pay-method-btn">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="7" y1="15" x2="9" y2="15"/></svg>
-        <div class="pname">Карта</div>
-      </div>
-      <div class="pay-method-btn">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        <div class="pname">СБП</div>
-      </div>
-    </div>
-
-    <div style="padding: 0 24px 24px;">
-      <button class="btn primary lg" style="width: 100%; justify-content: center; padding: 14px;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        Принять платёж 3 500 ₽
-      </button>
-      <button class="btn ghost" style="width: 100%; justify-content: center; margin-top: 6px;">
-        Распечатать чек
-      </button>
-    </div>
-  </div>
-
-  <!-- ====================== RECENT + SHIFT ====================== -->
+  <!-- LEFT: search -->
   <div style="display: flex; flex-direction: column; gap: 16px;">
-    <div class="card">
-      <div class="card-hd">
-        <h3>Касса смены</h3>
-        <span class="status-dot success">Открыта</span>
-      </div>
-      <div style="padding: 12px 0;">
-        <div class="summary-row"><span class="l">Открытие смены</span><span class="v">128 600 ₽</span></div>
-        <div class="summary-row"><span class="l">Принято наличные</span><span class="v" style="color: var(--success);">+ 142 800 ₽</span></div>
-        <div class="summary-row"><span class="l">Принято безналичные</span><span class="v" style="color: var(--success);">+ 41 400 ₽</span></div>
-        <div class="summary-row"><span class="l">Возвраты</span><span class="v" style="color: var(--danger);">— 0 ₽</span></div>
-        <div class="summary-row"><span class="l">Инкассация</span><span class="v" style="color: var(--danger);">— 0 ₽</span></div>
-        <div class="summary-divider"></div>
-        <div class="summary-row" style="font-size: 14px;"><span class="l" style="color: var(--text); font-weight: 600;">Остаток в кассе</span><span class="v" style="font-size: 16px; color: var(--primary);">312 800 ₽</span></div>
-      </div>
+    <div class="card search-card">
+      <div class="lbl">Найти заявку</div>
+      <input class="input" id="kk-search" placeholder="Номер заявки, ФИО или телефон" autocomplete="off" />
+      <div id="kk-search-results" style="margin-top: 12px; display: flex; flex-direction: column; gap: 6px; max-height: 360px; overflow-y: auto;"></div>
     </div>
 
-    <div class="card">
-      <div class="card-hd">
-        <h3>Последние операции</h3>
-        <a href="#" class="text-sm" style="color: var(--primary); font-weight: 600;">История →</a>
-      </div>
-      <div class="recent-list">
-        <div class="recent-item">
-          <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <div class="info">
-            <div class="name">Магомедов А. С.</div>
-            <div class="when">#143 · наличные · 14:08</div>
-          </div>
-          <div class="amount">+ 12 400 ₽</div>
-        </div>
-        <div class="recent-item">
-          <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <div class="info">
-            <div class="name">Хасиев А. Х.</div>
-            <div class="when">#144 · карта · 13:42</div>
-          </div>
-          <div class="amount">+ 10 500 ₽</div>
-        </div>
-        <div class="recent-item">
-          <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <div class="info">
-            <div class="name">Абдулаева З. М.</div>
-            <div class="when">#139 · наличные · 12:15</div>
-          </div>
-          <div class="amount">+ 9 700 ₽</div>
-        </div>
-        <div class="recent-item">
-          <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <div class="info">
-            <div class="name">Иналов И. У.</div>
-            <div class="when">#135 · СБП · 11:48</div>
-          </div>
-          <div class="amount">+ 6 200 ₽</div>
-        </div>
-        <div class="recent-item">
-          <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <div class="info">
-            <div class="name">Вагапов А. Р.</div>
-            <div class="when">#138 · наличные · 11:22</div>
-          </div>
-          <div class="amount">+ 8 700 ₽</div>
-        </div>
-        <div class="recent-item">
-          <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <div class="info">
-            <div class="name">Магомадов Р. С.</div>
-            <div class="when">#131 · карта · 10:55</div>
-          </div>
-          <div class="amount">+ 11 400 ₽</div>
-        </div>
-        <div class="recent-item">
-          <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <div class="info">
-            <div class="name">Тазуев М. Я.</div>
-            <div class="when">#129 · наличные · 10:18</div>
-          </div>
-          <div class="amount">+ 4 500 ₽</div>
-        </div>
-      </div>
+    <div class="card shift-card">
+      <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px;">Смена</h3>
+      <div class="shift-row"><span>Принято сегодня</span><span class="v" id="shift-income">0 ₽</span></div>
+      <div class="shift-row"><span>Платежей</span><span class="v" id="shift-count">0</span></div>
+      <div class="shift-row"><span>Остаток на кассе</span><span class="v" id="shift-balance">0 ₽</span></div>
     </div>
   </div>
+
+  <!-- CENTER: payment -->
+  <div class="card pay-card" id="pay-area">
+    <div class="pay-empty">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" style="margin:0 auto 14px;opacity:.4;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <div style="font-size:14px;">Найдите заявку слева</div>
+      <div style="font-size:12px;margin-top:6px;">Введите номер, ФИО или телефон клиента</div>
+    </div>
+  </div>
+
+  <!-- RIGHT: recent payments -->
+  <div class="card">
+    <div class="card-hd"><h3>Последние платежи</h3></div>
+    <div class="recent-list" id="recent-list">
+      <div style="padding:30px;text-align:center;color:var(--text-3);font-size:13px;">Платежей в смене ещё не было</div>
+    </div>
+  </div>
+
 </div>
 
 </div>
@@ -590,763 +107,235 @@
 <script src="db.js"></script>
 <script src="app.js"></script>
 <script>
-  PaydApp.mountShell({
-    active: 'kassir',
-    title: 'Рабочее место кассира',
-    breadcrumbs: [{ label: 'Главная', href: 'dashboard.html' }, { label: 'Касса' }]
-  });
+  PaydApp.mountShell({ active: 'kassir', title: 'Касса', breadcrumbs: [] });
 
-  // ============= CASHIER FULL FLOW =============
-  (function () {
-    const amountInput = document.querySelector('.pay-amount');
-    if (!amountInput) return;
+  const fmt = v => Math.round(+v || 0).toLocaleString('ru-RU').replace(/,/g, ' ') + ' ₽';
+  function escapeHtml(s) { return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
+  function getInitials(n) { const p = (n || '').trim().split(/\s+/); return ((p[0]?.[0] || '') + (p[1]?.[0] || '')).toUpperCase() || '?'; }
 
-    let scheduledAmount = 3500;
-    let selectedClient = { name: 'Даурбекова Луиза Саид-Усмановна', initials: 'ДЛ', color: 'c1', deal: '#142', schedule: '1/3', dealNum: '142', payIdx: 1, payTotal: 3, phone: '+7 989 918-51-58' };
+  let allApps = [];
+  let allCashes = [];
+  let activeCashId = '';
+  let selectedApp = null;
+  let selectedMethod = 'cash';
 
-    // Helper: format number with spaces
-    const fmt = n => Number(n).toLocaleString('ru-RU').replace(',', ' ');
-    const parse = s => parseInt(String(s).replace(/\D/g, ''), 10) || 0;
+  async function load() {
+    const [apps, cashes] = await Promise.all([
+      PaydDB.list('applications').catch(() => []),
+      PaydDB.list('cashes').catch(() => [])
+    ]);
+    allApps = apps.filter(a => !a.rejected); // не показываем отклонённые
+    allCashes = cashes.filter(c => c.status !== 'archived');
 
-    // ---- Persistent shift state ----
-    const KASS_KEY = 'payd.kassir.shift.v1';
-    function loadShift() {
-      try {
-        const s = JSON.parse(localStorage.getItem(KASS_KEY) || 'null');
-        if (!s) return;
-        // Restore stat values
-        const statValues = document.querySelectorAll('.stat .stat-value');
-        if (statValues[0] && s.accepted != null) statValues[0].innerHTML = '₽ ' + fmt(s.accepted);
-        if (statValues[2] && s.balance != null)  statValues[2].innerHTML = '₽ ' + fmt(s.balance);
-        // Restore counter
-        if (s.acceptedCount && statValues[0]?.parentElement) {
-          const sub = statValues[0].parentElement.querySelector('.stat-sub');
-          if (sub) sub.textContent = s.acceptedCount + ' платежей';
-        }
-        // Restore shift summary balance
-        const shiftBalance = [...document.querySelectorAll('.summary-row .v')].slice(-1)[0];
-        if (shiftBalance && s.balance != null) shiftBalance.textContent = fmt(s.balance) + ' ₽';
-        // Restore recent operations log
-        if (s.recent && s.recent.length) {
-          const recent = document.querySelector('.recent-list');
-          if (recent) {
-            recent.innerHTML = '';
-            s.recent.forEach(it => {
-              const div = document.createElement('div');
-              div.className = it.cls || 'recent-item';
-              div.innerHTML = it.html;
-              recent.appendChild(div);
-            });
-          }
-        }
-        // Restore due-list (remove already-paid)
-        if (s.removedDue && s.removedDue.length) {
-          s.removedDue.forEach(name => {
-            document.querySelectorAll('.due-item').forEach(d => {
-              if (d.querySelector('.name')?.textContent.trim() === name) d.remove();
-            });
-          });
-          // Update due count badge
-          const dueBadge = document.querySelector('.kassir-grid .card .card-hd .badge');
-          if (dueBadge) {
-            const remain = document.querySelectorAll('.due-item').length;
-            dueBadge.textContent = `${remain} платежей`;
-          }
-        }
-      } catch (_) {}
+    const sel = document.getElementById('kk-cash');
+    if (allCashes.length === 0) {
+      sel.innerHTML = '<option value="">— нет касс —</option>';
+    } else {
+      sel.innerHTML = allCashes.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join('');
+      activeCashId = allCashes[0].id;
+      sel.value = activeCashId;
     }
-    function saveShift() {
-      try {
-        const statValues = document.querySelectorAll('.stat .stat-value');
-        const accepted = parse(statValues[0]?.textContent);
-        const balance  = parse(statValues[2]?.textContent);
-        const acceptedCountM = statValues[0]?.parentElement.querySelector('.stat-sub')?.textContent.match(/\d+/);
-        const recentEls = [...document.querySelectorAll('.recent-list .recent-item')];
-        const recent = recentEls.slice(0, 30).map(el => ({ cls: el.className, html: el.innerHTML }));
-        const removedDue = JSON.parse(localStorage.getItem(KASS_KEY) || '{}').removedDue || [];
-        localStorage.setItem(KASS_KEY, JSON.stringify({ accepted, balance, acceptedCount: acceptedCountM ? +acceptedCountM[0] : undefined, recent, removedDue }));
-      } catch (_) {}
+    sel.addEventListener('change', () => { activeCashId = sel.value; refreshShift(); });
+
+    refreshSearch();
+    refreshShift();
+  }
+
+  // ===== Search =====
+  function refreshSearch() {
+    const q = (document.getElementById('kk-search').value || '').toLowerCase().trim();
+    const list = document.getElementById('kk-search-results');
+    let matches = q
+      ? allApps.filter(a => {
+          const blob = ((a.client_name || a.client?.name || '') + ' ' + (a.client_phone || a.client?.phone || '') + ' ' + (a.number || '')).toLowerCase();
+          return blob.includes(q);
+        })
+      : allApps.slice(0, 5);
+
+    if (!matches.length) {
+      list.innerHTML = `<div style="padding:14px;text-align:center;color:var(--text-3);font-size:12px;">${q ? 'Ничего не нашли' : 'Заявок нет'}</div>`;
+      return;
     }
-    function markDuePaid(clientName) {
-      try {
-        const cur = JSON.parse(localStorage.getItem(KASS_KEY) || '{}');
-        cur.removedDue = [...(cur.removedDue || []), clientName];
-        localStorage.setItem(KASS_KEY, JSON.stringify(cur));
-      } catch (_) {}
-    }
-    loadShift();
-
-    function setAmount(value) {
-      amountInput.value = fmt(value);
-    }
-    function getAmount() { return parse(amountInput.value); }
-
-    // ===== Numpad =====
-    document.querySelectorAll('.num-key').forEach(key => {
-      const txt = key.textContent.trim();
-      key.addEventListener('click', () => {
-        if (key.classList.contains('del')) {
-          const cur = String(getAmount());
-          setAmount(cur.length <= 1 ? 0 : cur.slice(0, -1));
-        } else if (txt === '.') {
-          // ignore decimals for whole-ruble simplicity
-        } else if (/^\d$/.test(txt)) {
-          const cur = getAmount();
-          setAmount(cur * 10 + parseInt(txt, 10));
-        }
-      });
-    });
-
-    // ===== Quick amounts =====
-    document.querySelectorAll('.qa-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const t = btn.textContent.trim();
-        if (t === 'По графику') {
-          setAmount(scheduledAmount);
-          PaydApp.toast(`Установлена сумма по графику: ${fmt(scheduledAmount)} ₽`, 'info');
-        } else {
-          const m = t.match(/(\d[\d\s]*)/);
-          if (m) {
-            const v = parse(m[1]);
-            setAmount(getAmount() + v);
-          }
-        }
-      });
-    });
-
-    // ===== Payment method (single-select) =====
-    document.querySelectorAll('.pay-method-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.pay-method-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-      });
-    });
-
-    // ===== Due-list click: load payment into form =====
-    document.querySelectorAll('.due-item').forEach(item => {
-      item.addEventListener('click', () => {
-        document.querySelectorAll('.due-item').forEach(d => d.classList.remove('selected'));
-        item.classList.add('selected');
-
-        const name = item.querySelector('.name')?.textContent || '';
-        const doc = item.querySelector('.doc')?.textContent || '';
-        const amount = parse(item.querySelector('.amount')?.textContent);
-        const initialsEl = item.querySelector('.avatar');
-        const initials = initialsEl?.textContent.trim() || '';
-        const color = [...(initialsEl?.classList || [])].find(c => /^c[1-7]$/.test(c)) || 'c1';
-
-        scheduledAmount = amount;
-        setAmount(amount);
-        const numMatch = doc.match(/#(\d+)/);
-        const progMatch = doc.match(/(\d+)\/(\d+)/);
-        const isFinal = /финал/i.test(doc);
-        selectedClient = {
-          name, initials, color,
-          deal: doc,
-          dealNum: numMatch ? numMatch[1] : '',
-          payIdx: progMatch ? parseInt(progMatch[1], 10) : 1,
-          payTotal: progMatch ? parseInt(progMatch[2], 10) : (isFinal ? 1 : 1),
-          phone: '+7 989 918-51-58'
-        };
-
-        // Update header card with new client
-        const headerCard = document.querySelector('.kassir-grid .card .pay-input-wrap')?.parentElement;
-        if (headerCard) {
-          const av = headerCard.querySelector('.avatar.lg');
-          const nameEl = headerCard.querySelectorAll('div')[2]?.querySelector('div:nth-child(2)');
-          if (av) {
-            av.textContent = initials;
-            av.classList.forEach(c => { if (/^c[1-7]$/.test(c)) av.classList.remove(c); });
-            av.classList.add(color);
-          }
-          // Find and update name + meta
-          const headerInfo = headerCard.querySelector('.pay-input-wrap').previousElementSibling;
-          if (headerInfo) {
-            const titles = headerInfo.querySelectorAll('div > div');
-            const flexInfo = headerInfo.querySelector('div[style*="flex: 1"]');
-            if (flexInfo) {
-              const labelDiv = flexInfo.children[0];
-              const nameDiv = flexInfo.children[1];
-              const metaDiv = flexInfo.children[2];
-              if (nameDiv) nameDiv.textContent = name;
-              if (metaDiv) metaDiv.textContent = `${doc}`;
-            }
-          }
-        }
-
-        PaydApp.toast(`Загружен платёж: ${name}`, 'info');
-      });
-    });
-
-    // ===== "Принять платёж" — adds to recent operations =====
-    function findAcceptButton() {
-      // Find btn whose text starts with "Принять платёж"
-      return [...document.querySelectorAll('button.btn.primary.lg')]
-        .find(b => /Принять платёж/i.test(b.textContent));
-    }
-    const acceptBtn = findAcceptButton();
-    if (acceptBtn) {
-      acceptBtn.addEventListener('click', e => {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        const amount = getAmount();
-        if (!amount) { PaydApp.toast('Введите сумму платежа', 'warning'); return; }
-
-        const method = document.querySelector('.pay-method-btn.active .pname')?.textContent.trim().toLowerCase() || 'наличные';
-        const now = new Date();
-        const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-        // Insert into recent operations
-        const recent = document.querySelector('.recent-list');
-        if (recent) {
-          const item = document.createElement('div');
-          item.className = 'recent-item';
-          item.innerHTML = `
-            <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg></div>
-            <div class="info">
-              <div class="name">${selectedClient.name}</div>
-              <div class="when">${selectedClient.deal} · ${method} · ${time}</div>
-            </div>
-            <div class="amount">+ ${fmt(amount)} ₽</div>
-          `;
-          item.style.background = '#ecfdf5';
-          recent.insertBefore(item, recent.firstChild);
-          setTimeout(() => { item.style.transition = 'background .8s'; item.style.background = ''; }, 100);
-        }
-
-        // Update stats: "Принято за смену"
-        const acceptedStat = document.querySelectorAll('.stat .stat-value')[0];
-        if (acceptedStat) {
-          const current = parse(acceptedStat.textContent);
-          acceptedStat.innerHTML = `₽ ${fmt(current + amount)}`;
-        }
-        // Counter
-        const countSub = acceptedStat?.parentElement.querySelector('.stat-sub');
-        if (countSub) {
-          const m = countSub.textContent.match(/(\d+)/);
-          if (m) countSub.textContent = `${parseInt(m[1], 10) + 1} платежей`;
-        }
-        // Cash drawer balance
-        const balanceStat = document.querySelectorAll('.stat .stat-value')[2];
-        if (balanceStat && /налич/.test(method)) {
-          const cur = parse(balanceStat.textContent);
-          balanceStat.innerHTML = `₽ ${fmt(cur + amount)}`;
-        }
-
-        // Remove from due list (this client's payment is now collected)
-        const sel = document.querySelector('.due-item.selected');
-        if (sel) {
-          const cName = sel.querySelector('.name')?.textContent.trim();
-          if (cName) markDuePaid(cName);
-          sel.style.transition = 'opacity .3s, max-height .3s, padding .3s';
-          sel.style.opacity = '0';
-          sel.style.maxHeight = '0';
-          sel.style.padding = '0';
-          setTimeout(() => sel.remove(), 300);
-        }
-
-        // Update due-list count badge
-        const dueCard = document.querySelector('.kassir-grid .card .card-hd');
-        if (dueCard) {
-          const badge = dueCard.querySelector('.badge');
-          if (badge) {
-            const m = badge.textContent.match(/(\d+)/);
-            if (m) badge.textContent = `${Math.max(0, parseInt(m[1], 10) - 1)} платежей`;
-          }
-        }
-
-        PaydApp.toast(`Платёж ${fmt(amount)} ₽ принят`, { type: 'success', subtitle: `${selectedClient.name} · ${method}` });
-        saveShift();
-        // Show full receipt with mini schedule
-        showReceipt({
-          type: 'payment',
-          title: 'КАССОВЫЙ ЧЕК · ПРИХОД',
-          client: selectedClient.name,
-          phone: selectedClient.phone,
-          deal: '#' + (selectedClient.dealNum || ''),
-          method,
-          amount,
-          time,
-          fullSchedule: true,
-          payIdx: selectedClient.payIdx,
-          payTotal: selectedClient.payTotal,
-          monthly: scheduledAmount
-        });
-        setAmount(0);
-      }, true);
-    }
-
-    // ============================================================
-    //  MODAL HELPER + ALL CASHIER MODALS
-    // ============================================================
-    function openModal({ title, body, footer }) {
-      const back = document.createElement('div');
-      back.className = 'km-backdrop';
-      back.innerHTML = `
-        <div class="km-modal">
-          <div class="km-head"><h3>${title}</h3><button class="km-close" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
-          <div class="km-body">${body}</div>
-          ${footer ? `<div class="km-foot">${footer}</div>` : ''}
+    list.innerHTML = matches.slice(0, 10).map(a => {
+      const colors = ['c1','c2','c3','c4','c5','c6'];
+      const cls = colors[Math.abs((a.client_name || '').length) % colors.length];
+      const name = a.client_name || a.client?.name || '—';
+      return `
+        <div class="search-row" data-id="${escapeHtml(a.id)}" style="display:flex;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;align-items:center;">
+          <div class="avatar ${cls} sm">${getInitials(name)}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;">${escapeHtml(name)}</div>
+            <div style="font-size:11px;color:var(--text-3);">#${escapeHtml(a.number || '')} · ${escapeHtml(a.product || '')}</div>
+          </div>
+          <div style="font-weight:700;font-variant-numeric:tabular-nums;">${fmt(a.amount || a.calc?.price || 0)}</div>
         </div>
       `;
-      document.body.appendChild(back);
-      requestAnimationFrame(() => back.classList.add('show'));
-      const close = () => { back.classList.remove('show'); setTimeout(() => back.remove(), 200); };
-      back.querySelector('.km-close').onclick = close;
-      back.addEventListener('click', e => { if (e.target === back) close(); });
-      const escFn = e => { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', escFn); } };
-      document.addEventListener('keydown', escFn);
-      return { back, modal: back.querySelector('.km-modal'), close };
-    }
+    }).join('');
+    list.querySelectorAll('.search-row').forEach(r => {
+      r.addEventListener('click', () => selectApp(r.dataset.id));
+    });
+  }
+  document.getElementById('kk-search').addEventListener('input', refreshSearch);
 
-    // Add a row to recent operations list
-    function addRecent({ name, meta, amount, kind, time }) {
-      const recent = document.querySelector('.recent-list');
-      if (!recent) return;
-      const item = document.createElement('div');
-      const cls = kind === 'expense' ? 'expense' : kind === 'income' ? 'income' : '';
-      const sign = kind === 'expense' ? '−' : '+';
-      const icon = kind === 'expense'
-        ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="5" y1="12" x2="19" y2="12"/></svg>'
-        : kind === 'income'
-        ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
-        : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>';
-      item.className = 'recent-item ' + cls;
-      item.innerHTML = `
-        <div class="ic">${icon}</div>
-        <div class="info">
-          <div class="name">${name}</div>
-          <div class="when">${meta} · ${time}</div>
+  // ===== Select app =====
+  async function selectApp(appId) {
+    const app = allApps.find(a => a.id === appId);
+    if (!app) return;
+    selectedApp = app;
+    selectedMethod = 'cash';
+    renderPay();
+  }
+
+  function renderPay() {
+    const a = selectedApp;
+    const sale = +(a.amount || a.calc?.price) || 0;
+    const down = +(a.down_payment || a.calc?.dpAmount) || 0;
+    const term = a.term || a.calc?.term || 0;
+    const monthly = +(a.monthly || a.calc?.monthly) || 0;
+    const phone = a.client_phone || a.client?.phone || '';
+
+    document.getElementById('pay-area').innerHTML = `
+      <div class="pay-app-head">
+        <div>
+          <div class="num">Заявка #${escapeHtml(a.number || '')}</div>
+          <div class="client">${escapeHtml(a.client_name || a.client?.name || '—')}</div>
+          <div class="product">${escapeHtml(a.product || '')} · ${escapeHtml(phone)}</div>
         </div>
-        <div class="amount">${sign} ${fmt(amount)} ₽</div>
-      `;
-      item.style.background = kind === 'expense' ? '#fef2f2' : '#ecfdf5';
-      recent.insertBefore(item, recent.firstChild);
-      setTimeout(() => { item.style.transition = 'background .8s'; item.style.background = ''; }, 100);
-      saveShift();
-      return item;
+        <a href="zayavka.html?id=${encodeURIComponent(a.id)}" class="btn sm">Открыть карточку →</a>
+      </div>
+
+      <div class="pay-row"><span class="l">Цена товара</span><span class="v">${fmt(sale)}</span></div>
+      <div class="pay-row"><span class="l">Первый взнос</span><span class="v">${fmt(down)}</span></div>
+      <div class="pay-row"><span class="l">Срок рассрочки</span><span class="v">${term} мес</span></div>
+      <div class="pay-row"><span class="l">Платёж в месяц</span><span class="v">${fmt(monthly)}</span></div>
+
+      <div style="margin-top: 18px;">
+        <label class="field-label">Сумма к приёму</label>
+        <input class="input amount-input" id="pay-amount" type="number" value="${monthly || down || 0}" />
+      </div>
+
+      <div style="margin-top: 14px;">
+        <label class="field-label">Способ оплаты</label>
+        <div class="method-grid">
+          <div class="method-btn selected" data-method="cash">💵 Наличные</div>
+          <div class="method-btn" data-method="card">💳 Карта</div>
+          <div class="method-btn" data-method="sbp">📱 СБП</div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-top: 20px;">
+        <button class="btn primary" id="pay-confirm" data-no-handler="true" style="flex: 1; padding: 14px; font-size: 15px; font-weight: 700;">
+          ✓ Принять платёж
+        </button>
+      </div>
+    `;
+    document.querySelectorAll('.method-btn').forEach(b => b.addEventListener('click', () => {
+      document.querySelectorAll('.method-btn').forEach(x => x.classList.remove('selected'));
+      b.classList.add('selected');
+      selectedMethod = b.dataset.method;
+    }));
+    document.getElementById('pay-confirm').addEventListener('click', acceptPayment);
+  }
+
+  // ===== Accept payment =====
+  async function acceptPayment() {
+    const amount = +document.getElementById('pay-amount').value || 0;
+    if (!amount) { PaydApp.toast('Введите сумму', 'error'); return; }
+    if (!activeCashId) { PaydApp.toast('Выберите кассу', 'error'); return; }
+    if (!window.PaydDB?.cloud?.isOnline?.()) { PaydApp.toast('Войдите в облако', 'error'); return; }
+
+    const sb = PaydDB.cloud.sb();
+    const a = selectedApp;
+    const num = 'PD-' + String(Date.now()).slice(-6);
+
+    try {
+      // 1. payments
+      const { error: payErr } = await sb.from('payments').insert({
+        app_id: a.id, amount, method: selectedMethod, cash_id: activeCashId
+      });
+      if (payErr) throw payErr;
+
+      // 2. cash_ops
+      const { error: opErr } = await sb.from('cash_ops').insert({
+        num, dir: 'in', cash_id: activeCashId, amount,
+        article_name: 'Платежи рассрочки', party: a.client_name || a.client?.name,
+        app_id: a.id, note: 'Заявка #' + (a.number || '')
+      });
+      if (opErr) throw opErr;
+
+      // 3. update cash balance
+      const cash = allCashes.find(c => c.id === activeCashId);
+      if (cash) {
+        const newBalance = (+cash.balance || 0) + amount;
+        await sb.from('cashes').update({ balance: newBalance }).eq('id', activeCashId);
+        cash.balance = newBalance;
+      }
+
+      // 4. audit log
+      await PaydDB.audit.log(a.id, 'payment.accepted', { amount, method: selectedMethod, cash_id: activeCashId });
+
+      PaydApp.toast(`Платёж ${fmt(amount)} принят`, { type: 'success', subtitle: 'Чек #' + num });
+      selectedApp = null;
+      document.getElementById('kk-search').value = '';
+      document.getElementById('pay-area').innerHTML = `<div class="pay-empty">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" style="margin:0 auto 14px;"><polyline points="20 6 9 17 4 12"/></svg>
+        <div style="font-size:14px;">Платёж принят</div>
+        <div style="font-size:12px;margin-top:6px;">Найдите следующую заявку</div>
+      </div>`;
+      refreshSearch();
+      refreshShift();
+    } catch (err) {
+      PaydApp.toast('Ошибка: ' + err.message, 'error');
     }
+  }
 
-    // Update cash balance in stats card and shift summary
-    function updateCashBalance(delta) {
-      const balanceStat = document.querySelectorAll('.stat .stat-value')[2];
-      if (balanceStat) {
-        const cur = parse(balanceStat.textContent);
-        balanceStat.innerHTML = `₽ ${fmt(cur + delta)}`;
-      }
-      const shiftBalance = [...document.querySelectorAll('.summary-row .v')].slice(-1)[0];
-      if (shiftBalance) {
-        const cur = parse(shiftBalance.textContent);
-        shiftBalance.textContent = `${fmt(cur + delta)} ₽`;
-      }
-      saveShift();
+  // ===== Shift state =====
+  async function refreshShift() {
+    if (!activeCashId) return;
+    const sb = PaydDB.cloud.sb();
+    if (!sb) return;
+
+    const today = new Date(); today.setHours(0,0,0,0);
+    const todayISO = today.toISOString();
+
+    const { data: ops } = await sb.from('cash_ops')
+      .select('*')
+      .eq('cash_id', activeCashId)
+      .eq('dir', 'in')
+      .gte('date', todayISO)
+      .order('date', { ascending: false });
+
+    const list = ops || [];
+    const total = list.reduce((s, o) => s + (+o.amount || 0), 0);
+    document.getElementById('shift-income').textContent = fmt(total);
+    document.getElementById('shift-count').textContent = list.length;
+
+    const cash = allCashes.find(c => c.id === activeCashId);
+    document.getElementById('shift-balance').textContent = fmt(cash?.balance || 0);
+
+    // Recent list
+    const recent = document.getElementById('recent-list');
+    if (!list.length) {
+      recent.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text-3);font-size:13px;">Платежей в смене ещё не было</div>';
+    } else {
+      recent.innerHTML = list.slice(0, 20).map(o => `
+        <div class="recent-item">
+          <div class="head">
+            <span class="name">${escapeHtml(o.party || '—')}</span>
+            <span class="amt">+${fmt(o.amount)}</span>
+          </div>
+          <div class="meta">${escapeHtml(o.num || '')} · ${new Date(o.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</div>
+        </div>
+      `).join('');
     }
+  }
 
-    // ============= QR SCANNER =============
-    document.getElementById('btn-qr-scan')?.addEventListener('click', () => {
-      const { modal, close } = openModal({
-        title: 'Сканирование QR клиента',
-        body: `
-          <div class="qr-frame" id="qr-frame">
-            <div class="qr-corner tl"></div>
-            <div class="qr-corner tr"></div>
-            <div class="qr-corner bl"></div>
-            <div class="qr-corner br"></div>
-            <div class="qr-fallback" id="qr-fallback">
-              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="17"/><line x1="14" y1="21" x2="17" y2="21"/><line x1="17" y1="14" x2="17" y2="14.01"/></svg>
-              <div class="t">Поднесите QR-код к камере</div>
-              <div class="s">Или введите номер заявки вручную</div>
-            </div>
-          </div>
-          <div class="km-row">
-            <label>Номер заявки</label>
-            <input class="input" id="qr-manual" placeholder="Например: 142 или ссылка из калькулятора" autofocus />
-          </div>
-          <div style="font-size: 11px; color: var(--text-3);">Подсказка: можно вставить полную ссылку из калькулятора с параметром <code style="background: var(--surface-2); padding: 1px 4px; border-radius: 3px;">?app=A...</code></div>
-        `,
-        footer: `
-          <button class="btn" id="qr-cancel">Отмена</button>
-          <button class="btn primary" id="qr-find">Найти заявку</button>
-        `
-      });
-
-      const tryStartCamera = async () => {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-          const frame = modal.querySelector('#qr-frame');
-          const fb = modal.querySelector('#qr-fallback');
-          fb.remove();
-          const video = document.createElement('video');
-          video.srcObject = stream; video.autoplay = true; video.playsInline = true; video.muted = true;
-          frame.appendChild(video);
-          modal._stream = stream;
-        } catch (err) {
-          // permission denied — fallback message stays
-        }
-      };
-      tryStartCamera();
-
-      const stopCamera = () => {
-        modal._stream?.getTracks?.().forEach(t => t.stop());
-      };
-
-      const finishWithApp = (id) => {
-        const num = String(id).match(/\d+/)?.[0];
-        if (!num) { PaydApp.toast('Не удалось распознать заявку', 'warning'); return; }
-        // Pretend we loaded that application — pick a due-item with matching #
-        const items = [...document.querySelectorAll('.due-item')];
-        const found = items.find(i => i.querySelector('.doc')?.textContent.includes('#' + num));
-        if (found) {
-          found.click();
-          PaydApp.toast(`Заявка #${num} открыта`, { type: 'success', subtitle: 'Сумма платежа подставлена' });
-        } else {
-          PaydApp.toast(`Заявка #${num} принята`, { type: 'info', subtitle: 'Введите сумму вручную' });
-        }
-        stopCamera();
-        close();
-      };
-
-      modal.querySelector('#qr-cancel').onclick = () => { stopCamera(); close(); };
-      modal.querySelector('#qr-find').onclick = () => {
-        const v = modal.querySelector('#qr-manual').value.trim();
-        if (!v) { PaydApp.toast('Введите номер заявки', 'warning'); return; }
-        finishWithApp(v);
-      };
-      modal.querySelector('#qr-manual').addEventListener('keydown', e => {
-        if (e.key === 'Enter') modal.querySelector('#qr-find').click();
-      });
-
-      // Demo: simulate successful scan after 3.5s if camera running
-      setTimeout(() => {
-        if (modal._stream && document.body.contains(modal)) {
-          PaydApp.toast('QR распознан', { type: 'success', subtitle: 'Заявка #142' });
-          finishWithApp('142');
-        }
-      }, 3500);
-    });
-
-    // ============= INCOME =============
-    document.getElementById('btn-income')?.addEventListener('click', () => {
-      const { modal, close } = openModal({
-        title: '+ Приход в кассу',
-        body: `
-          <div class="km-amount-big income"><input id="i-amt" type="text" inputmode="numeric" placeholder="0" autofocus /> ₽</div>
-          <div class="km-row">
-            <label>Источник</label>
-            <select class="select" id="i-src">
-              <option value="open">Внесение на открытие смены</option>
-              <option value="refill">Пополнение от руководителя</option>
-              <option value="bank">Возврат из банка</option>
-              <option value="other">Прочий приход</option>
-            </select>
-          </div>
-          <div class="km-row">
-            <label>Комментарий (необязательно)</label>
-            <textarea id="i-note" placeholder="Например: разменный фонд"></textarea>
-          </div>
-        `,
-        footer: `
-          <button class="btn" data-act="cancel">Отмена</button>
-          <button class="btn success" data-act="ok">Провести приход</button>
-        `
-      });
-      const amtEl = modal.querySelector('#i-amt');
-      amtEl.addEventListener('input', () => {
-        const n = parse(amtEl.value);
-        amtEl.value = n ? fmt(n) : '';
-      });
-      modal.querySelector('[data-act="cancel"]').onclick = close;
-      modal.querySelector('[data-act="ok"]').onclick = () => {
-        const amount = parse(amtEl.value);
-        if (!amount) { PaydApp.toast('Введите сумму', 'warning'); return; }
-        const src = modal.querySelector('#i-src').selectedOptions[0].textContent;
-        const now = new Date();
-        const time = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-        addRecent({ name: 'Приход в кассу', meta: src, amount, kind: 'income', time });
-        updateCashBalance(amount);
-        PaydApp.toast(`Приход ${fmt(amount)} ₽ проведён`, { type: 'success', subtitle: src });
-        close();
-        showReceipt({ type: 'income', title: 'ПРИХОДНЫЙ ОРДЕР', source: src, amount, time, note: modal.querySelector('#i-note').value.trim() });
-      };
-    });
-
-    // ============= EXPENSE =============
-    document.getElementById('btn-expense')?.addEventListener('click', () => {
-      const { modal, close } = openModal({
-        title: '− Расход из кассы',
-        body: `
-          <div class="km-amount-big expense"><input id="e-amt" type="text" inputmode="numeric" placeholder="0" autofocus /> ₽</div>
-          <div class="km-row">
-            <label>Тип расхода</label>
-            <select class="select" id="e-src">
-              <option>Инкассация в банк</option>
-              <option>Возврат клиенту</option>
-              <option>Выплата комиссии партнёру</option>
-              <option>Расходы магазина</option>
-              <option>Закрытие смены — выдача наличных</option>
-            </select>
-          </div>
-          <div class="km-row">
-            <label>Получатель / основание</label>
-            <input class="input" id="e-rcpt" placeholder="ФИО или назначение" />
-          </div>
-          <div class="km-row">
-            <label>Комментарий (необязательно)</label>
-            <textarea id="e-note" placeholder="Дополнительные детали"></textarea>
-          </div>
-        `,
-        footer: `
-          <button class="btn" data-act="cancel">Отмена</button>
-          <button class="btn warning" data-act="ok">Провести расход</button>
-        `
-      });
-      const amtEl = modal.querySelector('#e-amt');
-      amtEl.addEventListener('input', () => {
-        const n = parse(amtEl.value);
-        amtEl.value = n ? fmt(n) : '';
-      });
-      modal.querySelector('[data-act="cancel"]').onclick = close;
-      modal.querySelector('[data-act="ok"]').onclick = () => {
-        const amount = parse(amtEl.value);
-        if (!amount) { PaydApp.toast('Введите сумму', 'warning'); return; }
-        const balanceStat = document.querySelectorAll('.stat .stat-value')[2];
-        const cur = parse(balanceStat?.textContent || 0);
-        if (amount > cur) {
-          PaydApp.toast('Недостаточно средств в кассе', { type: 'warning', subtitle: `В кассе ${fmt(cur)} ₽` });
-          return;
-        }
-        const src = modal.querySelector('#e-src').value;
-        const rcpt = modal.querySelector('#e-rcpt').value.trim();
-        const now = new Date();
-        const time = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-        addRecent({ name: rcpt || 'Расход из кассы', meta: src, amount, kind: 'expense', time });
-        updateCashBalance(-amount);
-        PaydApp.toast(`Расход ${fmt(amount)} ₽ проведён`, { type: 'success', subtitle: src });
-        close();
-        showReceipt({ type: 'expense', title: 'РАСХОДНЫЙ ОРДЕР', source: src, recipient: rcpt, amount, time, note: modal.querySelector('#e-note').value.trim() });
-      };
-    });
-
-    // ============= RECEIPT (after payment / income / expense) =============
-    function showReceipt(r) {
-      const isExpense = r.type === 'expense';
-      const tNow = new Date();
-      const dateStr = `${String(tNow.getDate()).padStart(2,'0')}.${String(tNow.getMonth()+1).padStart(2,'0')}.${tNow.getFullYear()}`;
-
-      // ----- Build mini schedule (only for client payments with fullSchedule=true) -----
-      let scheduleHtml = '';
-      let summaryHtml = '';
-      let smsText = '';
-      if (r.type === 'payment' && r.fullSchedule) {
-        const monthly = r.monthly || r.amount;
-        const total = r.payTotal || 1;
-        const idx = r.payIdx || 1;
-        const totalSum = monthly * total;
-        const paidSum = monthly * idx;
-        const leftSum = totalSum - paidSum;
-
-        const today = new Date();
-        const months = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
-        const rows = [];
-        for (let i = 1; i <= total; i++) {
-          // Compute date: payment i is today + (i - idx) months from current
-          const d = new Date(today.getFullYear(), today.getMonth() + (i - idx), today.getDate());
-          const dStr = `${String(d.getDate()).padStart(2,'0')} ${months[d.getMonth()]}`;
-          let icon, color, label;
-          if (i < idx)       { icon = '✓'; color = '#059669'; label = 'оплачен'; }
-          else if (i === idx){ icon = '●'; color = '#2563eb'; label = 'СЕЙЧАС'; }
-          else               { icon = '○'; color = '#94a3b8'; label = 'ждёт'; }
-          rows.push(`<div class="r-sched-row" style="display:flex; align-items:center; gap:6px; padding:3px 0;">
-            <span style="color:${color}; width:14px; text-align:center; font-weight:700;">${icon}</span>
-            <span style="width:28px; color:#5a6478;">${i}/${total}</span>
-            <span style="flex:1; color:#5a6478;">${dStr}</span>
-            <span style="font-family:Inter; font-weight:700; color:${color};">${fmt(monthly)} ₽</span>
-            <span style="font-size:10px; color:${color}; min-width:60px; text-align:right; text-transform:uppercase;">${label}</span>
-          </div>`);
-        }
-        scheduleHtml = `
-          <div style="font-family:Inter; font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:#5a6478; margin-top:6px; margin-bottom:4px;">График платежей</div>
-          ${rows.join('')}
-        `;
-
-        summaryHtml = `
-          <div class="r-line"><span>Платёж в месяц</span><span>${fmt(monthly)} ₽</span></div>
-          <div class="r-line"><span>Срок рассрочки</span><span>${total} мес</span></div>
-          <div class="r-line"><span>Текущий платёж</span><span>${idx} из ${total}</span></div>
-          <div class="r-line"><span>Оплачено всего</span><span style="color:#059669;">${fmt(paidSum)} ₽</span></div>
-          <div class="r-line"><span>Осталось к оплате</span><span style="color:${leftSum > 0 ? '#dc2626' : '#059669'};">${fmt(leftSum)} ₽</span></div>
-        `;
-
-        // SMS / WhatsApp text for client
-        const nextDate = idx < total ? (() => {
-          const d = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
-          return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
-        })() : null;
-        smsText = `Здравствуйте, ${r.client.split(' ')[0]}!
-Платёж ${fmt(r.amount)} ₽ по заявке ${r.deal} принят ${dateStr} в ${r.time}.
-Платёж ${idx}/${total}. Оплачено: ${fmt(paidSum)} ₽${leftSum > 0 ? `, осталось: ${fmt(leftSum)} ₽.
-Следующий платёж: ${fmt(monthly)} ₽ до ${nextDate}.` : '. Рассрочка закрыта, спасибо!'}
-Полный график: payd.ru/lk
-— Payd`;
-      }
-
-      const lines = r.type === 'payment' ? `
-        <div class="r-line"><span>Клиент</span><span>${r.client}</span></div>
-        ${r.phone ? `<div class="r-line"><span>Телефон</span><span>${r.phone}</span></div>` : ''}
-        <div class="r-line"><span>Заявка</span><span>${r.deal}</span></div>
-        <div class="r-line"><span>Способ</span><span>${r.method}</span></div>
-      ` : `
-        <div class="r-line"><span>Тип</span><span>${r.source || ''}</span></div>
-        ${r.recipient ? `<div class="r-line"><span>Получатель</span><span>${r.recipient}</span></div>` : ''}
-        ${r.note ? `<div class="r-line"><span>Прим.</span><span>${r.note}</span></div>` : ''}
-      `;
-
-      const { modal, close } = openModal({
-        title: 'Чек / ордер',
-        body: `
-          <div class="receipt" id="rc-print">
-            <h4>${r.title}</h4>
-            <div class="r-line"><span>Дата</span><span>${dateStr} ${r.time}</span></div>
-            <div class="r-line"><span>Кассир</span><span>Бекуев Муслим Д.</span></div>
-            <div class="r-line"><span>ККТ</span><span>Атол 30Ф</span></div>
-            <div class="r-divider"></div>
-            ${lines}
-            <div class="r-divider"></div>
-            <div class="r-total" style="background: ${isExpense ? 'rgba(239,68,68,.06)' : 'rgba(37,99,235,.06)'}; padding:8px 12px; border-radius:6px; margin: 4px 0;"><span>${isExpense ? 'К ВЫДАЧЕ' : 'ОПЛАЧЕНО'}</span><span>${isExpense ? '−' : ''}${fmt(r.amount)} ₽</span></div>
-            ${summaryHtml ? `<div class="r-divider"></div>${summaryHtml}` : ''}
-            ${scheduleHtml ? `<div class="r-divider"></div>${scheduleHtml}` : ''}
-            <div class="r-foot">ООО «Payd» · ИНН 2014782301<br/>${r.fullSchedule ? 'Спасибо за своевременную оплату!' : 'Сохраните чек до получения товара'}</div>
-          </div>
-        `,
-        footer: r.fullSchedule ? `
-          <button class="btn" data-act="cancel">Закрыть</button>
-          <button class="btn" data-act="dl">PDF</button>
-          <button class="btn" data-act="print">Печать</button>
-          <button class="btn primary" data-act="send">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            Отправить клиенту
-          </button>
-        ` : `
-          <button class="btn" data-act="cancel">Закрыть</button>
-          <button class="btn" data-act="dl">Скачать PDF</button>
-          <button class="btn primary" data-act="print">Распечатать</button>
-        `
-      });
-      modal.querySelector('[data-act="cancel"]').onclick = close;
-      modal.querySelector('[data-act="print"]').onclick = () => window.print();
-      modal.querySelector('[data-act="dl"]').onclick = () => {
-        const html = modal.querySelector('#rc-print').outerHTML;
-        const blob = new Blob([`<html><head><meta charset="utf-8"></head><body>${html}</body></html>`], { type: 'text/html' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `${r.title} ${dateStr} ${r.time.replace(':','')}.html`;
-        a.click();
-        URL.revokeObjectURL(a.href);
-        PaydApp.toast('Чек скачан', 'success');
-      };
-
-      // ----- Send to client (SMS / WhatsApp / Email) -----
-      const sendBtn = modal.querySelector('[data-act="send"]');
-      if (sendBtn) {
-        sendBtn.onclick = () => openSendDialog(r, smsText);
-      }
-    }
-
-    // ============= SEND TO CLIENT (SMS / WhatsApp / Email) =============
-    function openSendDialog(r, smsText) {
-      const phoneClean = (r.phone || '').replace(/\D/g, '');
-      const waUrl = phoneClean ? `https://wa.me/${phoneClean}?text=${encodeURIComponent(smsText)}` : null;
-      const { modal, close } = openModal({
-        title: 'Отправить чек клиенту',
-        body: `
-          <div style="font-size: 13px; color: var(--text-2); margin-bottom: 14px;">
-            Клиенту <b style="color: var(--text);">${r.client}</b> ${r.phone ? '· <span style="color:var(--text);">' + r.phone + '</span>' : ''} будет отправлено сообщение с подтверждением платежа и графиком.
-          </div>
-          <div class="km-row">
-            <label>Текст сообщения</label>
-            <textarea id="sm-text" style="min-height: 180px; font-family: 'SF Mono', monospace; font-size: 12px;">${smsText}</textarea>
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
-            <button class="btn" data-ch="sms">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-              SMS
-            </button>
-            <button class="btn" data-ch="whatsapp" style="border-color: #25d366; color: #128c7e;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 0 1 8.413 3.488 11.824 11.824 0 0 1 3.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24zM6.597 20.13c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 0 0 1.516 5.26l-.999 3.648 3.972-.607zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.494.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.71.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/></svg>
-              WhatsApp
-            </button>
-            <button class="btn" data-ch="email">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-              Email
-            </button>
-          </div>
-          <div style="font-size: 11px; color: var(--text-3); margin-top: 10px; text-align: center;">Можно изменить текст перед отправкой</div>
-        `,
-        footer: `
-          <button class="btn" data-act="cancel">Отмена</button>
-        `
-      });
-      modal.querySelector('[data-act="cancel"]').onclick = close;
-      modal.querySelectorAll('[data-ch]').forEach(b => {
-        b.onclick = () => {
-          const ch = b.dataset.ch;
-          const txt = modal.querySelector('#sm-text').value;
-          if (ch === 'whatsapp' && phoneClean) {
-            window.open(`https://wa.me/${phoneClean}?text=${encodeURIComponent(txt)}`, '_blank');
-            PaydApp.toast('Открыт WhatsApp', { type: 'success', subtitle: r.phone });
-          } else if (ch === 'sms') {
-            PaydApp.toast(`SMS отправлено`, { type: 'success', subtitle: `${r.phone || 'клиенту'} · ${txt.length} знаков` });
-          } else if (ch === 'email') {
-            PaydApp.toast(`Email отправлено`, { type: 'success', subtitle: r.client });
-          }
-          close();
-        };
-      });
-    }
-
-    // ============= REPORTS =============
-    document.getElementById('btn-x-report')?.addEventListener('click', () => {
-      const accepted = parse(document.querySelectorAll('.stat .stat-value')[0]?.textContent);
-      const balance = parse(document.querySelectorAll('.stat .stat-value')[2]?.textContent);
-      const now = new Date();
-      const time = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-      showReceipt({ type: 'payment', title: 'X-ОТЧЁТ · БЕЗ ГАШЕНИЯ', client: '—', deal: 'Текущее состояние смены', method: `Принято ${fmt(accepted)} ₽ · в кассе ${fmt(balance)} ₽`, amount: balance, time });
-    });
-    document.getElementById('btn-z-report')?.addEventListener('click', () => {
-      if (!confirm('Сформировать Z-отчёт? Это закроет текущие итоги смены и обнулит счётчики.')) return;
-      const accepted = parse(document.querySelectorAll('.stat .stat-value')[0]?.textContent);
-      const now = new Date();
-      const time = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-      showReceipt({ type: 'payment', title: 'Z-ОТЧЁТ С ГАШЕНИЕМ', client: 'Бекуев Муслим Д.', deal: 'Закрытие итогов смены', method: 'Все методы оплаты', amount: accepted, time });
-      PaydApp.toast('Z-отчёт сформирован', 'success');
-    });
-    document.getElementById('btn-close-shift')?.addEventListener('click', () => {
-      if (!confirm('Закрыть смену? Все накопленные данные смены будут сброшены и касса начнёт следующую смену с нуля.')) return;
-      try { localStorage.removeItem(KASS_KEY); } catch (_) {}
-      PaydApp.toast('Смена закрыта', { type: 'success', subtitle: 'Z-отчёт сформирован, данные обнулены' });
-      setTimeout(() => location.reload(), 800);
-    });
-
-    // ============= RECENT — clickable to view receipt =============
-    document.querySelector('.recent-list')?.addEventListener('click', e => {
-      const item = e.target.closest('.recent-item');
-      if (!item) return;
-      const name = item.querySelector('.name')?.textContent || '';
-      const when = item.querySelector('.when')?.textContent || '';
-      const amount = parse(item.querySelector('.amount')?.textContent);
-      const isExpense = item.classList.contains('expense');
-      const isIncome = item.classList.contains('income');
-      const m = when.match(/(\d{1,2}:\d{2})$/);
-      const time = m ? m[1] : '';
-      if (isIncome) {
-        showReceipt({ type: 'income', title: 'ПРИХОДНЫЙ ОРДЕР', source: when.replace(' · ' + time, ''), amount, time });
-      } else if (isExpense) {
-        showReceipt({ type: 'expense', title: 'РАСХОДНЫЙ ОРДЕР', source: when.replace(' · ' + time, ''), recipient: name, amount, time });
-      } else {
-        showReceipt({ type: 'payment', title: 'КАССОВЫЙ ЧЕК · ПРИХОД', client: name, deal: when.split(' · ')[0] || '—', method: (when.split(' · ')[1] || 'наличные'), amount, time });
-      }
-    });
-  })();
+  load();
+  setInterval(refreshShift, 10000);
+  if (window.PaydDB?.subscribe) {
+    PaydDB.subscribe('cash_ops', refreshShift);
+    PaydDB.subscribe('applications', () => { load().then(refreshSearch); });
+  }
 </script>
 </body>
 </html>

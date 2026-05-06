@@ -12,15 +12,7 @@
   .sb-grid { display: grid; grid-template-columns: 360px 1fr; gap: 16px; }
   @media (max-width: 1200px) { .sb-grid { grid-template-columns: 1fr; } }
 
-  .queue-item {
-    display: flex;
-    gap: 12px;
-    padding: 14px 18px;
-    border-bottom: 1px solid var(--border);
-    cursor: pointer;
-    transition: background .12s;
-    align-items: flex-start;
-  }
+  .queue-item { display: flex; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .12s; align-items: flex-start; }
   .queue-item:hover { background: var(--surface-2); }
   .queue-item.selected { background: var(--primary-soft); border-left: 3px solid var(--primary); padding-left: 15px; }
   .queue-item .info { flex: 1; min-width: 0; }
@@ -31,36 +23,14 @@
   .queue-item .when { font-size: 10px; color: var(--text-3); margin-top: 2px; }
 
   .check-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .check-card {
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px;
-  }
+  .check-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
   .check-card.success { background: var(--success-soft); border-color: #a7f3d0; }
   .check-card.warning { background: var(--warning-soft); border-color: #fde68a; }
-  .check-card.danger { background: var(--danger-soft); border-color: #fecaca; }
-  .check-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-  .check-head .ic { width: 32px; height: 32px; border-radius: 8px; background: white; display: flex; align-items: center; justify-content: center; color: var(--text-2); }
-  .check-card.success .check-head .ic { color: var(--success); }
-  .check-card.warning .check-head .ic { color: var(--warning); }
-  .check-card.danger .check-head .ic { color: var(--danger); }
+  .check-card.danger  { background: var(--danger-soft);  border-color: #fecaca; }
+  .check-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
   .check-head .t { font-size: 12px; font-weight: 600; flex: 1; }
-  .check-card .v { font-size: 18px; font-weight: 700; margin-top: 4px; }
-  .check-card .s { font-size: 11px; color: var(--text-3); margin-top: 4px; }
-  .check-card.success .v { color: #047857; }
-  .check-card.danger .v { color: #b91c1c; }
-  .check-card.warning .v { color: #92400e; }
-
-  .scoring-meter { padding: 18px; text-align: center; }
-  .scoring-circle {
-    width: 140px; height: 140px;
-    margin: 0 auto;
-    position: relative;
-  }
-  .scoring-num { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-  .scoring-num .v { font-size: 36px; font-weight: 800; color: var(--text); letter-spacing: -.02em; }
-  .scoring-num .s { font-size: 11px; color: var(--text-3); }
+  .check-card .v { font-size: 16px; font-weight: 700; }
+  .check-card .s { font-size: 11px; color: var(--text-3); margin-top: 2px; }
 
   .data-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px 24px; padding: 16px 18px; }
   .data-grid .item .l { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; }
@@ -68,6 +38,8 @@
 
   .decision-actions { display: flex; gap: 10px; padding: 18px; border-top: 1px solid var(--border); background: var(--surface-2); border-radius: 0 0 var(--radius) var(--radius); }
   .decision-actions .btn { flex: 1; justify-content: center; padding: 12px; font-size: 14px; font-weight: 600; }
+
+  .empty { padding: 60px 20px; text-align: center; color: var(--text-3); }
 </style>
 </head>
 <body>
@@ -77,325 +49,47 @@
 <div class="page-head">
   <div>
     <h1>Служба безопасности</h1>
-    <div class="desc">Очередь заявок на проверку · 7 ожидают решения</div>
-  </div>
-  <div class="page-head-actions">
-    <button class="btn">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-      Чат с менеджерами
-    </button>
-    <button class="btn primary">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-      Обновить очередь
-    </button>
+    <div class="desc" id="sb-desc">Очередь заявок на проверку</div>
   </div>
 </div>
 
-<!-- ====================== STATS ====================== -->
-<div class="stat-grid cols-4 mb-5">
+<div class="stat-grid cols-4 mb-4">
   <div class="stat" style="padding: 14px 16px;">
     <div class="stat-label">В очереди</div>
-    <div class="stat-value" style="font-size: 22px; color: var(--warning);">7</div>
-    <div class="stat-sub">Ожидают проверки</div>
+    <div class="stat-value" style="font-size: 22px;" id="kpi-queue">0</div>
   </div>
   <div class="stat" style="padding: 14px 16px;">
-    <div class="stat-label">Проверено сегодня</div>
-    <div class="stat-value" style="font-size: 22px;">18</div>
-    <div class="stat-sub">12 одобрено · 6 отклонено</div>
+    <div class="stat-label" style="color: var(--success);">Одобрено сегодня</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--success);" id="kpi-approved">0</div>
   </div>
   <div class="stat" style="padding: 14px 16px;">
-    <div class="stat-label">Среднее время</div>
-    <div class="stat-value" style="font-size: 22px;">8 <small style="font-size: 14px; color: var(--text-3); font-weight: 600;">мин</small></div>
-    <div class="stat-sub">На обработку заявки</div>
+    <div class="stat-label" style="color: var(--danger);">Отклонено сегодня</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--danger);" id="kpi-rejected">0</div>
   </div>
   <div class="stat" style="padding: 14px 16px;">
-    <div class="stat-label">Уровень одобрений</div>
-    <div class="stat-value" style="font-size: 22px; color: var(--success);">66,7%</div>
-    <div class="stat-sub">За последние 30 дней</div>
+    <div class="stat-label">Принято решений</div>
+    <div class="stat-value" style="font-size: 22px;" id="kpi-decided">0</div>
   </div>
 </div>
 
-<!-- ====================== MAIN ====================== -->
 <div class="sb-grid">
 
-  <!-- QUEUE -->
+  <!-- LEFT: queue -->
   <div class="card">
-    <div class="card-hd">
-      <h3>Очередь заявок</h3>
-      <span class="badge warning">7</span>
-    </div>
-    <div>
-      <div class="queue-item selected">
-        <div class="avatar c6">ГИ</div>
-        <div class="info">
-          <div class="name">Гайтаев И. М.</div>
-          <div class="meta">#145 · iPhone 15 Plus</div>
-          <div class="meta" style="color: var(--warning); font-weight: 600; margin-top: 4px;">⏱ 8 мин в очереди</div>
-        </div>
-        <div class="right">
-          <div class="amount">68 400 ₽</div>
-          <div class="when">11:42</div>
-        </div>
-      </div>
-      <div class="queue-item">
-        <div class="avatar c1">ТР</div>
-        <div class="info">
-          <div class="name">Тазуев Р. С.</div>
-          <div class="meta">#147 · iPhone 16 Pro</div>
-          <div class="meta" style="color: var(--text-3); margin-top: 4px;">⏱ 14 мин в очереди</div>
-        </div>
-        <div class="right">
-          <div class="amount">84 200 ₽</div>
-          <div class="when">14:23</div>
-        </div>
-      </div>
-      <div class="queue-item">
-        <div class="avatar c4">МЛ</div>
-        <div class="info">
-          <div class="name">Магомадов Л. Х.</div>
-          <div class="meta">#148 · MacBook Air</div>
-          <div class="meta" style="color: var(--text-3); margin-top: 4px;">⏱ 22 мин в очереди</div>
-        </div>
-        <div class="right">
-          <div class="amount">145 000 ₽</div>
-          <div class="when">14:51</div>
-        </div>
-      </div>
-      <div class="queue-item">
-        <div class="avatar c5">АМ</div>
-        <div class="info">
-          <div class="name">Ахметова М. А.</div>
-          <div class="meta">#149 · Samsung S25</div>
-          <div class="meta" style="color: var(--text-3); margin-top: 4px;">⏱ 28 мин в очереди</div>
-        </div>
-        <div class="right">
-          <div class="amount">94 600 ₽</div>
-          <div class="when">15:02</div>
-        </div>
-      </div>
-      <div class="queue-item">
-        <div class="avatar c2">ИХ</div>
-        <div class="info">
-          <div class="name">Исмаилов Х. М.</div>
-          <div class="meta">#150 · TV Samsung 65"</div>
-          <div class="meta" style="color: var(--text-3); margin-top: 4px;">⏱ 35 мин в очереди</div>
-        </div>
-        <div class="right">
-          <div class="amount">128 500 ₽</div>
-          <div class="when">15:14</div>
-        </div>
-      </div>
-      <div class="queue-item">
-        <div class="avatar c3">УА</div>
-        <div class="info">
-          <div class="name">Умаров А. Р.</div>
-          <div class="meta">#151 · iPad Pro 11"</div>
-          <div class="meta" style="color: var(--text-3); margin-top: 4px;">⏱ 42 мин в очереди</div>
-        </div>
-        <div class="right">
-          <div class="amount">112 800 ₽</div>
-          <div class="when">15:28</div>
-        </div>
-      </div>
-      <div class="queue-item">
-        <div class="avatar c7">ЯТ</div>
-        <div class="info">
-          <div class="name">Ярбикова Т. М.</div>
-          <div class="meta">#152 · Apple Watch S10</div>
-          <div class="meta" style="color: var(--text-3); margin-top: 4px;">⏱ 51 мин в очереди</div>
-        </div>
-        <div class="right">
-          <div class="amount">42 000 ₽</div>
-          <div class="when">15:36</div>
-        </div>
-      </div>
+    <div class="card-hd"><h3>Очередь</h3><span class="h-sub" id="queue-count">0</span></div>
+    <div id="queue-list">
+      <div class="empty">Загрузка...</div>
     </div>
   </div>
 
-  <!-- CHECK DETAIL -->
-  <div class="card" style="display: flex; flex-direction: column;">
-
-    <!-- CLIENT HEADER -->
-    <div style="padding: 20px; border-bottom: 1px solid var(--border); display: flex; gap: 16px; align-items: flex-start;">
-      <div class="avatar c6 xl">ГИ</div>
-      <div style="flex: 1; min-width: 0;">
-        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-          <h2 style="font-size: 20px; font-weight: 700;">Гайтаев Ислам Магомедович</h2>
-          <span class="badge warning dot">На проверке</span>
-        </div>
-        <div style="display: flex; gap: 14px; flex-wrap: wrap; margin-top: 6px; color: var(--text-2); font-size: 13px;">
-          <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline; vertical-align: middle; margin-right: 4px;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>+7 938 022-87-13</span>
-          <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline; vertical-align: middle; margin-right: 4px;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>15.07.1989 (36 лет)</span>
-          <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline; vertical-align: middle; margin-right: 4px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/></svg>Грозный, ул. Мира 88</span>
-        </div>
-      </div>
-      <div style="text-align: right;">
-        <div style="font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em;">Сумма заявки</div>
-        <div style="font-size: 24px; font-weight: 800; color: var(--primary); letter-spacing: -.02em;">68 400 ₽</div>
-        <div style="font-size: 12px; color: var(--text-3);">Заявка #145 · 6 мес</div>
-      </div>
-    </div>
-
-    <!-- SCORING + DATA -->
-    <div style="display: grid; grid-template-columns: 200px 1fr; gap: 0; border-bottom: 1px solid var(--border);">
-      <div class="scoring-meter">
-        <div class="scoring-circle">
-          <svg width="140" height="140" viewBox="0 0 42 42">
-            <circle cx="21" cy="21" r="15.91" fill="none" stroke="#f1f4f9" stroke-width="3"/>
-            <circle cx="21" cy="21" r="15.91" fill="none" stroke="#10b981" stroke-width="3" stroke-dasharray="84 100" stroke-dashoffset="25" transform="rotate(-90 21 21)" stroke-linecap="round"/>
-          </svg>
-          <div class="scoring-num">
-            <div class="v">84</div>
-            <div class="s">из 100</div>
-          </div>
-        </div>
-        <div style="margin-top: 8px;">
-          <span class="badge success dot">Низкий риск</span>
-        </div>
-      </div>
-      <div class="data-grid">
-        <div class="item">
-          <div class="l">Паспорт</div>
-          <div class="v">96 14 № 728401</div>
-        </div>
-        <div class="item">
-          <div class="l">ИНН</div>
-          <div class="v">200148273912</div>
-        </div>
-        <div class="item">
-          <div class="l">Семейное положение</div>
-          <div class="v">Женат · 2 ребёнка</div>
-        </div>
-        <div class="item">
-          <div class="l">Образование</div>
-          <div class="v">Высшее</div>
-        </div>
-        <div class="item">
-          <div class="l">Место работы</div>
-          <div class="v">ООО «Спецстрой»</div>
-        </div>
-        <div class="item">
-          <div class="l">Должность</div>
-          <div class="v">Прораб</div>
-        </div>
-        <div class="item">
-          <div class="l">Стаж на работе</div>
-          <div class="v">4 года 8 месяцев</div>
-        </div>
-        <div class="item">
-          <div class="l">Доход в месяц</div>
-          <div class="v" style="color: var(--success);">85 000 ₽</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- CHECKS -->
-    <div style="padding: 18px;">
-      <div style="font-size: 13px; font-weight: 700; margin-bottom: 12px;">Результаты проверок</div>
-      <div class="check-grid">
-        <div class="check-card success">
-          <div class="check-head">
-            <div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M15 8h2M15 12h2M7 16h10"/></svg></div>
-            <div class="t">Паспорт РФ</div>
-            <span class="badge success" style="font-size: 10px;">✓</span>
-          </div>
-          <div class="v">Действителен</div>
-          <div class="s">Проверено в МВД · действующий, не утерян</div>
-        </div>
-
-        <div class="check-card success">
-          <div class="check-head">
-            <div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
-            <div class="t">Чёрный список</div>
-            <span class="badge success" style="font-size: 10px;">✓</span>
-          </div>
-          <div class="v">Не найден</div>
-          <div class="s">Внутренний и внешний ЧС</div>
-        </div>
-
-        <div class="check-card success">
-          <div class="check-head">
-            <div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
-            <div class="t">Кредитная история</div>
-            <span class="badge success" style="font-size: 10px;">✓</span>
-          </div>
-          <div class="v">Хорошая</div>
-          <div class="s">2 закрытых кредита · без просрочек · НБКИ</div>
-        </div>
-
-        <div class="check-card success">
-          <div class="check-head">
-            <div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-            <div class="t">Активные займы</div>
-            <span class="badge success" style="font-size: 10px;">✓</span>
-          </div>
-          <div class="v">Не найдены</div>
-          <div class="s">Нет открытых обязательств в других МФО</div>
-        </div>
-
-        <div class="check-card success">
-          <div class="check-head">
-            <div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg></div>
-            <div class="t">Доход</div>
-            <span class="badge success" style="font-size: 10px;">✓</span>
-          </div>
-          <div class="v">Подтверждён</div>
-          <div class="s">2-НДФЛ · справка работодателя</div>
-        </div>
-
-        <div class="check-card success">
-          <div class="check-head">
-            <div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg></div>
-            <div class="t">Социальные сети</div>
-            <span class="badge success" style="font-size: 10px;">✓</span>
-          </div>
-          <div class="v">Профиль чист</div>
-          <div class="s">Вконтакте, Instagram · соответствует</div>
-        </div>
-
-        <div class="check-card success">
-          <div class="check-head">
-            <div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg></div>
-            <div class="t">Внутренние сделки</div>
-            <span class="badge success" style="font-size: 10px;">✓</span>
-          </div>
-          <div class="v">3 закрытые</div>
-          <div class="s">Без просрочек · хороший клиент</div>
-        </div>
-
-        <div class="check-card warning">
-          <div class="check-head">
-            <div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
-            <div class="t">Поручитель</div>
-            <span class="badge warning" style="font-size: 10px;">?</span>
-          </div>
-          <div class="v">Не указан</div>
-          <div class="s">Рекомендуется для сумм > 50 000 ₽</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- COMMENT -->
-    <div style="padding: 0 18px 18px;">
-      <label class="field-label">Комментарий СБ</label>
-      <textarea class="textarea" placeholder="Добавьте комментарий к решению...">Клиент имеет 3 закрытые сделки, доход подтверждён, скоринг высокий. Рекомендую одобрить с условием подтверждения адреса.</textarea>
-    </div>
-
-    <div class="decision-actions">
-      <button class="btn danger lg">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-        Отклонить
-      </button>
-      <button class="btn lg">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/></svg>
-        Запросить документы
-      </button>
-      <button class="btn success lg">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        Одобрить
-      </button>
+  <!-- RIGHT: detail -->
+  <div class="card" id="detail-card">
+    <div class="empty">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" style="margin:0 auto 14px;opacity:.4;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <div>Выберите заявку из очереди слева</div>
     </div>
   </div>
+
 </div>
 
 </div>
@@ -404,113 +98,172 @@
 <script src="db.js"></script>
 <script src="app.js"></script>
 <script>
-  PaydApp.mountShell({
-    active: 'sb',
-    title: 'Служба безопасности',
-    breadcrumbs: [{ label: 'Главная', href: 'dashboard.html' }, { label: 'СБ' }]
-  });
+  PaydApp.mountShell({ active: 'sb', title: 'Служба безопасности', breadcrumbs: [] });
 
-  // ============= SB WORKFLOW =============
-  (function () {
-    const detailHeader = document.querySelector('.sb-grid .card:nth-child(2) > div:first-of-type');
+  const fmt = v => Math.round(+v || 0).toLocaleString('ru-RU').replace(/,/g, ' ') + ' ₽';
+  const fmtRel = ts => { const d = (Date.now() - new Date(ts).getTime()) / 1000; if (d < 60) return 'только что'; if (d < 3600) return Math.round(d/60) + ' мин'; if (d < 86400) return Math.round(d/3600) + ' ч'; return Math.round(d/86400) + ' дн'; };
+  const fmtDate = ts => { const d = new Date(ts); if (isNaN(d.getTime())) return '—'; const p = n => String(n).padStart(2, '0'); return `${p(d.getDate())}.${p(d.getMonth()+1)}.${d.getFullYear()}`; };
+  function escapeHtml(s) { return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
 
-    // Click queue item → switch detail view
-    document.querySelectorAll('.queue-item').forEach(item => {
-      item.addEventListener('click', () => {
-        document.querySelectorAll('.queue-item').forEach(q => q.classList.remove('selected'));
-        item.classList.add('selected');
+  let allApps = [];
+  let workflows = {};
+  let selectedAppId = null;
+  let history = [];
 
-        const name = item.querySelector('.name')?.textContent || '';
-        const meta = item.querySelector('.meta')?.textContent || '';
-        const amount = item.querySelector('.amount')?.textContent || '';
-        const initialsEl = item.querySelector('.avatar');
-        const initials = initialsEl?.textContent || '';
-        const color = [...(initialsEl?.classList || [])].find(c => /^c[1-7]$/.test(c)) || 'c1';
+  async function load() {
+    const sb = PaydDB.cloud.sb();
+    if (!sb) return;
+    const [apps, wfs, { data: hist }] = await Promise.all([
+      PaydDB.list('applications').catch(() => []),
+      PaydDB.list('workflows').catch(() => []),
+      sb.from('application_history').select('*').gte('ts', new Date(new Date().setHours(0,0,0,0)).toISOString())
+    ]);
+    allApps = apps;
+    workflows = {};
+    (Array.isArray(wfs) ? wfs : Object.values(wfs)).forEach(w => { if (w.app_id) workflows[w.app_id] = w; });
+    history = hist || [];
+    render();
+  }
 
-        // Update detail header (avatar, name, meta info, amount)
-        if (detailHeader) {
-          const av = detailHeader.querySelector('.avatar.xl');
-          if (av) {
-            av.textContent = initials;
-            av.classList.forEach(c => { if (/^c[1-7]$/.test(c)) av.classList.remove(c); });
-            av.classList.add(color);
-          }
-          const nameEl = detailHeader.querySelector('h2');
-          if (nameEl) nameEl.textContent = name + ' (полное имя)';
-          const amountEl = detailHeader.querySelector('div[style*="font-size: 24px"]');
-          if (amountEl) amountEl.textContent = amount;
-          const subEl = detailHeader.querySelector('div[style*="font-size: 12px"]:last-child');
-          if (subEl && /Заявка/.test(meta)) {
-            subEl.textContent = meta;
-          }
-        }
-
-        PaydApp.toast(`Открыто досье: ${name}`, 'info');
-      });
+  function getQueue() {
+    return allApps.filter(a => {
+      if (a.rejected || a.closed) return false;
+      const wf = workflows[a.id];
+      if (!wf) return true; // новая заявка → в очереди
+      return wf.sb_passed !== true; // пока не одобрена СБ
     });
+  }
 
-    // Decision buttons
-    function processDecision(action, color) {
-      const sel = document.querySelector('.queue-item.selected');
-      if (!sel) { PaydApp.toast('Выберите заявку из очереди', 'warning'); return; }
-      const name = sel.querySelector('.name')?.textContent || '';
+  function render() {
+    const queue = getQueue();
+    document.getElementById('queue-count').textContent = queue.length;
+    document.getElementById('kpi-queue').textContent = queue.length;
+    document.getElementById('kpi-approved').textContent = history.filter(h => h.action === 'sb.approved').length;
+    document.getElementById('kpi-rejected').textContent = history.filter(h => h.action === 'sb.rejected').length;
+    document.getElementById('kpi-decided').textContent = history.filter(h => h.action?.startsWith('sb.')).length;
+    document.getElementById('sb-desc').textContent = 'В очереди ' + queue.length + ' заявок';
 
-      // Animate removal from queue
-      sel.style.transition = 'opacity .3s, max-height .3s';
-      sel.style.opacity = '0';
-      setTimeout(() => sel.remove(), 300);
-
-      // Update queue counter
-      const counter = document.querySelector('.sb-grid .card .badge.warning');
-      if (counter) {
-        const m = counter.textContent.match(/(\d+)/);
-        if (m) counter.textContent = String(Math.max(0, parseInt(m[1], 10) - 1));
-      }
-      // Update "В очереди" stat
-      const stat = document.querySelectorAll('.stat .stat-value')[0];
-      if (stat) {
-        const cur = parseInt(stat.textContent.match(/\d+/)?.[0] || '0', 10);
-        stat.textContent = String(Math.max(0, cur - 1));
-      }
-      // Update "Проверено сегодня"
-      const checkedStat = document.querySelectorAll('.stat .stat-value')[1];
-      if (checkedStat) {
-        const cur = parseInt(checkedStat.textContent.match(/\d+/)?.[0] || '0', 10);
-        checkedStat.textContent = String(cur + 1);
-      }
-
-      const messages = {
-        approve: { text: `Заявка одобрена: ${name}`, type: 'success' },
-        reject: { text: `Заявка отклонена: ${name}`, type: 'error' },
-        request: { text: `Запрос документов отправлен: ${name}`, type: 'info' }
-      };
-      const m = messages[action];
-      PaydApp.toast(m.text, m.type);
-
-      // Auto-select next queue item
-      setTimeout(() => {
-        const next = document.querySelector('.queue-item:not(.selected)');
-        if (next) next.click();
-      }, 320);
+    const list = document.getElementById('queue-list');
+    if (!queue.length) {
+      list.innerHTML = `<div class="empty">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" style="margin:0 auto 12px;opacity:.6;"><polyline points="20 6 9 17 4 12"/></svg>
+        <div>Очередь пуста</div>
+        <div style="font-size:12px;margin-top:6px;">Все заявки обработаны</div>
+      </div>`;
+      if (!selectedAppId) return;
+    } else {
+      list.innerHTML = queue.map(a => {
+        const colors = ['c1','c2','c3','c4','c5','c6'];
+        const cls = colors[Math.abs((a.client_name || '').length) % colors.length];
+        const sel = a.id === selectedAppId ? ' selected' : '';
+        const name = a.client_name || a.client?.name || '—';
+        return `
+          <div class="queue-item${sel}" data-id="${escapeHtml(a.id)}">
+            <div class="avatar ${cls} sm">${name.split(/\s+/).map(p=>p[0]||'').slice(0,2).join('').toUpperCase()}</div>
+            <div class="info">
+              <div class="name">${escapeHtml(name)}</div>
+              <div class="meta">#${escapeHtml(a.number || '')} · ${escapeHtml(a.product || '')}</div>
+            </div>
+            <div class="right">
+              <div class="amount">${fmt(a.amount || a.calc?.price || 0)}</div>
+              <div class="when">${fmtRel(a.ts || a.created_at)}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      list.querySelectorAll('.queue-item').forEach(item => {
+        item.addEventListener('click', () => { selectedAppId = item.dataset.id; render(); });
+      });
     }
 
-    document.querySelectorAll('.decision-actions .btn').forEach(btn => {
-      const text = btn.textContent.trim().toLowerCase();
-      btn.addEventListener('click', e => {
-        e.preventDefault(); e.stopImmediatePropagation();
-        if (text.includes('одобрить')) processDecision('approve');
-        else if (text.includes('отклонить')) {
-          PaydApp.confirmDialog({
-            title: 'Отклонить заявку?',
-            message: 'Заявка будет переведена в статус «Отклонена», клиент получит SMS-уведомление.',
-            okText: 'Отклонить',
-            onOk: () => processDecision('reject')
-          });
-        }
-        else if (text.includes('запросить')) processDecision('request');
-      }, true);
-    });
-  })();
+    if (selectedAppId) renderDetail(allApps.find(a => a.id === selectedAppId));
+  }
+
+  function renderDetail(a) {
+    if (!a) {
+      document.getElementById('detail-card').innerHTML = `<div class="empty">Заявка не найдена</div>`;
+      return;
+    }
+    const sale = +(a.amount || a.calc?.price) || 0;
+    const down = +(a.down_payment || a.calc?.dpAmount) || 0;
+    const term = a.term || a.calc?.term || 0;
+    const monthly = +(a.monthly || a.calc?.monthly) || 0;
+
+    document.getElementById('detail-card').innerHTML = `
+      <div class="card-hd">
+        <h3>Заявка #${escapeHtml(a.number || '')}</h3>
+        <a href="zayavka.html?id=${encodeURIComponent(a.id)}" class="text-sm" style="color:var(--primary);font-weight:600;">Полная карточка →</a>
+      </div>
+      <div class="data-grid">
+        <div class="item"><div class="l">Клиент</div><div class="v">${escapeHtml(a.client_name || a.client?.name || '—')}</div></div>
+        <div class="item"><div class="l">Телефон</div><div class="v">${escapeHtml(a.client_phone || a.client?.phone || '—')}</div></div>
+        <div class="item"><div class="l">Паспорт</div><div class="v">${escapeHtml(a.client_passport || '—')}</div></div>
+        <div class="item"><div class="l">Адрес</div><div class="v">${escapeHtml(a.client_address || '—')}</div></div>
+        <div class="item"><div class="l">Товар</div><div class="v">${escapeHtml(a.product || '—')}</div></div>
+        <div class="item"><div class="l">Тип</div><div class="v">${escapeHtml(a.type || '—')}</div></div>
+        <div class="item"><div class="l">Сумма</div><div class="v">${fmt(sale)}</div></div>
+        <div class="item"><div class="l">Первый взнос</div><div class="v">${fmt(down)}</div></div>
+        <div class="item"><div class="l">Срок</div><div class="v">${term} мес</div></div>
+        <div class="item"><div class="l">Ежемесячно</div><div class="v">${fmt(monthly)}</div></div>
+      </div>
+
+      <div style="padding: 0 18px 18px;">
+        <div class="check-grid">
+          <div class="check-card success">
+            <div class="check-head"><span class="t">Скоринг</span></div>
+            <div class="v">— / 100</div>
+            <div class="s">авто-скоринг подключается отдельно</div>
+          </div>
+          <div class="check-card">
+            <div class="check-head"><span class="t">Ранее у клиента</span></div>
+            <div class="v">${countAppsForClient(a)} ${plural(countAppsForClient(a), 'заявка', 'заявки', 'заявок')}</div>
+            <div class="s">в системе</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="decision-actions">
+        <button class="btn danger" data-act="reject" data-no-handler="true">✕ Отклонить</button>
+        <button class="btn primary" data-act="approve" data-no-handler="true">✓ Одобрить</button>
+      </div>
+    `;
+    document.querySelector('[data-act="approve"]')?.addEventListener('click', () => decide(a, true));
+    document.querySelector('[data-act="reject"]')?.addEventListener('click', () => decide(a, false));
+  }
+
+  function plural(n, one, few, many) { n = Math.abs(n) % 100; const n1 = n % 10; if (n > 10 && n < 20) return many; if (n1 > 1 && n1 < 5) return few; if (n1 === 1) return one; return many; }
+  function countAppsForClient(a) {
+    const phone = a.client_phone || a.client?.phone;
+    if (!phone) return 0;
+    return allApps.filter(x => (x.client_phone || x.client?.phone) === phone).length;
+  }
+
+  async function decide(a, approve) {
+    const action = approve ? 'sb.approved' : 'sb.rejected';
+    const wf = { app_id: a.id, sb_passed: approve, sb_score: 0, rejected: !approve, step: approve ? 2 : 0 };
+
+    try {
+      await PaydDB.upsert('workflows', wf);
+      if (!approve) {
+        // Mark application as rejected
+        const updated = { ...a, rejected: true };
+        await PaydDB.upsert('applications', updated);
+      }
+      await PaydDB.audit.log(a.id, action);
+      PaydApp.toast(approve ? 'Заявка одобрена' : 'Заявка отклонена', approve ? 'success' : 'error');
+      selectedAppId = null;
+      load();
+    } catch (e) {
+      PaydApp.toast('Ошибка: ' + e.message, 'error');
+    }
+  }
+
+  load();
+  setInterval(load, 10000);
+  if (window.PaydDB?.subscribe) {
+    PaydDB.subscribe('applications', load);
+    PaydDB.subscribe('workflows', load);
+  }
 </script>
 </body>
 </html>
