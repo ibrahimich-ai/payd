@@ -9,199 +9,30 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <style>
-  .ink-grid { display: grid; grid-template-columns: 380px 1fr 340px; gap: 16px; }
-  @media (max-width: 1400px) { .ink-grid { grid-template-columns: 1fr; } }
+  .ink-grid { display: grid; grid-template-columns: 1fr 360px; gap: 16px; }
+  @media (max-width: 1100px) { .ink-grid { grid-template-columns: 1fr; } }
 
-  /* Shift hero */
-  .ink-hero {
-    background: linear-gradient(135deg, #0f1f44 0%, #15275a 50%, #0c1a3a 100%);
-    color: white;
-    border-radius: var(--radius-lg);
-    padding: 22px 24px;
-    margin-bottom: 16px;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 12px 30px -12px rgba(15,23,42,.45);
-  }
-  .ink-hero::before {
-    content: '';
-    position: absolute; inset: 0;
-    background:
-      radial-gradient(600px 200px at 100% 0%, rgba(47,123,255,.18), transparent 60%),
-      radial-gradient(400px 200px at 0% 100%, rgba(74,146,255,.10), transparent 60%);
-    pointer-events: none;
-  }
-  .ink-hero-row { display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 1; gap: 16px; flex-wrap: wrap; }
-  .ink-hero h1 { font-size: 22px; font-weight: 800; letter-spacing: -.02em; }
-  .ink-hero .sub { font-size: 13px; color: #aab3c5; margin-top: 4px; }
-  .ink-hero .badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-  .ink-hero .badges .b {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 5px 10px;
-    background: rgba(255,255,255,.08);
-    border: 1px solid rgba(255,255,255,.14);
-    border-radius: 999px;
-    font-size: 12px;
-    color: #c7d3ec;
-    font-weight: 600;
-  }
-  .ink-hero .badges .b svg { color: #4a92ff; }
-  .ink-hero .badges .b.live { background: rgba(34,197,94,.15); border-color: rgba(34,197,94,.35); color: #86efac; }
-  .ink-hero .badges .b.live::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+  .stop { display: grid; grid-template-columns: 60px 1fr 110px 100px 130px; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--border); align-items: center; }
+  .stop:last-child { border-bottom: none; }
+  .stop .num { font-size: 20px; font-weight: 800; color: var(--text-3); text-align: center; }
+  .stop.done .num { color: var(--success); }
+  .stop.skipped .num { color: var(--danger); text-decoration: line-through; }
+  .stop .who { font-size: 13px; font-weight: 700; }
+  .stop .meta { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+  .stop .dir-badge { font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: .04em; text-align: center; }
+  .dir-badge.deliver { background: var(--success-soft); color: var(--success); }
+  .dir-badge.pickup  { background: var(--primary-soft); color: var(--primary); }
+  .stop .amount { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+  .stop .actions { display: flex; gap: 6px; justify-content: flex-end; }
+  .stop .actions .btn { padding: 6px 10px; font-size: 11px; }
+  .empty { padding: 60px 20px; text-align: center; color: var(--text-3); }
 
-  /* Route list */
-  .stop-list { display: flex; flex-direction: column; max-height: 640px; overflow-y: auto; }
-  .stop-item {
-    display: grid;
-    grid-template-columns: 28px 38px 1fr auto;
-    gap: 12px;
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--border);
-    cursor: pointer;
-    transition: background .12s;
-    align-items: center;
-    position: relative;
-  }
-  .stop-item:hover { background: var(--surface-2); }
-  .stop-item.selected { background: var(--primary-soft); }
-  .stop-item.selected::before {
-    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--primary);
-  }
-  .stop-num {
-    width: 28px; height: 28px; border-radius: 50%;
-    background: white; border: 2px solid var(--border-strong);
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 700; font-size: 12px; color: var(--text-2);
-    flex-shrink: 0;
-  }
-  .stop-item.done .stop-num { background: var(--success); border-color: var(--success); color: white; }
-  .stop-item.skip .stop-num { background: var(--warning); border-color: var(--warning); color: white; }
-  .stop-item.current .stop-num { background: var(--primary); border-color: var(--primary); color: white; box-shadow: 0 0 0 4px rgba(37,99,235,.18); }
-  .stop-name { font-size: 13px; font-weight: 700; line-height: 1.3; }
-  .stop-meta { font-size: 11px; color: var(--text-3); margin-top: 2px; line-height: 1.3; }
-  .stop-amount { text-align: right; font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; flex-shrink: 0; }
-  .stop-amount .small { font-size: 10px; color: var(--text-3); font-weight: 600; margin-top: 2px; }
-  .stop-item.done .stop-name { color: var(--text-3); text-decoration: line-through; }
-
-  /* Active stop big card */
-  .active-stop {
-    padding: 0;
-    overflow: hidden;
-  }
-  .as-head {
-    padding: 22px 24px;
-    background: linear-gradient(180deg, var(--primary-soft) 0%, transparent 100%);
-    border-bottom: 1px solid var(--border);
-  }
-  .as-row { display: flex; align-items: center; gap: 14px; }
-  .as-row .partner-logo {
-    width: 56px; height: 56px;
-    border-radius: 14px;
-    background: linear-gradient(135deg, #f1f5f9, #e2e8f0) !important;
-    color: #1a2332 !important;
-    border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px;
-    flex-shrink: 0;
-  }
-  .as-row .partner-logo svg { width: 28px; height: 28px; stroke-width: 1.5; }
-  .stop-item > div[style*="border-radius"] svg { width: 18px; height: 18px; stroke-width: 1.7; }
-  .as-h { font-size: 20px; font-weight: 800; letter-spacing: -.01em; }
-  .as-sub { font-size: 13px; color: var(--text-2); margin-top: 4px; display: flex; align-items: center; gap: 6px; }
-  .as-amount-block { padding: 26px 24px; text-align: center; border-bottom: 1px solid var(--border); }
-  .as-amount-label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-3); font-weight: 700; }
-  .as-amount-big { font-size: 46px; font-weight: 900; letter-spacing: -.03em; margin: 8px 0; font-variant-numeric: tabular-nums; }
-  .as-amount-big.income { color: var(--success); }
-  .as-amount-big.expense { color: var(--danger); }
-  .as-amount-sub { font-size: 13px; color: var(--text-2); }
-  .as-meta-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
-    background: var(--border); border-bottom: 1px solid var(--border);
-  }
-  .as-meta-grid .cell {
-    background: white; padding: 14px 18px;
-  }
-  .as-meta-grid .cell .l { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); font-weight: 700; }
-  .as-meta-grid .cell .v { font-size: 14px; font-weight: 700; margin-top: 4px; }
-  .as-actions {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-    padding: 18px 24px;
-  }
-  .as-actions .full { grid-column: 1 / -1; }
-  .as-actions .btn { padding: 12px; justify-content: center; }
-  .as-actions .btn.lg { padding: 16px; font-size: 14px; font-weight: 700; }
-
-  /* Bag balance */
-  .bag-card {
-    padding: 0;
-  }
-  .bag-head {
-    padding: 22px 22px 16px;
-    background: linear-gradient(135deg, #0f1f44, #15275a);
-    color: white;
-    text-align: center;
-  }
-  .bag-icon {
-    width: 44px; height: 44px;
-    border-radius: 12px;
-    background: rgba(255,255,255,.1);
-    border: 1px solid rgba(255,255,255,.15);
-    display: inline-flex; align-items: center; justify-content: center;
-    color: #4a92ff;
-    margin-bottom: 8px;
-  }
-  .bag-val { font-size: 28px; font-weight: 900; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
-  .bag-lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #aab3c5; font-weight: 700; margin-top: 4px; }
-  .bag-rows { padding: 8px 0; }
-  .bag-row { display: flex; justify-content: space-between; padding: 8px 22px; font-size: 13px; }
-  .bag-row .l { color: var(--text-2); }
-  .bag-row .v { font-weight: 700; font-variant-numeric: tabular-nums; }
-  .bag-row .v.plus { color: var(--success); }
-  .bag-row .v.minus { color: var(--danger); }
-
-  /* Recent ops */
-  .ink-recent { display: flex; flex-direction: column; max-height: 360px; overflow-y: auto; }
-  .ink-recent-item {
-    display: grid;
-    grid-template-columns: 32px 1fr auto;
-    gap: 10px;
-    padding: 10px 18px;
-    border-bottom: 1px solid var(--border);
-    align-items: center;
-  }
-  .ink-recent-item .ic {
-    width: 32px; height: 32px; border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    color: white;
-  }
-  .ink-recent-item.deliver .ic { background: var(--success); }
-  .ink-recent-item.pickup .ic { background: var(--primary); }
-  .ink-recent-item.skip .ic { background: var(--warning); }
-  .ink-recent-item .name { font-size: 12px; font-weight: 700; }
-  .ink-recent-item .when { font-size: 11px; color: var(--text-3); }
-  .ink-recent-item .amount { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
-
-  /* Modal (re-use compact style) */
-  .ink-backdrop {
-    position: fixed; inset: 0; background: rgba(15,23,42,.55); backdrop-filter: blur(4px);
-    z-index: 200; display: flex; align-items: center; justify-content: center; padding: 24px;
-    opacity: 0; pointer-events: none; transition: opacity .18s;
-  }
-  .ink-backdrop.show { opacity: 1; pointer-events: auto; }
-  .ink-modal { background: white; border-radius: 16px; width: 100%; max-width: 460px; box-shadow: 0 30px 80px rgba(0,0,0,.35); transform: translateY(8px); transition: transform .2s; overflow: hidden; }
-  .ink-backdrop.show .ink-modal { transform: translateY(0); }
-  .ink-modal h3 { padding: 18px 22px; font-size: 17px; font-weight: 800; border-bottom: 1px solid var(--border); }
-  .ink-modal-body { padding: 18px 22px; }
-  .ink-modal-foot { display: flex; gap: 8px; justify-content: flex-end; padding: 14px 22px; border-top: 1px solid var(--border); background: var(--surface-2); }
-  .ink-field { margin-bottom: 12px; }
-  .ink-field label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-3); font-weight: 700; margin-bottom: 6px; }
-  .ink-field textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 13px; outline: none; resize: vertical; min-height: 70px; }
-
-  /* Direction toggle */
-  .dir-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 4px; background: var(--surface-2); border-radius: 10px; margin: 0 0 14px; }
-  .dir-pill { padding: 9px 12px; text-align: center; font-size: 12px; font-weight: 600; color: var(--text-2); border-radius: 7px; cursor: pointer; }
-  .dir-pill.active { background: white; color: var(--text); box-shadow: var(--shadow-sm); font-weight: 700; }
-
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(15,23,42,.55); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+  .modal-bg.open { display: flex; }
+  .modal { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-lg); max-width: 480px; width: 100%; padding: 24px; }
+  .modal h3 { font-size: 17px; font-weight: 700; margin-bottom: 16px; }
+  .modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 </style>
 </head>
 <body>
@@ -210,596 +41,235 @@
 
 <div class="page-head">
   <div>
-    <h1>Рабочее место инкассатора</h1>
-    <div class="desc">Маршрут смены · доставка комиссий и забор выручки от партнёров</div>
+    <h1>Маршрут инкассатора</h1>
+    <div class="desc" id="ink-desc">Сегодня</div>
   </div>
   <div class="page-head-actions">
-    <button class="btn" id="btn-route-tomorrow">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
-      Маршрут на завтра
-    </button>
-    <button class="btn" id="btn-day-report">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      Отчёт смены
-    </button>
-    <button class="btn danger" id="btn-finish">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-      Завершить смену
+    <button class="btn primary" id="btn-add" data-no-handler="true">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Добавить точку
     </button>
   </div>
 </div>
 
-<!-- HERO -->
-<div class="ink-hero">
-  <div class="ink-hero-row">
-    <div>
-      <h1>Идрисов Адам Мовлади</h1>
-      <div class="sub">Смена 03.05.2026 · автомобиль <b style="color: white;">Лада Веста · Х742МК95</b></div>
-      <div class="badges">
-        <span class="b live">Маршрут активен</span>
-        <span class="b"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Грозный → Аргун → Гудермес</span>
-        <span class="b"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>09:00 — 18:00</span>
-      </div>
-    </div>
-    <div style="display: flex; gap: 8px;">
-      <button class="btn" style="background: rgba(255,255,255,.15); color: white; border: 1px solid rgba(255,255,255,.18);">Поменять авто</button>
-      <button class="btn" style="background: white; color: var(--primary); border-color: white;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 18 15 12 9 6"/></svg>
-        Открыть в навигаторе
-      </button>
-    </div>
+<div class="stat-grid cols-4 mb-4">
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label">Всего точек</div>
+    <div class="stat-value" style="font-size: 22px;" id="kpi-total">0</div>
+  </div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label" style="color: var(--success);">Выполнено</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--success);" id="kpi-done">0</div>
+  </div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label" style="color: var(--primary);">Ожидают</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--primary);" id="kpi-pending">0</div>
+  </div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label">Сумма к выдаче</div>
+    <div class="stat-value" style="font-size: 18px; color: var(--purple);" id="kpi-amount">0 ₽</div>
   </div>
 </div>
 
-<!-- STATS -->
-<div class="stat-grid cols-4 mb-5">
-  <div class="stat" style="padding: 14px 16px;">
-    <div class="stat-label">В сумке</div>
-    <div class="stat-value" style="font-size: 22px; color: var(--primary);" id="bag-stat">₽ 184 000</div>
-    <div class="stat-sub">Доставлено: 0 · Забрано: 0</div>
-  </div>
-  <div class="stat" style="padding: 14px 16px;">
-    <div class="stat-label">Точек на маршруте</div>
-    <div class="stat-value" style="font-size: 22px;"><span id="route-done">0</span> / <span id="route-total">7</span></div>
-    <div class="stat-sub" id="route-sub">7 партнёров · 0 завершено</div>
-  </div>
-  <div class="stat" style="padding: 14px 16px;">
-    <div class="stat-label">К доставке</div>
-    <div class="stat-value" style="font-size: 22px; color: var(--success);">₽ 184 000</div>
-    <div class="stat-sub">5 партнёров · комиссии</div>
-  </div>
-  <div class="stat" style="padding: 14px 16px;">
-    <div class="stat-label">К забору</div>
-    <div class="stat-value" style="font-size: 22px; color: var(--warning);">₽ 247 500</div>
-    <div class="stat-sub">2 партнёра · выручка</div>
-  </div>
-</div>
-
-<!-- MAIN GRID -->
 <div class="ink-grid">
-
-  <!-- ============ ROUTE LIST ============ -->
   <div class="card">
-    <div class="card-hd">
-      <h3>Маршрут на сегодня</h3>
-      <span class="badge primary" id="route-badge">7 точек</span>
+    <div style="background: var(--surface-2); padding: 10px 18px; font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .04em; display: grid; grid-template-columns: 60px 1fr 110px 100px 130px; gap: 12px; border-bottom: 1px solid var(--border);">
+      <div style="text-align:center;">№</div>
+      <div>Партнёр / адрес</div>
+      <div>Тип</div>
+      <div style="text-align:right;">Сумма</div>
+      <div></div>
     </div>
-    <div class="dir-toggle" style="margin: 12px 14px;">
-      <div class="dir-pill active" data-filter="all">Все <span class="badge muted">7</span></div>
-      <div class="dir-pill" data-filter="pending">Осталось <span class="badge muted">7</span></div>
-    </div>
-    <div class="stop-list" id="stop-list">
-      <!-- Stops will be rendered by JS -->
+    <div id="stops-list">
+      <div class="empty">Загрузка...</div>
     </div>
   </div>
 
-  <!-- ============ ACTIVE STOP ============ -->
-  <div class="card active-stop" id="active-stop">
-    <!-- Will be rendered by JS based on selected stop -->
-  </div>
-
-  <!-- ============ BAG + RECENT ============ -->
-  <div style="display: flex; flex-direction: column; gap: 16px;">
-    <div class="card bag-card">
-      <div class="bag-head">
-        <div class="bag-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-        </div>
-        <div class="bag-val" id="bag-val">184 000 ₽</div>
-        <div class="bag-lbl">Сейчас в сумке</div>
-      </div>
-      <div class="bag-rows">
-        <div class="bag-row"><span class="l">Старт смены</span><span class="v" id="bag-start">184 000 ₽</span></div>
-        <div class="bag-row"><span class="l">Доставлено партнёрам</span><span class="v minus" id="bag-out">— 0 ₽</span></div>
-        <div class="bag-row"><span class="l">Забрано у партнёров</span><span class="v plus" id="bag-in">+ 0 ₽</span></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-hd">
-        <h3>История точек</h3>
-        <span class="text-sm" style="color: var(--text-3);" id="recent-empty">Пока нет</span>
-      </div>
-      <div class="ink-recent" id="ink-recent"></div>
+  <div class="card">
+    <div class="card-hd"><h3>Сводка дня</h3></div>
+    <div style="padding: 16px 18px; display: flex; flex-direction: column; gap: 10px;">
+      <div style="display:flex;justify-content:space-between;font-size:13px;"><span class="text-muted">Доставить партнёрам</span><span style="font-weight:700;" id="sum-deliver">0 ₽</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;"><span class="text-muted">Забрать у партнёров</span><span style="font-weight:700;" id="sum-pickup">0 ₽</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;border-top:1px dashed var(--border);padding-top:10px;"><span style="font-weight:700;">Итого оборот</span><span style="font-weight:800;color:var(--primary);" id="sum-total">0 ₽</span></div>
     </div>
   </div>
+</div>
 
 </div>
 
+<div class="modal-bg" id="stop-modal">
+  <div class="modal">
+    <h3 id="stop-modal-title">Новая точка маршрута</h3>
+    <div class="modal-row">
+      <div class="field">
+        <label class="field-label">Партнёр *</label>
+        <select class="select" id="m-partner"></select>
+      </div>
+      <div class="field">
+        <label class="field-label">Тип *</label>
+        <select class="select" id="m-dir">
+          <option value="deliver">Доставить (к партнёру)</option>
+          <option value="pickup">Забрать (от партнёра)</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="field">
+        <label class="field-label">Сумма (₽) *</label>
+        <input class="input" id="m-amount" type="number" placeholder="0" />
+      </div>
+      <div class="field">
+        <label class="field-label">Время</label>
+        <input class="input" id="m-time" type="time" />
+      </div>
+    </div>
+    <div class="field" style="margin-bottom: 12px;">
+      <label class="field-label">Заметка</label>
+      <input class="input" id="m-note" placeholder="Например: 5 заявок · комиссии за апрель" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="m-cancel" data-no-handler="true">Отмена</button>
+      <button class="btn primary" id="m-save" data-no-handler="true">Сохранить</button>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="db.js"></script>
 <script src="app.js"></script>
 <script>
-  PaydApp.mountShell({
-    active: 'inkassator',
-    title: 'Инкассатор',
-    breadcrumbs: [{ label: 'Главная', href: 'dashboard.html' }, { label: 'Инкассатор' }]
-  });
+  PaydApp.mountShell({ active: 'inkassator', title: 'Инкассатор', breadcrumbs: [] });
 
-  // ============================================================
-  //  ROUTE DATA
-  // ============================================================
-  // Branded line-icons (white stroke on navy plate)
-  const ICONS = {
-    phone:    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>',
-    laptop:   '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="1.5"/><line x1="2" y1="20" x2="22" y2="20"/></svg>',
-    shop:     '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1-5h16l1 5"/><path d="M5 9v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9"/><path d="M9 21v-6a3 3 0 0 1 6 0v6"/></svg>',
-    headset:  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1v-7h3v5z"/><path d="M3 19a2 2 0 0 0 2 2h1v-7H3v5z"/></svg>',
-    sofa:     '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 11v5a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v2H7v-2a2 2 0 0 0-4 0z"/></svg>',
-    watch:    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="6"/><polyline points="12 9 12 12 13.5 13.5"/><path d="M16.5 4.5l-1.41-1.41A2 2 0 0 0 13.67 2.5h-3.34a2 2 0 0 0-1.42.59L7.5 4.5"/><path d="M16.5 19.5l-1.41 1.41a2 2 0 0 1-1.42.59h-3.34a2 2 0 0 1-1.42-.59L7.5 19.5"/></svg>',
-    sport:    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5h11"/><path d="M6.5 17.5h11"/><line x1="6.5" y1="3" x2="6.5" y2="21"/><line x1="17.5" y1="3" x2="17.5" y2="21"/><line x1="2" y1="12" x2="22" y2="12"/></svg>'
-  };
+  const fmt = v => Math.round(+v || 0).toLocaleString('ru-RU').replace(/,/g, ' ') + ' ₽';
+  function escapeHtml(s) { return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
 
-  const STOPS = [
-    { id: 1, partner: 'ТехноМир — Грозный',         address: 'Грозный, пр. Путина, 18',    dir: 'deliver', amount: 42000,  items: '5 заявок · комиссии за апрель',  plannedAt: '09:30', iconKey: 'phone'   },
-    { id: 2, partner: 'ДигиМаркет — Грозный',             address: 'Грозный, ул. Кольцова, 226', dir: 'deliver', amount: 28500,  items: '3 заявки · комиссии за апрель',  plannedAt: '10:15', iconKey: 'laptop'  },
-    { id: 3, partner: 'Электро-Гранд — Аргун',         address: 'Аргун, ул. Кадырова, 7',     dir: 'pickup',  amount: 145000, items: 'Выручка с предзаказов',          plannedAt: '11:00', iconKey: 'shop'    },
-    { id: 4, partner: 'Связной — Аргун',           address: 'Аргун, пр. Шоссейная, 144',  dir: 'deliver', amount: 18500,  items: '2 заявки · акция Мурабаха',      plannedAt: '11:45', iconKey: 'headset' },
-    { id: 5, partner: 'Мебель «Лидер» — Гудермес', address: 'Гудермес, ул. Терская, 33',  dir: 'deliver', amount: 35000,  items: '4 заявки · мебель в рассрочку',  plannedAt: '13:30', iconKey: 'sofa'    },
-    { id: 6, partner: 'Часовой ломбард',           address: 'Грозный, пр. Путина, 5',     dir: 'pickup',  amount: 102500, items: 'Выручка от ломбардных продаж',   plannedAt: '15:00', iconKey: 'watch'   },
-    { id: 7, partner: 'Спорт-маркет',              address: 'Грозный, пр. Кадырова, 90',  dir: 'deliver', amount: 60000,  items: '6 заявок · спортивная техника',  plannedAt: '16:30', iconKey: 'sport'   }
-  ];
+  let allStops = [];
+  let allPartners = [];
+  const today = new Date().toISOString().slice(0, 10);
 
-  // Plate style — light gradient like products catalog
-  const BRAND_PLATE = `
-    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
-    color: #1a2332;
-    border: 1px solid var(--border);
-  `;
-  const BRAND_ACCENT = '';
-  const BRAND_ACCENT_BIG = '';
-
-  // ---- Persistence ----
-  const INK_KEY = 'payd.inkassator.state.v1';
-  function loadInk() {
-    try {
-      const s = JSON.parse(localStorage.getItem(INK_KEY) || 'null');
-      if (s && typeof s === 'object') return s;
-    } catch (_) {}
-    return null;
-  }
-  function saveInk() {
-    try {
-      localStorage.setItem(INK_KEY, JSON.stringify({ status, recentLog, currentId }));
-    } catch (_) {}
-  }
-  const _saved = loadInk();
-  let currentId = _saved?.currentId || 1;
-  const status = {};
-  STOPS.forEach(s => status[s.id] = (_saved?.status?.[s.id]) || 'pending');
-  let filter = 'all';
-
-  const recentLog = (_saved?.recentLog && Array.isArray(_saved.recentLog)) ? _saved.recentLog : [];
-
-  const $ = sel => document.querySelector(sel);
-  const fmt = n => Math.round(n).toLocaleString('ru-RU');
-
-  // ============= RENDER STOP LIST =============
-  function renderStopList() {
-    const host = $('#stop-list');
-    const items = STOPS.filter(s => filter === 'all' || (filter === 'pending' && status[s.id] === 'pending'));
-    host.innerHTML = items.map((s, i) => {
-      const st = status[s.id];
-      const sel = (s.id === currentId && st === 'pending') ? 'selected current' : (st === 'done' ? 'done' : st === 'skip' ? 'skip' : '');
-      const num = st === 'done' ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>'
-                : st === 'skip' ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
-                : (i + 1);
-      const dirIcon = s.dir === 'deliver'
-        ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>'
-        : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="7" x2="7" y2="17"/><polyline points="17 17 7 17 7 7"/></svg>';
-      return `
-        <div class="stop-item ${sel}" data-id="${s.id}">
-          <div class="stop-num">${num}</div>
-          <div style="width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; ${BRAND_PLATE}">${BRAND_ACCENT}<span style="position:relative; z-index:1;">${ICONS[s.iconKey] || ICONS.shop}</span></div>
-          <div>
-            <div class="stop-name">${s.partner}</div>
-            <div class="stop-meta">${s.plannedAt} · ${s.address}</div>
-          </div>
-          <div class="stop-amount">
-            <div style="display: flex; align-items: center; gap: 4px; justify-content: flex-end;">${dirIcon}${fmt(s.amount)} ₽</div>
-            <div class="small">${s.dir === 'deliver' ? 'выдать' : 'забрать'}</div>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    host.querySelectorAll('.stop-item').forEach(el => {
-      el.addEventListener('click', () => {
-        currentId = parseInt(el.dataset.id, 10);
-        saveInk();
-        renderStopList();
-        renderActiveStop();
-      });
-    });
+  async function load() {
+    const sb = PaydDB.cloud.sb();
+    if (!sb) return;
+    const [{ data: stops }, partners] = await Promise.all([
+      sb.from('inkassator_stops').select('*').eq('shift_date', today).order('planned_at'),
+      PaydDB.list('partners').catch(() => [])
+    ]);
+    allStops = stops || [];
+    allPartners = partners.filter(p => p.status !== 'danger');
+    render();
   }
 
-  // ============= RENDER ACTIVE STOP =============
-  function renderActiveStop() {
-    const s = STOPS.find(x => x.id === currentId);
-    const st = status[currentId];
-    if (!s) return;
-    const isDeliver = s.dir === 'deliver';
-    const dirLabel = isDeliver ? 'Доставка' : 'Забор выручки';
-    const amtClass = isDeliver ? 'expense' : 'income';
-    const amtSub = isDeliver ? 'Выдать наличными партнёру' : 'Забрать у партнёра в кассу';
-    const ix = STOPS.findIndex(x => x.id === currentId) + 1;
-    const next = STOPS.find((x, i) => i > ix - 1 && status[x.id] === 'pending' && x.id !== currentId);
-
-    const statusLabel = st === 'done' ? `<span class="badge success" style="margin-left: 10px;">Завершено</span>`
-                      : st === 'skip' ? `<span class="badge warning" style="margin-left: 10px;">Пропущено</span>`
-                      : `<span class="badge primary" style="margin-left: 10px;">Точка ${ix} из ${STOPS.length}</span>`;
-
-    const actionsHtml = (st === 'pending') ? `
-      <button class="btn primary lg full" data-act="confirm">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        ${isDeliver ? 'Передать ' : 'Принять '}${fmt(s.amount)} ₽
-      </button>
-      <button class="btn" data-act="skip">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
-        Пропустить
-      </button>
-      <button class="btn" data-act="navigate">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
-        В навигатор
-      </button>
-    ` : `
-      <div class="full" style="text-align: center; padding: 20px; color: var(--text-2);">
-        ${st === 'done' ? `✅ Точка завершена в ${recentLog.find(r => r.id === s.id)?.ts || '—'}` : '⏭️ Точка пропущена'}
-      </div>
-      <button class="btn full" data-act="undo">Отменить статус</button>
-    `;
-
-    $('#active-stop').innerHTML = `
-      <div class="as-head">
-        <div class="as-row">
-          <div class="partner-logo" style="${BRAND_PLATE}">${BRAND_ACCENT_BIG}<span style="position:relative; z-index:1; transform:scale(1.4); display:flex;">${ICONS[s.iconKey] || ICONS.shop}</span></div>
-          <div style="flex: 1; min-width: 0;">
-            <div class="as-h">${s.partner}</div>
-            <div class="as-sub">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              ${s.address}${statusLabel}
+  function render() {
+    const list = document.getElementById('stops-list');
+    if (!allStops.length) {
+      list.innerHTML = `<div class="empty">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" style="margin:0 auto 12px;opacity:.4;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/></svg>
+        <div>Точек на сегодня нет</div>
+        <div style="font-size:12px;margin-top:6px;">Нажми «Добавить точку»</div>
+      </div>`;
+    } else {
+      list.innerHTML = allStops.map((s, i) => {
+        const partner = allPartners.find(p => p.id === s.partner_id || p.name === s.recipient);
+        const partnerName = partner?.name || s.recipient || '—';
+        const partnerAddr = partner?.address || '';
+        const stCls = s.status === 'done' ? 'done' : s.status === 'skip' ? 'skipped' : '';
+        return `
+          <div class="stop ${stCls}" data-id="${escapeHtml(s.id)}">
+            <div class="num">${i + 1}</div>
+            <div>
+              <div class="who">${escapeHtml(partnerName)}</div>
+              <div class="meta">${escapeHtml(partnerAddr || s.note || '')} ${s.planned_at ? '· ' + s.planned_at : ''}</div>
+            </div>
+            <div><span class="dir-badge ${s.dir}">${s.dir === 'deliver' ? 'Доставить' : 'Забрать'}</span></div>
+            <div class="amount">${fmt(s.amount)}</div>
+            <div class="actions">
+              ${s.status === 'pending' || !s.status
+                ? `<button class="btn sm primary" data-act="done" data-no-handler="true">✓ Готово</button>
+                   <button class="btn sm" data-act="skip" data-no-handler="true">пропустить</button>`
+                : `<span class="badge ${s.status === 'done' ? 'success' : 'danger'}">${s.status === 'done' ? 'Выполнено' : 'Пропущено'}</span>
+                   <button class="btn sm" data-act="reset" data-no-handler="true">↶</button>`}
             </div>
           </div>
-        </div>
-      </div>
-      <div class="as-amount-block">
-        <div class="as-amount-label">${dirLabel}</div>
-        <div class="as-amount-big ${amtClass}">${isDeliver ? '−' : '+'} ${fmt(s.amount)} ₽</div>
-        <div class="as-amount-sub">${amtSub}</div>
-      </div>
-      <div class="as-meta-grid">
-        <div class="cell"><div class="l">Время по плану</div><div class="v">${s.plannedAt}</div></div>
-        <div class="cell"><div class="l">Тип операции</div><div class="v">${dirLabel}</div></div>
-        <div class="cell"><div class="l">Состав</div><div class="v">${s.items}</div></div>
-        <div class="cell"><div class="l">Следующая точка</div><div class="v">${next ? next.partner.split(' — ')[0] : 'Конец маршрута'}</div></div>
-      </div>
-      <div class="as-actions">${actionsHtml}</div>
-    `;
-
-    $('#active-stop').querySelectorAll('button[data-act]').forEach(btn => {
-      btn.addEventListener('click', () => handleAction(btn.dataset.act, s));
-    });
-  }
-
-  // ============= ACTIONS =============
-  function handleAction(act, s) {
-    if (act === 'confirm') return openConfirm(s);
-    if (act === 'skip')    return openSkip(s);
-    if (act === 'navigate'){ PaydApp.toast('Открываем 2ГИС…', { type: 'info', subtitle: s.address }); return; }
-    if (act === 'undo')    { status[s.id] = 'pending'; refreshAll(); PaydApp.toast('Статус сброшен', 'info'); return; }
-  }
-
-  function openConfirm(s) {
-    const isDeliver = s.dir === 'deliver';
-    const back = document.createElement('div');
-    back.className = 'ink-backdrop';
-    back.innerHTML = `
-      <div class="ink-modal">
-        <h3>${isDeliver ? 'Подтвердить доставку' : 'Подтвердить забор'}</h3>
-        <div class="ink-modal-body">
-          <div style="font-size: 13px; margin-bottom: 14px;">
-            Партнёр: <b>${s.partner}</b><br/>
-            Сумма: <b style="font-size: 17px; color: ${isDeliver ? 'var(--danger)' : 'var(--success)'};">${isDeliver ? '−' : '+'} ${fmt(s.amount)} ₽</b>
-          </div>
-          <div class="ink-field">
-            <label>Кто принял ${isDeliver ? '/выдал' : ''} (ФИО)</label>
-            <input class="input" id="im-rcpt" placeholder="${isDeliver ? 'Тагаев Руслан Анатольевич' : 'Кассир магазина'}" />
-          </div>
-          <div class="ink-field">
-            <label>Подпись / отметка</label>
-            <input class="input" id="im-sign" placeholder="Подписано лично · печать партнёра" value="Подписано лично" />
-          </div>
-          <div class="ink-field">
-            <label>Комментарий (необязательно)</label>
-            <textarea id="im-note" placeholder="Например: касса передана в нерабочее время"></textarea>
-          </div>
-        </div>
-        <div class="ink-modal-foot">
-          <button class="btn" data-cancel>Отмена</button>
-          <button class="btn primary" data-ok>Подтвердить и распечатать чек</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(back);
-    requestAnimationFrame(() => back.classList.add('show'));
-    const close = () => { back.classList.remove('show'); setTimeout(() => back.remove(), 200); };
-    back.addEventListener('click', e => { if (e.target === back) close(); });
-    back.querySelector('[data-cancel]').onclick = close;
-    back.querySelector('[data-ok]').onclick = () => {
-      const rcpt = back.querySelector('#im-rcpt').value.trim();
-      if (!rcpt) { PaydApp.toast('Укажите ФИО принявшего', 'warning'); return; }
-      status[s.id] = 'done';
-      const now = new Date();
-      const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-      recentLog.unshift({ id: s.id, ts, partner: s.partner, amount: s.amount, dir: s.dir, kind: 'done', rcpt });
-      // For deliveries to partner — create a pending payout that the partner must confirm
-      if (isDeliver) {
-        try {
-          const list = JSON.parse(localStorage.getItem('payd.partner.payouts.v1') || '[]');
-          list.unshift({
-            id: 'po_' + Date.now(),
-            partner: s.partner,
-            amount: s.amount,
-            description: s.items || 'Комиссии партнёру',
-            inkassator: 'Идрисов А.М.',
-            recipient: rcpt,
-            sign: back.querySelector('#im-sign').value,
-            note: back.querySelector('#im-note').value,
-            deliveredAt: now.toISOString(),
-            confirmedAt: null,
-            status: 'pending'
-          });
-          localStorage.setItem('payd.partner.payouts.v1', JSON.stringify(list));
-        } catch (_) {}
-      }
-      close();
-      // Auto-select next pending
-      const nextPending = STOPS.find(x => status[x.id] === 'pending');
-      if (nextPending) currentId = nextPending.id;
-      refreshAll();
-      PaydApp.toast(`${isDeliver ? 'Доставлено' : 'Забрано'}: ${fmt(s.amount)} ₽`, { type: 'success', subtitle: isDeliver ? `${s.partner} · ожидает подтверждения партнёра` : s.partner });
-      // Show receipt
-      showReceipt({
-        type: isDeliver ? 'deliver' : 'pickup',
-        title: isDeliver ? 'РАСХОДНЫЙ ОРДЕР · ВЫДАЧА' : 'ПРИХОДНЫЙ ОРДЕР · ЗАБОР',
-        partner: s.partner,
-        address: s.address,
-        amount: s.amount,
-        recipient: rcpt,
-        sign: back.querySelector('#im-sign').value,
-        note: back.querySelector('#im-note').value,
-        ts
+        `;
+      }).join('');
+      list.querySelectorAll('[data-act]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const stop = btn.closest('.stop');
+          const id = stop.dataset.id;
+          const act = btn.dataset.act;
+          updateStop(id, act === 'done' ? 'done' : act === 'skip' ? 'skip' : 'pending');
+        });
       });
-    };
-  }
-
-  function openSkip(s) {
-    const back = document.createElement('div');
-    back.className = 'ink-backdrop';
-    back.innerHTML = `
-      <div class="ink-modal">
-        <h3>Пропустить точку</h3>
-        <div class="ink-modal-body">
-          <div style="font-size: 13px; margin-bottom: 14px;"><b>${s.partner}</b> · ${s.address}</div>
-          <div class="ink-field">
-            <label>Причина пропуска</label>
-            <select class="select" id="sk-reason">
-              <option>Партнёр недоступен</option>
-              <option>Точка закрыта</option>
-              <option>Технические проблемы</option>
-              <option>Перенесено на завтра</option>
-              <option>Другое</option>
-            </select>
-          </div>
-          <div class="ink-field">
-            <label>Комментарий</label>
-            <textarea id="sk-note"></textarea>
-          </div>
-        </div>
-        <div class="ink-modal-foot">
-          <button class="btn" data-cancel>Отмена</button>
-          <button class="btn warning" data-ok>Пропустить</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(back);
-    requestAnimationFrame(() => back.classList.add('show'));
-    const close = () => { back.classList.remove('show'); setTimeout(() => back.remove(), 200); };
-    back.addEventListener('click', e => { if (e.target === back) close(); });
-    back.querySelector('[data-cancel]').onclick = close;
-    back.querySelector('[data-ok]').onclick = () => {
-      status[s.id] = 'skip';
-      const now = new Date();
-      const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-      recentLog.unshift({ id: s.id, ts, partner: s.partner, amount: s.amount, dir: s.dir, kind: 'skip', reason: back.querySelector('#sk-reason').value });
-      close();
-      const nextPending = STOPS.find(x => status[x.id] === 'pending');
-      if (nextPending) currentId = nextPending.id;
-      refreshAll();
-      PaydApp.toast(`Точка пропущена: ${s.partner}`, 'warning');
-    };
-  }
-
-  // ============= RECEIPT =============
-  function showReceipt(r) {
-    const back = document.createElement('div');
-    back.className = 'ink-backdrop';
-    const sign = r.type === 'deliver' ? '−' : '+';
-    const cl   = r.type === 'deliver' ? 'expense' : 'income';
-    back.innerHTML = `
-      <div class="ink-modal" style="max-width: 420px;">
-        <h3>${r.title}</h3>
-        <div class="ink-modal-body">
-          <div style="font-family: 'SF Mono', monospace; font-size: 12px; line-height: 1.6; padding: 18px; border: 1px dashed var(--border-strong); border-radius: 8px;">
-            <div style="text-align: center; font-family: Inter; font-size: 14px; font-weight: 800; margin-bottom: 8px;">${r.title}</div>
-            <div style="display: flex; justify-content: space-between;"><span>Дата</span><span>${new Date().toLocaleDateString('ru-RU')} ${r.ts}</span></div>
-            <div style="display: flex; justify-content: space-between;"><span>Инкассатор</span><span>Идрисов А. М.</span></div>
-            <div style="display: flex; justify-content: space-between;"><span>Авто</span><span>Х742МК95</span></div>
-            <div style="border-top: 1px dashed; margin: 8px 0;"></div>
-            <div style="display: flex; justify-content: space-between;"><span>Партнёр</span><span>${r.partner}</span></div>
-            <div style="display: flex; justify-content: space-between;"><span>Адрес</span><span style="text-align: right; max-width: 60%;">${r.address}</span></div>
-            <div style="display: flex; justify-content: space-between;"><span>Принял</span><span>${r.recipient}</span></div>
-            <div style="display: flex; justify-content: space-between;"><span>Подпись</span><span>${r.sign}</span></div>
-            ${r.note ? `<div style="margin-top: 6px; font-size: 11px; color: #5a6478;">Прим: ${r.note}</div>` : ''}
-            <div style="border-top: 1px dashed; margin: 8px 0;"></div>
-            <div style="display: flex; justify-content: space-between; font-family: Inter; font-weight: 800; font-size: 15px;"><span>${r.type === 'deliver' ? 'ВЫДАНО' : 'ПРИНЯТО'}</span><span>${sign} ${fmt(r.amount)} ₽</span></div>
-          </div>
-        </div>
-        <div class="ink-modal-foot">
-          <button class="btn" data-cancel>Закрыть</button>
-          <button class="btn" data-dl>Скачать PDF</button>
-          <button class="btn primary" data-pr>Распечатать</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(back);
-    requestAnimationFrame(() => back.classList.add('show'));
-    const close = () => { back.classList.remove('show'); setTimeout(() => back.remove(), 200); };
-    back.querySelector('[data-cancel]').onclick = close;
-    back.addEventListener('click', e => { if (e.target === back) close(); });
-    back.querySelector('[data-pr]').onclick = () => window.print();
-    back.querySelector('[data-dl]').onclick = () => {
-      const blob = new Blob([back.querySelector('.ink-modal-body').innerHTML], { type: 'text/html' });
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${r.title}.html`; a.click(); URL.revokeObjectURL(a.href);
-      PaydApp.toast('Чек скачан', 'success');
-    };
-  }
-
-  // ============= REFRESH STATS / BAG / RECENT =============
-  function refreshAll() {
-    renderStopList();
-    renderActiveStop();
-    refreshStats();
-    refreshBag();
-    refreshRecent();
-    saveInk();
-  }
-
-  function refreshStats() {
-    const done = STOPS.filter(s => status[s.id] === 'done').length;
-    $('#route-done').textContent = done;
-    $('#route-total').textContent = STOPS.length;
-    $('#route-sub').textContent = `${STOPS.length} партнёров · ${done} завершено`;
-    $('#route-badge').textContent = `${STOPS.length} точек`;
-    document.querySelector('.dir-toggle .active .badge').textContent = STOPS.length;
-    const pendingCount = STOPS.filter(s => status[s.id] === 'pending').length;
-    document.querySelectorAll('.dir-toggle .dir-pill .badge')[1].textContent = pendingCount;
-  }
-
-  const START_BAG = 184000;
-  function refreshBag() {
-    const out = STOPS.filter(s => status[s.id] === 'done' && s.dir === 'deliver').reduce((a, b) => a + b.amount, 0);
-    const inc = STOPS.filter(s => status[s.id] === 'done' && s.dir === 'pickup').reduce((a, b) => a + b.amount, 0);
-    const bag = START_BAG - out + inc;
-    $('#bag-val').textContent = fmt(bag) + ' ₽';
-    $('#bag-stat').textContent = '₽ ' + fmt(bag);
-    $('#bag-start').textContent = fmt(START_BAG) + ' ₽';
-    $('#bag-out').textContent = '— ' + fmt(out) + ' ₽';
-    $('#bag-in').textContent = '+ ' + fmt(inc) + ' ₽';
-    const sub = $('#bag-stat').parentElement.querySelector('.stat-sub');
-    if (sub) sub.textContent = `Доставлено: ${fmt(out)} ₽ · Забрано: ${fmt(inc)} ₽`;
-  }
-
-  function refreshRecent() {
-    const host = $('#ink-recent');
-    if (!recentLog.length) {
-      host.innerHTML = '';
-      $('#recent-empty').style.display = '';
-      return;
     }
-    $('#recent-empty').style.display = 'none';
-    // Read partner-side confirmations to show status
-    let payouts = [];
-    try { payouts = JSON.parse(localStorage.getItem('payd.partner.payouts.v1') || '[]'); } catch (_) {}
-    host.innerHTML = recentLog.map(r => {
-      const cls = r.kind === 'skip' ? 'skip' : (r.dir === 'deliver' ? 'deliver' : 'pickup');
-      const sign = r.kind === 'skip' ? '⊘' : (r.dir === 'deliver' ? '−' : '+');
-      const icon = r.kind === 'skip'
-        ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
-        : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>';
-      const partnerShort = r.partner.split(' — ')[0];
-      // Find matching payout to show partner-confirmation status
-      let confLabel = '';
-      if (r.dir === 'deliver' && r.kind !== 'skip') {
-        const po = payouts.find(p => p.partner === r.partner && Math.abs(p.amount - r.amount) < 1);
-        if (po && po.status === 'confirmed') {
-          confLabel = ' · <span style="color: var(--success); font-weight: 600;">✓ подтверждено</span>';
-        } else if (po && po.status === 'pending') {
-          confLabel = ' · <span style="color: var(--warning); font-weight: 600;">⌛ ждёт подтверждения</span>';
-        }
-      }
-      return `
-        <div class="ink-recent-item ${cls}">
-          <div class="ic">${icon}</div>
-          <div>
-            <div class="name">${partnerShort}</div>
-            <div class="when">${r.dir === 'deliver' ? 'выдано' : 'принято'} · ${r.ts}${r.reason ? ' · ' + r.reason : ''}${confLabel}</div>
-          </div>
-          <div class="amount" style="color: ${r.kind === 'skip' ? 'var(--text-3)' : (r.dir === 'deliver' ? 'var(--danger)' : 'var(--success)')};">${sign} ${fmt(r.amount)} ₽</div>
-        </div>
-      `;
-    }).join('');
+
+    const done = allStops.filter(s => s.status === 'done').length;
+    const pending = allStops.filter(s => !s.status || s.status === 'pending').length;
+    const totalAmount = allStops.reduce((s, x) => s + (+x.amount || 0), 0);
+    const deliver = allStops.filter(s => s.dir === 'deliver').reduce((s, x) => s + (+x.amount || 0), 0);
+    const pickup = allStops.filter(s => s.dir === 'pickup').reduce((s, x) => s + (+x.amount || 0), 0);
+
+    document.getElementById('kpi-total').textContent = allStops.length;
+    document.getElementById('kpi-done').textContent = done;
+    document.getElementById('kpi-pending').textContent = pending;
+    document.getElementById('kpi-amount').textContent = fmt(totalAmount);
+    document.getElementById('sum-deliver').textContent = fmt(deliver);
+    document.getElementById('sum-pickup').textContent = fmt(pickup);
+    document.getElementById('sum-total').textContent = fmt(totalAmount);
+    document.getElementById('ink-desc').textContent = 'Сегодня · ' + allStops.length + ' точек, выполнено ' + done;
   }
 
-  // Live update history every few seconds (in case partner confirms while page open)
-  setInterval(refreshRecent, 5000);
+  async function updateStop(id, status) {
+    const sb = PaydDB.cloud.sb();
+    const upd = { status };
+    if (status === 'done') upd.confirmed_at = new Date().toISOString();
+    await sb.from('inkassator_stops').update(upd).eq('id', id);
+    PaydApp.toast(status === 'done' ? 'Точка выполнена' : status === 'skip' ? 'Пропущена' : 'Сброшено', 'info');
+    load();
+  }
 
-  // ============= FILTER =============
-  document.querySelectorAll('.dir-toggle .dir-pill').forEach(p => {
-    p.addEventListener('click', () => {
-      document.querySelectorAll('.dir-toggle .dir-pill').forEach(x => x.classList.remove('active'));
-      p.classList.add('active');
-      filter = p.dataset.filter;
-      renderStopList();
-    });
+  // Modal
+  const modal = document.getElementById('stop-modal');
+  document.getElementById('btn-add').addEventListener('click', () => {
+    const sel = document.getElementById('m-partner');
+    sel.innerHTML = allPartners.map(p => `<option value="${escapeHtml(p.id || p.name)}">${escapeHtml(p.name)}${p.address ? ' — ' + escapeHtml(p.address) : ''}</option>`).join('');
+    document.getElementById('m-amount').value = '';
+    document.getElementById('m-time').value = '';
+    document.getElementById('m-note').value = '';
+    document.getElementById('m-dir').value = 'deliver';
+    modal.classList.add('open');
+  });
+  document.getElementById('m-cancel').addEventListener('click', () => modal.classList.remove('open'));
+  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
+
+  document.getElementById('m-save').addEventListener('click', async () => {
+    const partnerVal = document.getElementById('m-partner').value;
+    const amount = +document.getElementById('m-amount').value;
+    if (!partnerVal) { PaydApp.toast('Выберите партнёра', 'error'); return; }
+    if (!amount) { PaydApp.toast('Введите сумму', 'error'); return; }
+
+    const partner = allPartners.find(p => p.id === partnerVal || p.name === partnerVal);
+    const sb = PaydDB.cloud.sb();
+    const data = {
+      shift_date: today,
+      partner_id: partner?.id && /^[0-9a-f-]{36}$/i.test(partner.id) ? partner.id : null,
+      recipient: partner?.name || partnerVal,
+      dir: document.getElementById('m-dir').value,
+      amount,
+      planned_at: document.getElementById('m-time').value || null,
+      status: 'pending',
+      note: document.getElementById('m-note').value.trim() || null
+    };
+    try {
+      const { error } = await sb.from('inkassator_stops').insert(data);
+      if (error) throw error;
+      PaydApp.toast('Точка добавлена', 'success');
+      modal.classList.remove('open');
+      load();
+    } catch (err) { PaydApp.toast('Ошибка: ' + err.message, 'error'); }
   });
 
-  // ============= TOP ACTIONS =============
-  document.getElementById('btn-day-report').addEventListener('click', () => {
-    const out = STOPS.filter(s => status[s.id] === 'done' && s.dir === 'deliver').reduce((a, b) => a + b.amount, 0);
-    const inc = STOPS.filter(s => status[s.id] === 'done' && s.dir === 'pickup').reduce((a, b) => a + b.amount, 0);
-    const skipped = STOPS.filter(s => status[s.id] === 'skip').length;
-    const done = STOPS.filter(s => status[s.id] === 'done').length;
-    PaydApp.toast('Отчёт смены сформирован', { type: 'info', subtitle: `${done} точек · доставлено ${fmt(out)} ₽ · принято ${fmt(inc)} ₽ · пропущено ${skipped}` });
-  });
-
-  document.getElementById('btn-route-tomorrow').addEventListener('click', () => {
-    PaydApp.toast('Маршрут на завтра', { type: 'info', subtitle: 'Будет сформирован вечером после Z-отчётов партнёров' });
-  });
-
-  document.getElementById('btn-finish').addEventListener('click', () => {
-    const pending = STOPS.filter(s => status[s.id] === 'pending').length;
-    if (pending && !confirm(`Не завершено ${pending} точек. Всё равно закрыть смену? Состояние смены будет сброшено.`)) return;
-    if (!pending && !confirm('Закрыть смену? Состояние сбросится для следующего рабочего дня.')) return;
-    try { localStorage.removeItem(INK_KEY); } catch (_) {}
-    PaydApp.toast('Смена закрыта', { type: 'success', subtitle: 'Отчёт отправлен · данные сброшены' });
-    setTimeout(() => location.reload(), 800);
-  });
-
-  // ============= INIT =============
-  refreshAll();
+  load();
+  setInterval(load, 15000);
 </script>
 </body>
 </html>

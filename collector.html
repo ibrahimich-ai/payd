@@ -9,65 +9,16 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <style>
-  .col-grid { display: grid; grid-template-columns: 1fr 380px; gap: 16px; }
-  @media (max-width: 1300px) { .col-grid { grid-template-columns: 1fr; } }
-
-  .debt-card {
-    border-left: 4px solid var(--danger);
-    transition: all .15s;
-    cursor: pointer;
-  }
-  .debt-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
-  .debt-card.warning { border-left-color: var(--warning); }
-  .debt-card.critical { border-left-color: var(--danger); background: linear-gradient(90deg, #fef2f2 0%, white 50%); }
-
-  .debt-row {
-    display: grid;
-    grid-template-columns: 1fr 160px 160px 200px 140px;
-    gap: 16px;
-    padding: 16px 18px;
-    align-items: center;
-  }
-  .debt-row .info-cell { display: flex; gap: 12px; align-items: center; min-width: 0; }
-  .debt-row .info-cell .info { min-width: 0; }
-  .debt-row .name { font-size: 14px; font-weight: 700; }
-  .debt-row .meta { font-size: 11px; color: var(--text-3); margin-top: 2px; display: flex; gap: 8px; }
-  .debt-row .amount-cell .label { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; }
-  .debt-row .amount-cell .v { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .debt-row .amount-cell .v.danger { color: var(--danger); }
-  .debt-row .actions-cell { display: flex; gap: 6px; flex-wrap: wrap; }
-
-  .contact-tags { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
-  .ctag {
-    font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    background: var(--surface-2);
-    color: var(--text-2);
-    border: 1px solid var(--border);
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-  }
-  .ctag.success { background: var(--success-soft); color: #047857; border-color: #a7f3d0; }
-  .ctag.danger { background: var(--danger-soft); color: #b91c1c; border-color: #fecaca; }
-
-  .timeline-item { display: flex; gap: 10px; padding: 10px 18px; }
-  .timeline-item .ic { width: 28px; height: 28px; border-radius: 50%; background: var(--surface-2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .timeline-item .info { flex: 1; min-width: 0; }
-  .timeline-item .a { font-size: 12px; font-weight: 600; }
-  .timeline-item .b { font-size: 11px; color: var(--text-3); }
-  .timeline-item.success .ic { background: var(--success-soft); color: var(--success); }
-  .timeline-item.warning .ic { background: var(--warning-soft); color: var(--warning); }
-  .timeline-item.danger .ic { background: var(--danger-soft); color: var(--danger); }
-
-  .priority-row { display: flex; gap: 10px; align-items: center; padding: 12px 18px; border-bottom: 1px solid var(--border); }
-  .priority-row:last-child { border-bottom: none; }
-  .priority-row.urgent { background: var(--danger-soft); }
-  .priority-row .info { flex: 1; min-width: 0; }
-  .priority-row .name { font-size: 13px; font-weight: 600; }
-  .priority-row .meta { font-size: 11px; color: var(--text-3); }
-  .priority-row .amount { font-size: 13px; font-weight: 700; color: var(--danger); }
+  .case-row { display: grid; grid-template-columns: 60px 1fr 110px 100px 110px 100px; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--border); align-items: center; cursor: pointer; transition: background .12s; }
+  .case-row:hover { background: var(--surface-2); }
+  .case-row .num { font-family: 'Courier New', monospace; font-weight: 700; }
+  .case-row .name { font-weight: 700; font-size: 13px; }
+  .case-row .meta { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+  .case-row .days { text-align: center; font-weight: 800; font-size: 16px; }
+  .case-row .days.warn  { color: var(--warning); }
+  .case-row .days.danger{ color: var(--danger); }
+  .case-row .amount { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .empty { padding: 60px 20px; text-align: center; color: var(--text-3); }
 </style>
 </head>
 <body>
@@ -76,458 +27,48 @@
 
 <div class="page-head">
   <div>
-    <h1>Работа с просроченной задолженностью</h1>
-    <div class="desc">Без рибы · 23 активных кейса · сумма долга не увеличивается</div>
-  </div>
-  <div class="page-head-actions">
-    <button class="btn" id="btn-mass-mail">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-      Массовая рассылка
-    </button>
-    <button class="btn primary" id="btn-day-plan">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      План на день
-    </button>
+    <h1>Взыскание</h1>
+    <div class="desc" id="cl-desc">Просроченные платежи</div>
   </div>
 </div>
 
-<!-- ====================== STATS ====================== -->
-<div class="stat-grid cols-4 mb-5">
-  <div class="stat">
-    <div class="stat-head">
-      <div class="stat-icon danger">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
-      </div>
-    </div>
-    <div class="stat-label">Общий долг</div>
-    <div class="stat-value">₽ 412 800</div>
-    <div class="stat-sub">23 кейса · сумма зафиксирована</div>
+<div class="stat-grid cols-4 mb-4">
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label">Всего просрочек</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--danger);" id="kpi-total">0</div>
   </div>
-  <div class="stat">
-    <div class="stat-head">
-      <div class="stat-icon warning">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      </div>
-    </div>
-    <div class="stat-label">Просрочка 1–7 дней</div>
-    <div class="stat-value">14 <small style="font-size: 14px; color: var(--text-3); font-weight: 600;">кейсов</small></div>
-    <div class="stat-sub">186 400 ₽</div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label">До 7 дней</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--warning);" id="kpi-7">0</div>
   </div>
-  <div class="stat">
-    <div class="stat-head">
-      <div class="stat-icon danger">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      </div>
-    </div>
-    <div class="stat-label">Просрочка 8–30 дней</div>
-    <div class="stat-value">7 <small style="font-size: 14px; color: var(--text-3); font-weight: 600;">кейсов</small></div>
-    <div class="stat-sub">142 600 ₽ · приоритет</div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label">7–30 дней</div>
+    <div class="stat-value" style="font-size: 22px;" id="kpi-30">0</div>
   </div>
-  <div class="stat">
-    <div class="stat-head">
-      <div class="stat-icon" style="background: #1a2332; color: white;">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-      </div>
-    </div>
-    <div class="stat-label">Безнадёжные долги</div>
-    <div class="stat-value">2 <small style="font-size: 14px; color: var(--text-3); font-weight: 600;">кейса</small></div>
-    <div class="stat-sub">83 800 ₽ · списано в резерв</div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label">Сумма долга</div>
+    <div class="stat-value" style="font-size: 18px; color: var(--danger);" id="kpi-amount">0 ₽</div>
   </div>
 </div>
 
-<!-- POLICY NOTE -->
-<div class="alert info mb-4">
-  <div class="ai"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div>
-  <div><b>Политика взыскания.</b> Сумма долга не увеличивается ни при каких обстоятельствах. Штрафные проценты и пени не начисляются. При финансовых трудностях клиента — реструктуризация графика без удорожания. При длительной просрочке — возврат товара или списание в безнадёжный долг.</div>
-</div>
-
-<!-- ====================== FILTERS ====================== -->
-<div class="chip-row mb-4">
-  <div class="chip active">Все <span class="count">23</span></div>
-  <div class="chip">1–7 дней <span class="count">14</span></div>
-  <div class="chip">8–14 дней <span class="count">4</span></div>
-  <div class="chip">15–30 дней <span class="count">3</span></div>
-  <div class="chip">30+ дней <span class="count">2</span></div>
-  <div class="chip" style="margin-left: auto;">Мои кейсы <span class="count">8</span></div>
-</div>
-
-<!-- ====================== MAIN ====================== -->
-<div class="col-grid">
-  <div style="display: flex; flex-direction: column; gap: 12px;">
-
-    <!-- DEBT 1 -->
-    <div class="card debt-card critical">
-      <div class="debt-row">
-        <div class="info-cell">
-          <div class="avatar c7">ИЯ</div>
-          <div class="info">
-            <div class="name">Исраилов Я. А.</div>
-            <div class="meta">
-              <span>Заявка #140</span>
-              <span>·</span>
-              <span>Samsung Galaxy S25</span>
-              <span>·</span>
-              <span>10 511 ₽/мес</span>
-            </div>
-            <div class="contact-tags">
-              <span class="ctag success"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>Звонил 2р.</span>
-              <span class="ctag">SMS отправлено</span>
-              <span class="ctag danger">Не берёт трубку</span>
-            </div>
-          </div>
-        </div>
-        <div class="amount-cell">
-          <div class="label">Долг</div>
-          <div class="v danger">31 533 ₽</div>
-        </div>
-        <div class="amount-cell">
-          <div class="label">Просрочка</div>
-          <div class="v" style="color: var(--danger);">12 дней</div>
-        </div>
-        <div>
-          <span class="badge danger dot">Критичный</span>
-          <div style="font-size: 11px; color: var(--text-3); margin-top: 4px;">Закреплён: <b>Хасанов А.</b></div>
-        </div>
-        <div class="actions-cell">
-          <button class="btn sm primary"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>Звонок</button>
-          <button class="btn sm">SMS</button>
-          <button class="btn sm">Открыть</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- DEBT 2 -->
-    <div class="card debt-card critical">
-      <div class="debt-row">
-        <div class="info-cell">
-          <div class="avatar c5">ЭП</div>
-          <div class="info">
-            <div class="name">Эльмурзаева П. А.</div>
-            <div class="meta">
-              <span>Заявка #098</span>
-              <span>·</span>
-              <span>Холодильник LG</span>
-              <span>·</span>
-              <span>8 400 ₽/мес</span>
-            </div>
-            <div class="contact-tags">
-              <span class="ctag success">Обещал оплатить</span>
-              <span class="ctag">Перенесено на 02.05</span>
-            </div>
-          </div>
-        </div>
-        <div class="amount-cell">
-          <div class="label">Долг</div>
-          <div class="v danger">8 400 ₽</div>
-        </div>
-        <div class="amount-cell">
-          <div class="label">Просрочка</div>
-          <div class="v" style="color: var(--warning);">1 день</div>
-        </div>
-        <div>
-          <span class="badge warning dot">В работе</span>
-          <div style="font-size: 11px; color: var(--text-3); margin-top: 4px;">Закреплён: <b>Бекуев М.</b></div>
-        </div>
-        <div class="actions-cell">
-          <button class="btn sm primary">Звонок</button>
-          <button class="btn sm">SMS</button>
-          <button class="btn sm">Открыть</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- DEBT 3 -->
-    <div class="card debt-card warning">
-      <div class="debt-row">
-        <div class="info-cell">
-          <div class="avatar c3">ТМ</div>
-          <div class="info">
-            <div class="name">Тимаев М. А.</div>
-            <div class="meta">
-              <span>Заявка #112</span>
-              <span>·</span>
-              <span>iPhone 15 256GB</span>
-              <span>·</span>
-              <span>12 200 ₽/мес</span>
-            </div>
-            <div class="contact-tags">
-              <span class="ctag">SMS отправлено</span>
-              <span class="ctag success">Перезвонит сегодня</span>
-            </div>
-          </div>
-        </div>
-        <div class="amount-cell">
-          <div class="label">Долг</div>
-          <div class="v danger">24 400 ₽</div>
-        </div>
-        <div class="amount-cell">
-          <div class="label">Просрочка</div>
-          <div class="v" style="color: var(--warning);">8 дней</div>
-        </div>
-        <div>
-          <span class="badge warning dot">В работе</span>
-          <div style="font-size: 11px; color: var(--text-3); margin-top: 4px;">Закреплён: <b>Алиев С.</b></div>
-        </div>
-        <div class="actions-cell">
-          <button class="btn sm primary">Звонок</button>
-          <button class="btn sm">SMS</button>
-          <button class="btn sm">Открыть</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- DEBT 4 -->
-    <div class="card debt-card warning">
-      <div class="debt-row">
-        <div class="info-cell">
-          <div class="avatar c4">УР</div>
-          <div class="info">
-            <div class="name">Усманов Р. Б.</div>
-            <div class="meta">
-              <span>Заявка #088</span>
-              <span>·</span>
-              <span>Стиральная машина Bosch</span>
-              <span>·</span>
-              <span>5 800 ₽/мес</span>
-            </div>
-            <div class="contact-tags">
-              <span class="ctag success">Контакт установлен</span>
-              <span class="ctag">Реструктуризация</span>
-            </div>
-          </div>
-        </div>
-        <div class="amount-cell">
-          <div class="label">Долг</div>
-          <div class="v danger">17 400 ₽</div>
-        </div>
-        <div class="amount-cell">
-          <div class="label">Просрочка</div>
-          <div class="v" style="color: var(--warning);">22 дня</div>
-        </div>
-        <div>
-          <span class="badge warning dot">В работе</span>
-          <div style="font-size: 11px; color: var(--text-3); margin-top: 4px;">Закреплён: <b>Хасанов А.</b></div>
-        </div>
-        <div class="actions-cell">
-          <button class="btn sm primary">Звонок</button>
-          <button class="btn sm">SMS</button>
-          <button class="btn sm">Открыть</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- DEBT 5 -->
-    <div class="card debt-card critical">
-      <div class="debt-row">
-        <div class="info-cell">
-          <div class="avatar c2">ДА</div>
-          <div class="info">
-            <div class="name">Дудаев А. М.</div>
-            <div class="meta">
-              <span>Заявка #062</span>
-              <span>·</span>
-              <span>Телевизор Sony</span>
-              <span>·</span>
-              <span>9 200 ₽/мес</span>
-            </div>
-            <div class="contact-tags">
-              <span class="ctag danger">Не берёт трубку</span>
-              <span class="ctag danger">Игнорирует SMS</span>
-              <span class="ctag" style="background: #1a2332; color: white; border-color: #1a2332;">Безнадёжный</span>
-            </div>
-          </div>
-        </div>
-        <div class="amount-cell">
-          <div class="label">Долг</div>
-          <div class="v danger">46 000 ₽</div>
-        </div>
-        <div class="amount-cell">
-          <div class="label">Просрочка</div>
-          <div class="v" style="color: var(--danger);">38 дней</div>
-        </div>
-        <div>
-          <span class="badge gray dot" style="background: #1a2332; color: white; border-color: #1a2332;">Списан</span>
-          <div style="font-size: 11px; color: var(--text-3); margin-top: 4px;">Списан: <b>20.04.2026</b></div>
-        </div>
-        <div class="actions-cell">
-          <button class="btn sm">Открыть</button>
-          <button class="btn sm">Архив</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- DEBT 6 -->
-    <div class="card debt-card warning">
-      <div class="debt-row">
-        <div class="info-cell">
-          <div class="avatar c6">КА</div>
-          <div class="info">
-            <div class="name">Кадиров А. И.</div>
-            <div class="meta">
-              <span>Заявка #119</span>
-              <span>·</span>
-              <span>MacBook Pro 14"</span>
-              <span>·</span>
-              <span>14 800 ₽/мес</span>
-            </div>
-            <div class="contact-tags">
-              <span class="ctag">SMS отправлено</span>
-              <span class="ctag success">Не отвечает</span>
-            </div>
-          </div>
-        </div>
-        <div class="amount-cell">
-          <div class="label">Долг</div>
-          <div class="v danger">14 800 ₽</div>
-        </div>
-        <div class="amount-cell">
-          <div class="label">Просрочка</div>
-          <div class="v" style="color: var(--warning);">3 дня</div>
-        </div>
-        <div>
-          <span class="badge primary dot">Новый</span>
-          <div style="font-size: 11px; color: var(--text-3); margin-top: 4px;">Не назначен</div>
-        </div>
-        <div class="actions-cell">
-          <button class="btn sm primary">Взять</button>
-          <button class="btn sm">SMS</button>
-          <button class="btn sm">Открыть</button>
-        </div>
-      </div>
-    </div>
-
+<div class="filter-bar">
+  <div class="filter-search">
+    <span class="si"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+    <input type="text" id="cl-search" placeholder="Поиск по клиенту, номеру..." />
   </div>
+</div>
 
-  <!-- ====================== SIDE PANEL ====================== -->
-  <div style="display: flex; flex-direction: column; gap: 16px;">
-    <div class="card">
-      <div class="card-hd">
-        <h3>Приоритет на сегодня</h3>
-        <span class="badge danger">8 кейсов</span>
-      </div>
-      <div>
-        <div class="priority-row urgent">
-          <div class="avatar c7 sm">ИЯ</div>
-          <div class="info">
-            <div class="name">Исраилов Я. А.</div>
-            <div class="meta">12 дней просрочки · крит.</div>
-          </div>
-          <div class="amount">31 533 ₽</div>
-        </div>
-        <div class="priority-row urgent">
-          <div class="avatar c2 sm">ДА</div>
-          <div class="info">
-            <div class="name">Дудаев А. М.</div>
-            <div class="meta">38 дней · списан</div>
-          </div>
-          <div class="amount">46 000 ₽</div>
-        </div>
-        <div class="priority-row">
-          <div class="avatar c3 sm">ТМ</div>
-          <div class="info">
-            <div class="name">Тимаев М. А.</div>
-            <div class="meta">8 дней · перезвон</div>
-          </div>
-          <div class="amount">24 400 ₽</div>
-        </div>
-        <div class="priority-row">
-          <div class="avatar c4 sm">УР</div>
-          <div class="info">
-            <div class="name">Усманов Р. Б.</div>
-            <div class="meta">22 дня · реструктур.</div>
-          </div>
-          <div class="amount">17 400 ₽</div>
-        </div>
-        <div class="priority-row">
-          <div class="avatar c5 sm">ЭП</div>
-          <div class="info">
-            <div class="name">Эльмурзаева П. А.</div>
-            <div class="meta">1 день · обещал</div>
-          </div>
-          <div class="amount">8 400 ₽</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-hd">
-        <h3>История взаимодействий</h3>
-      </div>
-      <div style="padding: 8px 0;">
-        <div class="timeline-item success">
-          <div class="ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <div class="info">
-            <div class="a">Платёж получен · Тазуев М.</div>
-            <div class="b">5 800 ₽ · 12:48 · Бекуев М.</div>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
-          <div class="info">
-            <div class="a">Звонок · Эльмурзаева П.</div>
-            <div class="b">Обещал оплатить 02.05 · 12:15 · Бекуев М.</div>
-          </div>
-        </div>
-        <div class="timeline-item warning">
-          <div class="ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-          <div class="info">
-            <div class="a">SMS отправлено · Кадиров А.</div>
-            <div class="b">Напоминание · 11:32 · Авто</div>
-          </div>
-        </div>
-        <div class="timeline-item danger">
-          <div class="ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></div>
-          <div class="info">
-            <div class="a">Не дозвонился · Исраилов Я.</div>
-            <div class="b">2-я попытка · 10:45 · Хасанов А.</div>
-          </div>
-        </div>
-        <div class="timeline-item danger">
-          <div class="ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></div>
-          <div class="info">
-            <div class="a">Долг списан в безнадёжные · Дудаев А.</div>
-            <div class="b">38 дней без контакта · 09:18 · Хасанов А.</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-hd">
-        <h3>Эффективность</h3>
-        <span class="h-sub">апрель</span>
-      </div>
-      <div style="padding: 12px 18px 18px;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-          <span style="font-size: 12px; color: var(--text-2);">Возврат долгов</span>
-          <span style="font-size: 13px; font-weight: 700; color: var(--success);">68% (28/41)</span>
-        </div>
-        <div class="progress-bar success"><div class="fill" style="width: 68%"></div></div>
-
-        <div style="display: flex; justify-content: space-between; margin: 14px 0 6px;">
-          <span style="font-size: 12px; color: var(--text-2);">Дозвон</span>
-          <span style="font-size: 13px; font-weight: 700;">82% (62/76)</span>
-        </div>
-        <div class="progress-bar"><div class="fill" style="width: 82%"></div></div>
-
-        <div style="display: flex; justify-content: space-between; margin: 14px 0 6px;">
-          <span style="font-size: 12px; color: var(--text-2);">Конверсия в платёж</span>
-          <span style="font-size: 13px; font-weight: 700; color: var(--warning);">48% (28/58)</span>
-        </div>
-        <div class="progress-bar warning"><div class="fill" style="width: 48%"></div></div>
-
-        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-          <div>
-            <div style="font-size: 11px; color: var(--text-3);">Возвращено</div>
-            <div style="font-size: 16px; font-weight: 700; color: var(--success);">186 200 ₽</div>
-          </div>
-          <div>
-            <div style="font-size: 11px; color: var(--text-3);">Средн. срок возврата</div>
-            <div style="font-size: 16px; font-weight: 700;">5,4 дн</div>
-          </div>
-        </div>
-      </div>
-    </div>
+<div class="card">
+  <div style="background: var(--surface-2); padding: 10px 18px; font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .04em; display: grid; grid-template-columns: 60px 1fr 110px 100px 110px 100px; gap: 12px; border-bottom: 1px solid var(--border);">
+    <div>№</div>
+    <div>Клиент</div>
+    <div style="text-align:center;">Дней</div>
+    <div style="text-align:right;">Сумма</div>
+    <div>Контакт</div>
+    <div></div>
+  </div>
+  <div id="cases-list">
+    <div class="empty">Загрузка...</div>
   </div>
 </div>
 
@@ -537,603 +78,99 @@
 <script src="db.js"></script>
 <script src="app.js"></script>
 <script>
-  PaydApp.mountShell({
-    active: 'collector',
-    title: 'Взыскание долгов',
-    breadcrumbs: [{ label: 'Главная', href: 'dashboard.html' }, { label: 'Взыскание' }]
-  });
+  PaydApp.mountShell({ active: 'collector', title: 'Взыскание', breadcrumbs: [] });
 
-  // ============= COLLECTOR PER-CASE ACTIONS =============
-  (function () {
-    document.querySelectorAll('.debt-card').forEach(card => {
-      const name = card.querySelector('.name')?.textContent || 'клиента';
-      card.querySelectorAll('.actions-cell .btn').forEach(btn => {
-        const text = btn.textContent.trim().toLowerCase();
-        btn.addEventListener('click', e => {
-          e.preventDefault(); e.stopImmediatePropagation();
-          if (/звонок/.test(text)) {
-            PaydApp.toast(`Соединение с ${name}...`, { type: 'info', subtitle: 'Через Mango Office' });
-          } else if (/sms/.test(text)) {
-            PaydApp.toast(`SMS отправлено: ${name}`, { type: 'success', subtitle: 'Шаблон «Напоминание о платеже»' });
-          } else if (/открыть/.test(text)) {
-            location.href = 'zayavka.html?back=collector.html';
-          } else if (/взять/.test(text)) {
-            btn.textContent = '✓ Взято';
-            btn.disabled = true;
-            btn.style.opacity = '0.6';
-            PaydApp.toast(`Кейс закреплён за вами: ${name}`, 'success');
-          } else if (/документы|архив/.test(text)) {
-            PaydApp.toast('Документы дела открываются...', 'info');
-          }
-        }, true);
+  const fmt = v => Math.round(+v || 0).toLocaleString('ru-RU').replace(/,/g, ' ') + ' ₽';
+  function escapeHtml(s) { return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
+
+  let allOverdue = [];
+
+  async function load() {
+    const sb = PaydDB.cloud.sb();
+    if (!sb) return;
+
+    // Active applications (with contracts but not closed)
+    const apps = await PaydDB.list('applications').catch(() => []);
+    const active = apps.filter(a => !a.closed && !a.rejected);
+
+    if (!active.length) { allOverdue = []; render(); return; }
+
+    // Get all payments
+    const { data: payments } = await sb.from('payments').select('*').in('app_id', active.map(a => a.id));
+    const byApp = {};
+    (payments || []).forEach(p => { byApp[p.app_id] = (byApp[p.app_id] || []).concat(p); });
+
+    // Compute overdue: for each app, how many monthly payments should have been made by now
+    const now = new Date();
+    allOverdue = [];
+    active.forEach(a => {
+      const start = new Date(a.ts || a.created_at || now);
+      if (isNaN(start.getTime())) return;
+      const monthsPassed = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
+      const expected = Math.max(0, monthsPassed);
+      const actual = (byApp[a.id] || []).length;
+      const missed = expected - actual;
+      if (missed <= 0) return;
+      const monthly = +(a.monthly || a.calc?.monthly) || 0;
+      // Days since the first missed payment
+      const lastDue = new Date(start.getFullYear(), start.getMonth() + actual + 1, start.getDate());
+      const days = Math.max(1, Math.floor((now - lastDue) / (1000 * 60 * 60 * 24)));
+      allOverdue.push({
+        app: a, missed, days, debt: monthly * missed
       });
     });
+    allOverdue.sort((a, b) => b.days - a.days);
+    render();
+  }
 
-    // Priority list rows are clickable
-    document.querySelectorAll('.priority-row').forEach(row => {
-      row.style.cursor = 'pointer';
-      row.addEventListener('click', () => {
-        const name = row.querySelector('.name')?.textContent || '';
-        const card = [...document.querySelectorAll('.debt-card')]
-          .find(c => c.querySelector('.name')?.textContent === name);
-        if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        PaydApp.toast(`Переход к кейсу: ${name}`, 'info');
-      });
-    });
+  function render() {
+    const q = (document.getElementById('cl-search').value || '').toLowerCase().trim();
+    const filtered = q
+      ? allOverdue.filter(o => ((o.app.client_name || '') + ' ' + (o.app.number || '')).toLowerCase().includes(q))
+      : allOverdue;
 
-    // Filter chips actually filter cases
-    const cases = document.querySelectorAll('.debt-card');
-    document.querySelectorAll('.chip-row .chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        const text = chip.textContent.toLowerCase();
-        cases.forEach(c => {
-          const days = c.querySelector('.amount-cell:nth-of-type(2) .v')?.textContent || '';
-          const m = days.match(/(\d+)/);
-          const num = m ? parseInt(m[1], 10) : 0;
-          let show = true;
-          if (text.includes('1–7')) show = num >= 1 && num <= 7;
-          else if (text.includes('8–14')) show = num >= 8 && num <= 14;
-          else if (text.includes('15–30')) show = num >= 15 && num <= 30;
-          else if (text.includes('30+')) show = num > 30;
-          else if (text.includes('мои')) show = c.textContent.includes('Бекуев М.');
-          c.style.display = show ? '' : 'none';
-        });
-      });
-    });
-
-    // ============= KEBAB MENU PER CASE =============
-    document.querySelectorAll('.debt-card').forEach(card => {
-      const name = card.querySelector('.name')?.textContent || 'клиента';
-      const debt = card.querySelector('.amount-cell .v')?.textContent || '';
-
-      // Add kebab to actions cell
-      const actions = card.querySelector('.actions-cell');
-      if (!actions) return;
-      const kebab = document.createElement('button');
-      kebab.className = 'btn sm';
-      kebab.style.cssText = 'padding: 5px 8px;';
-      kebab.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>';
-      kebab.title = 'Дополнительно';
-      kebab.addEventListener('click', e => {
-        e.preventDefault(); e.stopImmediatePropagation();
-        const I = window.PaydIcons || {};
-        PaydApp.showDropdown(kebab, [
-          { label: 'Добавить заметку', icon: I.note, action: () => openNoteModal(card, name) },
-          { label: 'Договорённость на дату', icon: I.calendar, action: () => openPromiseModal(card, name) },
-          { divider: true },
-          { label: 'Перевести в реструктуризацию', icon: I.refresh, action: () => markRestructured(card, name) },
-          { label: 'Отметить оплаченным', icon: I.check, action: () => markPaid(card, name, debt) },
-          { divider: true },
-          { label: 'Передать другому', icon: I.transfer, action: () => openTransferModal(card, name) },
-          { label: 'Скрыть из списка', icon: I.archive, action: () => hideCase(card, name) }
-        ]);
-      });
-      actions.appendChild(kebab);
-    });
-
-    function openNoteModal(card, name) {
-      const backdrop = makeModal({
-        title: `Заметка к кейсу: ${name}`,
-        body: `
-          <div class="field">
-            <label class="field-label">Текст заметки</label>
-            <textarea class="textarea" id="note-text" placeholder="Например: клиент обещал оплатить 5 числа после получения зарплаты" style="min-height: 100px;"></textarea>
+    const list = document.getElementById('cases-list');
+    if (!filtered.length) {
+      list.innerHTML = `<div class="empty">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" style="margin:0 auto 12px;opacity:.6;"><polyline points="20 6 9 17 4 12"/></svg>
+        <div>Просрочек нет ✨</div>
+        <div style="font-size:12px;margin-top:6px;">Все платежи в срок</div>
+      </div>`;
+    } else {
+      list.innerHTML = filtered.map(o => {
+        const a = o.app;
+        const cls = o.days > 30 ? 'danger' : o.days > 7 ? 'warn' : '';
+        const phone = a.client_phone || a.client?.phone || '';
+        return `
+          <div class="case-row" data-id="${escapeHtml(a.id)}">
+            <div class="num">#${escapeHtml(a.number || '')}</div>
+            <div>
+              <div class="name">${escapeHtml(a.client_name || a.client?.name || '—')}</div>
+              <div class="meta">${escapeHtml(a.product || '')}</div>
+            </div>
+            <div class="days ${cls}">${o.days}</div>
+            <div class="amount">${fmt(o.debt)}</div>
+            <div>${phone ? `<a href="tel:${escapeHtml(phone)}" style="color:var(--primary);font-size:12px;">${escapeHtml(phone)}</a>` : '—'}</div>
+            <div style="text-align:right;color:var(--text-3);">→</div>
           </div>
-        `,
-        ok: 'Сохранить',
-        onOk: (modal) => {
-          const text = modal.querySelector('#note-text').value.trim();
-          if (!text) { PaydApp.toast('Введите текст заметки', 'warning'); return false; }
-          // Add note tag to card
-          const tagsRow = card.querySelector('.contact-tags');
-          if (tagsRow) {
-            const tag = document.createElement('span');
-            tag.className = 'ctag';
-            tag.title = text;
-            tag.innerHTML = `📝 заметка`;
-            tagsRow.appendChild(tag);
-          }
-          PaydApp.toast('Заметка сохранена', 'success');
-          return true;
-        }
+        `;
+      }).join('');
+      list.querySelectorAll('.case-row').forEach(r => {
+        r.addEventListener('click', () => location.href = 'zayavka.html?id=' + encodeURIComponent(r.dataset.id));
       });
     }
 
-    function openPromiseModal(card, name) {
-      makeModal({
-        title: `Договорённость с клиентом: ${name}`,
-        body: `
-          <p style="font-size: 13px; color: var(--text-2); margin-bottom: 14px;">Зафиксируйте дату обещанного платежа. Клиент получит SMS-напоминание за день до срока.</p>
-          <div style="display: grid; gap: 12px; grid-template-columns: 1fr 1fr;">
-            <div class="field">
-              <label class="field-label">Дата платежа</label>
-              <input class="input" id="promise-date" type="date" />
-            </div>
-            <div class="field">
-              <label class="field-label">Сумма</label>
-              <input class="input" id="promise-amount" placeholder="10 000" />
-            </div>
-          </div>
-        `,
-        ok: 'Зафиксировать',
-        onOk: (modal) => {
-          const date = modal.querySelector('#promise-date').value;
-          if (!date) { PaydApp.toast('Укажите дату', 'warning'); return false; }
-          const tags = card.querySelector('.contact-tags');
-          if (tags) {
-            const tag = document.createElement('span');
-            tag.className = 'ctag success';
-            tag.textContent = `Обещал ${new Date(date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'long' })}`;
-            tags.appendChild(tag);
-          }
-          PaydApp.toast(`Договорённость зафиксирована · SMS-напоминание поставлено`, 'success');
-          return true;
-        }
-      });
-    }
+    document.getElementById('kpi-total').textContent = allOverdue.length;
+    document.getElementById('kpi-7').textContent = allOverdue.filter(o => o.days <= 7).length;
+    document.getElementById('kpi-30').textContent = allOverdue.filter(o => o.days > 7 && o.days <= 30).length;
+    document.getElementById('kpi-amount').textContent = fmt(allOverdue.reduce((s, o) => s + o.debt, 0));
+    document.getElementById('cl-desc').textContent = 'Просроченные платежи · ' + allOverdue.length + ' клиентов';
+  }
 
-    function markRestructured(card, name) {
-      PaydApp.confirmDialog({
-        title: 'Перевести в реструктуризацию?',
-        message: `Кейс «${name}» будет переведён в работу с реструктуризацией графика без увеличения суммы долга.`,
-        okText: 'Перевести',
-        danger: false,
-        onOk: () => {
-          const tags = card.querySelector('.contact-tags');
-          if (tags) {
-            const tag = document.createElement('span');
-            tag.className = 'ctag';
-            tag.textContent = '🔄 Реструктуризация';
-            tags.appendChild(tag);
-          }
-          card.classList.remove('critical');
-          card.classList.add('warning');
-          PaydApp.toast('Кейс переведён в реструктуризацию', 'success');
-        }
-      });
-    }
+  document.getElementById('cl-search').addEventListener('input', render);
 
-    function markPaid(card, name, debt) {
-      PaydApp.confirmDialog({
-        title: `Отметить оплаченным: ${name}?`,
-        message: `Кейс будет закрыт. Сумма ${debt} удалена из активной просрочки.`,
-        okText: 'Подтвердить',
-        danger: false,
-        onOk: () => {
-          // Animate removal
-          card.style.transition = 'opacity .35s, max-height .35s, padding .35s, margin .35s';
-          card.style.opacity = '0';
-          card.style.maxHeight = '0';
-          card.style.padding = '0';
-          card.style.margin = '0';
-          setTimeout(() => { card.remove(); recalcStats(); }, 360);
-
-          // Find and remove from priority list too
-          const priRow = [...document.querySelectorAll('.priority-row')]
-            .find(r => r.querySelector('.name')?.textContent === name);
-          if (priRow) priRow.remove();
-
-          PaydApp.toast(`Оплачено: ${name} · ${debt}`, { type: 'success', subtitle: 'Кейс закрыт' });
-        }
-      });
-    }
-
-    function openTransferModal(card, name) {
-      makeModal({
-        title: `Передать кейс: ${name}`,
-        body: `
-          <div class="field">
-            <label class="field-label">Кому передать</label>
-            <select class="select" id="transfer-to">
-              <option>Бекуев Муслим (мне)</option>
-              <option>Хасанов Адам</option>
-              <option>Алиев Султан</option>
-              <option>Исаев Ислам</option>
-              <option>Юристам — досудебная работа</option>
-            </select>
-          </div>
-          <div class="field" style="margin-top: 12px;">
-            <label class="field-label">Комментарий (опционально)</label>
-            <textarea class="textarea" id="transfer-note" placeholder="Причина передачи..." style="min-height: 70px;"></textarea>
-          </div>
-        `,
-        ok: 'Передать',
-        onOk: (modal) => {
-          const to = modal.querySelector('#transfer-to').value;
-          // Update assigned name in card
-          const assignBlock = card.querySelector('.actions-cell').previousElementSibling;
-          if (assignBlock) {
-            const b = assignBlock.querySelector('b');
-            if (b) b.textContent = to.split(' (')[0];
-          }
-          PaydApp.toast(`Кейс передан: ${to}`, 'success');
-          return true;
-        }
-      });
-    }
-
-    function hideCase(card, name) {
-      card.style.transition = 'opacity .25s';
-      card.style.opacity = '0';
-      setTimeout(() => { card.remove(); recalcStats(); }, 250);
-      PaydApp.toast(`Кейс скрыт: ${name}`, 'info');
-    }
-
-    function recalcStats() {
-      const visible = document.querySelectorAll('.debt-card');
-      // Total debt
-      let total = 0, count_1_7 = 0, sum_1_7 = 0, count_8_30 = 0, sum_8_30 = 0, hopeless = 0, sum_h = 0;
-      visible.forEach(c => {
-        const debt = parseInt(c.querySelector('.amount-cell .v')?.textContent.replace(/\D/g, '') || '0', 10);
-        const days = parseInt(c.querySelector('.amount-cell:nth-of-type(2) .v')?.textContent.match(/\d+/)?.[0] || '0', 10);
-        const isWritten = c.textContent.includes('Списан');
-        total += debt;
-        if (isWritten) { hopeless++; sum_h += debt; }
-        else if (days <= 7) { count_1_7++; sum_1_7 += debt; }
-        else if (days <= 30) { count_8_30++; sum_8_30 += debt; }
-      });
-      const fmt = n => n.toLocaleString('ru-RU');
-      const stats = document.querySelectorAll('.stat .stat-value');
-      const subs = document.querySelectorAll('.stat .stat-sub');
-      if (stats[0]) stats[0].textContent = `₽ ${fmt(total)}`;
-      if (subs[0]) subs[0].textContent = `${visible.length} кейсов · сумма зафиксирована`;
-      if (stats[1]) stats[1].innerHTML = `${count_1_7} <small style="font-size: 14px; color: var(--text-3); font-weight: 600;">кейсов</small>`;
-      if (subs[1]) subs[1].textContent = `${fmt(sum_1_7)} ₽`;
-      if (stats[2]) stats[2].innerHTML = `${count_8_30} <small style="font-size: 14px; color: var(--text-3); font-weight: 600;">кейсов</small>`;
-      if (subs[2]) subs[2].textContent = `${fmt(sum_8_30)} ₽ · приоритет`;
-      if (stats[3]) stats[3].innerHTML = `${hopeless} <small style="font-size: 14px; color: var(--text-3); font-weight: 600;">кейсов</small>`;
-      if (subs[3]) subs[3].textContent = `${fmt(sum_h)} ₽ · списано в резерв`;
-    }
-
-    // ============= MASS MAIL MODAL =============
-    document.getElementById('btn-mass-mail')?.addEventListener('click', e => {
-      e.preventDefault(); e.stopImmediatePropagation();
-      const totalCases = document.querySelectorAll('.debt-card:not([style*="display: none"])').length;
-      makeModal({
-        title: 'Массовая рассылка SMS',
-        body: `
-          <p style="font-size: 13px; color: var(--text-2); margin-bottom: 14px;">Отправьте уведомление по нескольким кейсам сразу. Можно выбрать шаблон и фильтр получателей.</p>
-          <div style="display: grid; gap: 14px;">
-            <div class="field">
-              <label class="field-label">Шаблон сообщения</label>
-              <select class="select" id="mm-template">
-                <option value="reminder">Напоминание о платеже</option>
-                <option value="overdue">Уведомление о просрочке</option>
-                <option value="restructure">Предложение реструктуризации</option>
-                <option value="repossession">Уведомление о возврате товара</option>
-              </select>
-            </div>
-            <div class="field">
-              <label class="field-label">Получатели</label>
-              <select class="select" id="mm-target">
-                <option value="all">Все активные кейсы (${totalCases})</option>
-                <option value="1-7">Просрочка 1–7 дней</option>
-                <option value="8-30">Просрочка 8–30 дней</option>
-                <option value="30+">Просрочка 30+ дней</option>
-                <option value="not-contacted">Без контакта (не берут трубку)</option>
-              </select>
-            </div>
-            <div id="mm-preview" style="background: #fafbfd; border: 1px solid #e5e9f2; border-radius: 8px; padding: 12px; font-size: 12px; color: #5a6478; line-height: 1.5;">
-              <b>Предпросмотр:</b><br/>
-              «Уважаемый [ФИО], напоминаем о платеже по договору [номер]. Сумма [сумма]. Сумма долга не увеличивается. Оплатить: lk.payd.ru»
-            </div>
-          </div>
-        `,
-        ok: 'Отправить',
-        onOk: (modal) => {
-          const tpl = modal.querySelector('#mm-template').value;
-          const target = modal.querySelector('#mm-target').value;
-          // Count recipients based on filter
-          let count = 0;
-          document.querySelectorAll('.debt-card:not([style*="display: none"])').forEach(c => {
-            const days = parseInt(c.querySelector('.amount-cell:nth-of-type(2) .v')?.textContent.match(/\d+/)?.[0] || '0', 10);
-            const noContact = c.textContent.includes('Не берёт трубку');
-            if (target === 'all') count++;
-            else if (target === '1-7' && days >= 1 && days <= 7) count++;
-            else if (target === '8-30' && days >= 8 && days <= 30) count++;
-            else if (target === '30+' && days > 30) count++;
-            else if (target === 'not-contacted' && noContact) count++;
-          });
-          PaydApp.toast(`Рассылка запущена: ${count} SMS`, { type: 'info', subtitle: 'Доставка займёт 2–5 минут' });
-          return true;
-        }
-      });
-
-      // Update preview based on template
-      setTimeout(() => {
-        const tpl = document.querySelector('#mm-template');
-        const preview = document.querySelector('#mm-preview');
-        const PREVIEWS = {
-          reminder: '«Уважаемый [ФИО], напоминаем о платеже по договору [номер]. Сумма [сумма]. Сумма долга не увеличивается. Оплатить: lk.payd.ru»',
-          overdue: '«[ФИО], платёж по договору [номер] просрочен на [дней] дней. Свяжитесь с нами для согласования. Тел: +7 8712 22-44-66»',
-          restructure: '«[ФИО], мы готовы пересмотреть график платежей без увеличения суммы долга. Позвоните: +7 8712 22-44-66»',
-          repossession: '«[ФИО], при отсутствии оплаты в течение 30 дней Payd оставляет за собой право вернуть товар. Свяжитесь срочно.»'
-        };
-        if (tpl && preview) {
-          tpl.addEventListener('change', () => {
-            preview.innerHTML = `<b>Предпросмотр:</b><br/>${PREVIEWS[tpl.value]}`;
-          });
-        }
-      }, 50);
-    }, true);
-
-    // ============= DAY PLAN MODAL =============
-    document.getElementById('btn-day-plan')?.addEventListener('click', e => {
-      e.preventDefault(); e.stopImmediatePropagation();
-      const today = new Date();
-      const dateStr = today.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
-
-      // Build plan based on visible cases
-      const allCases = [...document.querySelectorAll('.debt-card:not([style*="display: none"])')];
-      const critical = allCases.filter(c => c.classList.contains('critical')).slice(0, 3);
-      const warning = allCases.filter(c => c.classList.contains('warning')).slice(0, 3);
-
-      const morningCalls = critical.map((c, i) => ({
-        time: `${9 + i}:00–${9 + i}:30`,
-        action: 'Звонок',
-        client: c.querySelector('.name')?.textContent || '',
-        debt: c.querySelector('.amount-cell .v')?.textContent || '',
-        days: c.querySelector('.amount-cell:nth-of-type(2) .v')?.textContent || ''
-      }));
-      const afternoonSMS = warning.map((c, i) => ({
-        time: `${14 + i}:00`,
-        action: 'SMS',
-        client: c.querySelector('.name')?.textContent || '',
-        debt: c.querySelector('.amount-cell .v')?.textContent || '',
-        days: c.querySelector('.amount-cell:nth-of-type(2) .v')?.textContent || ''
-      }));
-
-      const renderRow = (item, type) => `
-        <div class="plan-row" data-name="${item.client}" style="display: flex; gap: 12px; padding: 10px; background: white; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: all .12s;">
-          <div style="width: 60px; font-size: 11px; font-weight: 700; color: var(--text-3);">${item.time}</div>
-          <div style="flex: 1; min-width: 0;">
-            <div style="font-size: 13px; font-weight: 600;">${type === 'call' ? '📞' : '💬'} ${item.action} ${item.client}</div>
-            <div style="font-size: 11px; color: var(--text-3); margin-top: 2px;">${item.debt} · просрочка ${item.days}</div>
-          </div>
-          <button class="btn sm primary plan-do-btn" style="padding: 4px 10px;">Готово</button>
-        </div>
-      `;
-
-      makeModal({
-        title: `План на ${dateStr}`,
-        body: `
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-            <p style="font-size: 13px; color: var(--text-2); margin: 0;">Приоритетные действия на сегодня. Выполненные пункты помечайте «Готово».</p>
-            <button class="btn sm primary" id="add-plan-item">+ Добавить пункт</button>
-          </div>
-          <div style="background: var(--surface-2); padding: 14px; border-radius: 10px; margin-bottom: 16px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-              <div style="font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em;">🌅 Утро · критичные звонки</div>
-              <button class="btn sm add-to-section" data-section="morning" style="padding: 2px 8px; font-size: 11px;">+ в утро</button>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 6px;" id="plan-morning">
-              ${morningCalls.map(i => renderRow(i, 'call')).join('') || '<div style="color: var(--text-3); font-size: 12px;">Нет критичных кейсов</div>'}
-            </div>
-          </div>
-          <div style="background: var(--surface-2); padding: 14px; border-radius: 10px; margin-bottom: 16px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-              <div style="font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em;">☀️ День · SMS-напоминания</div>
-              <button class="btn sm add-to-section" data-section="day" style="padding: 2px 8px; font-size: 11px;">+ в день</button>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 6px;" id="plan-day">
-              ${afternoonSMS.map(i => renderRow(i, 'sms')).join('') || '<div style="color: var(--text-3); font-size: 12px;">Нет SMS на сегодня</div>'}
-            </div>
-          </div>
-          <div style="background: var(--surface-2); padding: 14px; border-radius: 10px; margin-bottom: 16px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-              <div style="font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em;">🌆 Вечер · личные встречи</div>
-              <button class="btn sm add-to-section" data-section="evening" style="padding: 2px 8px; font-size: 11px;">+ в вечер</button>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 6px;" id="plan-evening">
-              <div style="color: var(--text-3); font-size: 12px;">Пусто. Добавьте встречу или личный визит.</div>
-            </div>
-          </div>
-          <div style="background: var(--success-soft); padding: 14px; border-radius: 10px; border: 1px solid #a7f3d0;">
-            <div style="font-size: 11px; font-weight: 700; color: #047857; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px;">📊 Цель дня</div>
-            <div style="font-size: 13px; color: #065f46;">Закрыть <b>3 кейса</b> на сумму <b>~ 80 000 ₽</b> · средний чек 26 700 ₽</div>
-          </div>
-        `,
-        ok: 'Печать плана',
-        cancel: 'Закрыть',
-        onOk: () => {
-          PaydApp.toast('План отправлен на печать', 'info');
-          setTimeout(() => window.print(), 300);
-          return true;
-        }
-      });
-
-      setTimeout(() => {
-        // Wire row clicks
-        function wireRow(row) {
-          row.addEventListener('click', e => {
-            if (e.target.classList.contains('plan-do-btn')) {
-              row.style.opacity = '.5';
-              row.style.textDecoration = 'line-through';
-              const btn = row.querySelector('.plan-do-btn');
-              btn.textContent = '✓';
-              btn.disabled = true;
-              PaydApp.toast(`Выполнено: ${row.dataset.name}`, 'success');
-              return;
-            }
-            const card = [...document.querySelectorAll('.debt-card .name')]
-              .find(n => n.textContent === row.dataset.name)?.closest('.debt-card');
-            if (card) {
-              document.querySelector('.payd-modal-backdrop')?.classList.remove('show');
-              setTimeout(() => {
-                document.querySelector('.payd-modal-backdrop')?.remove();
-                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                card.style.transition = 'box-shadow .3s';
-                card.style.boxShadow = '0 0 0 3px var(--primary)';
-                setTimeout(() => card.style.boxShadow = '', 1500);
-              }, 150);
-            }
-          });
-        }
-        document.querySelectorAll('.plan-row').forEach(wireRow);
-
-        // Helper to open "add plan item" form
-        function openAddItemForm(forSection) {
-          // Build cases dropdown
-          const caseOpts = ['<option value="">— Без привязки к кейсу —</option>'];
-          document.querySelectorAll('.debt-card').forEach(c => {
-            const name = c.querySelector('.name')?.textContent;
-            const debt = c.querySelector('.amount-cell .v')?.textContent;
-            const days = c.querySelector('.amount-cell:nth-of-type(2) .v')?.textContent;
-            if (name) caseOpts.push(`<option value="${name}|${debt}|${days}">${name} · ${debt} · ${days}</option>`);
-          });
-
-          const form = document.createElement('div');
-          form.className = 'payd-modal-backdrop';
-          form.style.zIndex = '10000';
-          form.innerHTML = `
-            <div class="payd-modal" style="max-width: 460px;">
-              <h3>Новый пункт плана</h3>
-              <div style="display: grid; gap: 14px; margin-bottom: 18px;">
-                <div class="field">
-                  <label class="field-label">Время</label>
-                  <input class="input" id="pi-time" placeholder="Например: 14:00 или 14:00–14:30" />
-                </div>
-                <div class="field">
-                  <label class="field-label">Тип действия</label>
-                  <select class="select" id="pi-type">
-                    <option value="call">📞 Звонок</option>
-                    <option value="sms">💬 SMS</option>
-                    <option value="meet">🤝 Встреча / визит</option>
-                    <option value="other">📝 Другое</option>
-                  </select>
-                </div>
-                <div class="field">
-                  <label class="field-label">Связан с кейсом (опционально)</label>
-                  <select class="select" id="pi-case">${caseOpts.join('')}</select>
-                </div>
-                <div class="field">
-                  <label class="field-label">Описание (если без привязки к кейсу)</label>
-                  <input class="input" id="pi-desc" placeholder="Например: Объехать офис партнёра" />
-                </div>
-              </div>
-              <div class="payd-modal-actions">
-                <button class="btn cancel-btn">Отмена</button>
-                <button class="btn primary save-btn">Добавить в план</button>
-              </div>
-            </div>
-          `;
-          document.body.appendChild(form);
-          requestAnimationFrame(() => form.classList.add('show'));
-          form.querySelector('#pi-time').focus();
-
-          const closeForm = () => { form.classList.remove('show'); setTimeout(() => form.remove(), 150); };
-          form.querySelector('.cancel-btn').onclick = closeForm;
-          form.onclick = e => { if (e.target === form) closeForm(); };
-
-          form.querySelector('.save-btn').onclick = () => {
-            const time = form.querySelector('#pi-time').value.trim() || '—';
-            const type = form.querySelector('#pi-type').value;
-            const caseVal = form.querySelector('#pi-case').value;
-            const desc = form.querySelector('#pi-desc').value.trim();
-
-            const TYPE_LABELS = { call: { i: '📞', l: 'Звонок' }, sms: { i: '💬', l: 'SMS' }, meet: { i: '🤝', l: 'Встреча' }, other: { i: '📝', l: '' } };
-            const t = TYPE_LABELS[type];
-
-            let name, sub;
-            if (caseVal) {
-              const [n, d, days] = caseVal.split('|');
-              name = n;
-              sub = `${d} · просрочка ${days}`;
-            } else if (desc) {
-              name = desc;
-              sub = 'Без привязки к кейсу';
-            } else {
-              PaydApp.toast('Заполните описание или выберите кейс', 'warning');
-              return;
-            }
-
-            const targetId = forSection === 'morning' ? 'plan-morning' : forSection === 'evening' ? 'plan-evening' : 'plan-day';
-            const target = document.getElementById(targetId);
-            if (!target) { closeForm(); return; }
-
-            // Remove "пусто" placeholder
-            const placeholder = target.querySelector('div[style*="color: var(--text-3)"]');
-            if (placeholder && placeholder.textContent.includes('Пусто') || placeholder?.textContent.includes('Нет')) placeholder.remove();
-
-            const row = document.createElement('div');
-            row.className = 'plan-row';
-            row.dataset.name = name;
-            row.style.cssText = 'display: flex; gap: 12px; padding: 10px; background: white; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: all .12s;';
-            row.innerHTML = `
-              <div style="width: 60px; font-size: 11px; font-weight: 700; color: var(--text-3);">${time}</div>
-              <div style="flex: 1; min-width: 0;">
-                <div style="font-size: 13px; font-weight: 600;">${t.i} ${t.l ? t.l + ' ' : ''}${name}</div>
-                <div style="font-size: 11px; color: var(--text-3); margin-top: 2px;">${sub}</div>
-              </div>
-              <button class="btn sm primary plan-do-btn" style="padding: 4px 10px;">Готово</button>
-            `;
-            target.appendChild(row);
-            // Highlight
-            row.style.boxShadow = '0 0 0 2px var(--primary)';
-            setTimeout(() => { row.style.transition = 'box-shadow .8s'; row.style.boxShadow = ''; }, 100);
-            wireRow(row);
-
-            PaydApp.toast(`Пункт добавлен в план`, 'success');
-            closeForm();
-          };
-        }
-
-        // "+ Добавить пункт" main button — defaults to "day"
-        document.getElementById('add-plan-item')?.addEventListener('click', () => openAddItemForm('day'));
-
-        // Per-section "+ в утро / в день / в вечер"
-        document.querySelectorAll('.add-to-section').forEach(b => {
-          b.addEventListener('click', () => openAddItemForm(b.dataset.section));
-        });
-      }, 50);
-    }, true);
-
-    // ============= MODAL HELPER =============
-    function makeModal({ title, body, ok = 'OK', cancel = 'Отмена', onOk }) {
-      const backdrop = document.createElement('div');
-      backdrop.className = 'payd-modal-backdrop';
-      backdrop.innerHTML = `
-        <div class="payd-modal" style="max-width: 560px;">
-          <h3>${title}</h3>
-          ${body}
-          <div class="payd-modal-actions" style="margin-top: 18px;">
-            <button class="btn cancel-btn">${cancel}</button>
-            <button class="btn primary ok-btn">${ok}</button>
-          </div>
-        </div>
-      `;
-      document.body.appendChild(backdrop);
-      requestAnimationFrame(() => backdrop.classList.add('show'));
-      const close = () => { backdrop.classList.remove('show'); setTimeout(() => backdrop.remove(), 150); };
-      backdrop.querySelector('.cancel-btn').onclick = close;
-      backdrop.onclick = e => { if (e.target === backdrop) close(); };
-      backdrop.querySelector('.ok-btn').onclick = () => {
-        const result = onOk?.(backdrop.querySelector('.payd-modal'));
-        if (result !== false) close();
-      };
-      return backdrop;
-    }
-  })();
+  load();
+  setInterval(load, 30000);
 </script>
 </body>
 </html>
