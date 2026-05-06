@@ -381,7 +381,7 @@
         <div class="qstat"><div class="l">Сделок</div><div class="v" data-bind="clientDeals">3</div></div>
         <div class="qstat"><div class="l">На сумму</div><div class="v" data-bind="clientTotal">38 400 ₽</div></div>
       </div>
-      <a href="client.html" class="btn sm" style="width: 100%; justify-content: center; margin-top: 12px;">Открыть карточку клиента →</a>
+      <a href="client.html" id="open-client-link" class="btn sm" style="width: 100%; justify-content: center; margin-top: 12px;">Открыть карточку клиента →</a>
     </div>
 
     <div class="card sb-card" id="sb-card">
@@ -518,7 +518,7 @@
               <td>1</td>
               <td>
                 <div class="product-cell">
-                  <div class="product-img" data-bind="productIcon">🎧</div>
+                  <div class="product-img" id="product-icon-cell"></div>
                   <div class="product-info">
                     <div class="pname" data-bind="productName">Airpods 4 CASE MXP93 · Белый USB-C CHARGING ANC (eu)</div>
                     <div class="pcode" data-bind="productCode">Код: 000001234</div>
@@ -923,31 +923,8 @@
         </div>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-3)"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
-      <div class="hist-list">
-        <div class="hist-item">
-          <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div>
-          <div class="info">
-            <div class="a">Создано</div>
-            <div class="b">19.04.2026 16:07</div>
-            <div class="c">Бекуев Муслим Д.</div>
-          </div>
-        </div>
-        <div class="hist-item">
-          <div class="ic" style="color: var(--success); background: var(--success-soft); border-color: #a7f3d0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <div class="info">
-            <div class="a">Проверка СБ пройдена</div>
-            <div class="b">19.04.2026 15:55</div>
-            <div class="c">Автоматически</div>
-          </div>
-        </div>
-        <div class="hist-item">
-          <div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
-          <div class="info">
-            <div class="a">Последнее изменение</div>
-            <div class="b">19.04.2026 16:09</div>
-            <div class="c">Бекуев Муслим Д.</div>
-          </div>
-        </div>
+      <div class="hist-list" id="hist-list-real">
+        <div style="padding:20px;text-align:center;color:var(--text-3);font-size:12px;">Загрузка истории...</div>
       </div>
     </div>
 
@@ -971,6 +948,33 @@
   //  Build a synthetic _app from localStorage matching the
   //  shape that renderApp() expects.
   // ============================================================
+  // ============ Иконка товара по типу ============
+  function pickProductIcon(name) {
+    const n = (name || '').toLowerCase();
+    const sv = (path) => `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a2332" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
+    if (/iphone|samsung|galaxy|xiaomi|redmi|смартфон|телефон|phone/.test(n))
+      return sv('<rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>');
+    if (/macbook|ноутбук|laptop|lenovo|asus/.test(n))
+      return sv('<rect x="2" y="4" width="20" height="13" rx="1.5"/><line x1="2" y1="20" x2="22" y2="20"/>');
+    if (/ipad|tablet|планшет/.test(n))
+      return sv('<rect x="4" y="2" width="16" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>');
+    if (/samsung qled|телевизор|tv|оled/.test(n))
+      return sv('<rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="17 21 12 17 7 21"/>');
+    if (/airpods|наушник|headphone|sony wh/.test(n))
+      return sv('<path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1v-7h3v5z"/><path d="M3 19a2 2 0 0 0 2 2h1v-7H3v5z"/>');
+    if (/watch|часы/.test(n))
+      return sv('<circle cx="12" cy="12" r="6"/><polyline points="12 9 12 12 13 13"/>');
+    if (/playstation|xbox|nintendo|консоль/.test(n))
+      return sv('<line x1="6" y1="11" x2="10" y2="11"/><line x1="8" y1="9" x2="8" y2="13"/><line x1="15" y1="12" x2="15.01" y2="12"/><line x1="18" y1="10" x2="18.01" y2="10"/><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258A4 4 0 0 0 17.32 5z"/>');
+    if (/холодильник|стиральн|плита|посудомоеч|духов/.test(n))
+      return sv('<rect x="5" y="2" width="14" height="20" rx="2"/><line x1="5" y1="10" x2="19" y2="10"/>');
+    if (/мебель|диван|стол|шкаф|кровать/.test(n))
+      return sv('<path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 11v5a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v2H7v-2a2 2 0 0 0-4 0z"/>');
+    if (/велосипед|мопед|самокат/.test(n))
+      return sv('<circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"/>');
+    return sv('<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>');
+  }
+
   function buildAppFromCalc(rec) {
     const c = rec.calc || {};
     const fmt = n => Math.round(n || 0).toLocaleString('ru-RU').replace(/,/g, ' ');
@@ -1020,7 +1024,7 @@
       clientDeals: '—',
       clientTotal: '—',
 
-      productIcon: '📦',
+      productIcon: pickProductIcon(rec.product || c.product || ''),
       productName: rec.product || c.product || '—',
       productCode: rec.product_id ? 'Артикул: ' + rec.product_id : (rec.partner ? 'Партнёр: ' + rec.partner : 'Со склада'),
       productQty: '1 шт',
@@ -1797,16 +1801,93 @@
     }
   }
 
-  function pushHistory(action, by = 'Бекуев Муслим Д.') {
+  function pushHistory(action, by = null) {
     const list = document.querySelector('.hist-list');
     if (!list) return;
+    const userName = window.PaydDB?.cloud?.user?.()?.email || 'Система';
     const item = document.createElement('div');
     item.className = 'hist-item';
     item.innerHTML = `
       <div class="ic" style="color: var(--success); background: var(--success-soft); border-color: #a7f3d0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg></div>
-      <div class="info"><div class="a">${action}</div><div class="b">${nowStr()}</div><div class="c">${by}</div></div>
+      <div class="info"><div class="a">${action}</div><div class="b">${nowStr()}</div><div class="c">${by || userName}</div></div>
     `;
     list.prepend(item);
+  }
+
+  // ============= Загрузка реальной истории из application_history =============
+  async function loadRealHistory() {
+    const list = document.getElementById('hist-list-real');
+    if (!list || !_appId) return;
+    const sb = window.PaydDB?.cloud?.sb?.();
+    if (!sb) {
+      list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-3);font-size:12px;">Войдите в облако чтобы видеть историю</div>';
+      return;
+    }
+    try {
+      const { data, error } = await sb.from('application_history')
+        .select('*').eq('app_id', _appId).order('ts', { ascending: false });
+      if (error) throw error;
+
+      const events = data || [];
+      if (!events.length) {
+        list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-3);font-size:12px;">История пуста</div>';
+        return;
+      }
+
+      const ACTION_LABELS = {
+        'application.created': { label: 'Заявка создана', icon: '+' , cls: 'primary' },
+        'sb.approved':         { label: 'Проверка СБ пройдена', icon: '✓', cls: 'success' },
+        'sb.rejected':         { label: 'Проверка СБ не пройдена', icon: '✕', cls: 'danger' },
+        'contract.created':    { label: 'Договор создан', icon: '📄', cls: 'primary' },
+        'contract.signed':     { label: 'Договор подписан', icon: '✓', cls: 'success' },
+        'payment.first_paid':  { label: 'Первый взнос принят', icon: '$', cls: 'success' },
+        'payment.accepted':    { label: 'Платёж принят', icon: '$', cls: 'success' },
+        'product.delivered':   { label: 'Товар выдан клиенту', icon: '📦', cls: 'success' },
+        'application.rejected':{ label: 'Заявка отклонена', icon: '✕', cls: 'danger' },
+        'application.completed':{ label: 'Заявка завершена', icon: '✓', cls: 'success' }
+      };
+      const fmtTs = (iso) => {
+        const d = new Date(iso);
+        if (isNaN(d.getTime())) return '—';
+        const p = n => String(n).padStart(2, '0');
+        return `${p(d.getDate())}.${p(d.getMonth()+1)}.${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+      };
+      const escHtml = s => String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+      list.innerHTML = events.map(e => {
+        const meta = ACTION_LABELS[e.action] || { label: e.action || 'Изменение', icon: '·', cls: '' };
+        const styleByCls = {
+          success: 'color: var(--success); background: var(--success-soft); border-color: #a7f3d0;',
+          danger:  'color: var(--danger); background: var(--danger-soft); border-color: #fecaca;',
+          primary: 'color: var(--primary); background: var(--primary-soft); border-color: #bfdbfe;',
+          '':      ''
+        }[meta.cls] || '';
+        const extra = e.meta && typeof e.meta === 'object' ? Object.entries(e.meta).map(([k, v]) => `${k}: ${v}`).join(' · ') : '';
+        return `
+          <div class="hist-item">
+            <div class="ic" style="${styleByCls}font-weight:800;font-size:14px;">${meta.icon}</div>
+            <div class="info">
+              <div class="a">${escHtml(meta.label)}</div>
+              <div class="b">${fmtTs(e.ts)}</div>
+              <div class="c">${escHtml(e.by_user || 'Система')}${extra ? ' · ' + escHtml(extra) : ''}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch (err) {
+      console.warn('history load', err);
+      list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-3);font-size:12px;">Ошибка загрузки</div>';
+    }
+  }
+  loadRealHistory();
+  setInterval(loadRealHistory, 15000);
+
+  // Кнопка «Открыть карточку клиента» — с параметрами phone+name
+  const openClientLink = document.getElementById('open-client-link');
+  if (openClientLink) {
+    const phone = encodeURIComponent(_app.clientPhone || '');
+    const name = encodeURIComponent(_app.clientName || '');
+    openClientLink.href = `client.html?phone=${phone}&name=${name}`;
   }
 
   // ============= SB run — реальная проверка =============
