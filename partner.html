@@ -25,11 +25,20 @@
   .stage-delivered{ background: var(--success-soft); color: var(--success); }
 
   .payout-card { padding: 16px; background: var(--success-soft); border: 1px solid #a7f3d0; border-radius: 10px; margin-bottom: 10px; }
+  .payout-card.disputed { background: var(--danger-soft); border-color: #fecaca; }
+  .payout-card.confirmed { background: var(--surface-2); border-color: var(--border); }
   .payout-card .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
   .payout-card .amt { font-size: 18px; font-weight: 800; color: var(--success-2); }
+  .payout-card.disputed .amt { color: var(--danger); }
   .payout-card .meta { font-size: 11px; color: var(--text-3); }
 
   .empty { padding: 60px 20px; text-align: center; color: var(--text-3); }
+
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(15,23,42,.55); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+  .modal-bg.open { display: flex; }
+  .modal { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-lg); max-width: 480px; width: 100%; padding: 24px; }
+  .modal h3 { font-size: 17px; font-weight: 700; margin-bottom: 14px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 </style>
 </head>
 <body>
@@ -42,7 +51,7 @@
     <div class="desc" id="pg-desc">Загрузка...</div>
   </div>
   <div class="page-head-actions">
-    <select class="select" id="pg-partner" style="padding: 8px 30px 8px 12px;"></select>
+    <select class="select" id="pg-partner" style="padding: 8px 30px 8px 12px; display: none;"></select>
   </div>
 </div>
 
@@ -63,6 +72,21 @@
     <div class="stat-label">Оборот</div>
     <div class="stat-value" style="font-size: 18px;" id="kpi-turnover">0 ₽</div>
   </div>
+</div>
+
+<div class="filter-bar">
+  <div class="filter-search">
+    <span class="si"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+    <input type="text" id="pg-search" placeholder="Поиск по клиенту, номеру, товару..." />
+  </div>
+</div>
+
+<div class="chip-row mb-3" id="stage-chips">
+  <div class="chip active" data-stage="all">Все <span class="count" id="cnt-all">0</span></div>
+  <div class="chip" data-stage="reserved">Резерв <span class="count" id="cnt-reserved">0</span></div>
+  <div class="chip" data-stage="sold">Куплено Payd <span class="count" id="cnt-sold">0</span></div>
+  <div class="chip" data-stage="contract">Договор <span class="count" id="cnt-contract">0</span></div>
+  <div class="chip" data-stage="delivered">Выдан <span class="count" id="cnt-delivered">0</span></div>
 </div>
 
 <div class="pg-grid">
@@ -106,6 +130,24 @@
 
 </div>
 
+<!-- Модал «Оспорить выплату» -->
+<div class="modal-bg" id="dispute-modal">
+  <div class="modal">
+    <h3>Оспорить получение</h3>
+    <div style="font-size: 12px; color: var(--text-3); margin-bottom: 12px;">
+      Укажите причину — инкассатор и менеджер увидят оспаривание в журнале.
+    </div>
+    <div class="field">
+      <label class="field-label">Причина *</label>
+      <textarea class="textarea" id="dispute-reason" placeholder="Например: сумма не совпадает, не получен и т.д." style="min-height: 80px;"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="dispute-cancel" data-no-handler="true">Отмена</button>
+      <button class="btn danger" id="dispute-save" data-no-handler="true">Оспорить</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="db.js"></script>
 <script src="app.js"></script>
@@ -128,22 +170,65 @@
   let allApps = [];
   let allReservs = [];
   let allPayouts = [];
+  let userRole = 'admin';
+  let userPartnerId = null;
+  let activeStage = 'all';
+
+  // ============ Загрузка профиля + проверка прав ============
+  async function loadUserContext() {
+    if (!window.PaydDB?.cloud?.isOnline?.()) {
+      // Без логина — показываем как admin для удобства разработки
+      userRole = 'admin';
+      return;
+    }
+    const sb = PaydDB.cloud.sb();
+    const user = PaydDB.cloud.user();
+    if (!sb || !user) { userRole = 'admin'; return; }
+    try {
+      const { data } = await sb.from('profiles').select('role, partner_id').eq('id', user.id).maybeSingle();
+      userRole = data?.role || 'admin';
+      userPartnerId = data?.partner_id || null;
+      // Партнёр не может видеть чужие магазины
+      if (userRole === 'partner' && !userPartnerId) {
+        document.getElementById('pg-desc').textContent = 'Профиль партнёра не настроен — обратитесь к администратору';
+      }
+    } catch (e) {
+      console.warn('loadUserContext', e.message);
+    }
+  }
 
   async function loadPartners() {
     allPartners = await PaydDB.list('partners').catch(() => []);
     const sel = document.getElementById('pg-partner');
+
     if (!allPartners.length) {
       sel.innerHTML = '<option value="">— партнёров нет —</option>';
+      sel.style.display = '';
       document.getElementById('pg-desc').textContent = 'Партнёров в системе ещё нет';
       return;
     }
-    sel.innerHTML = allPartners.map(p => `<option value="${escapeHtml(p.name)}">${escapeHtml(p.name)}</option>`).join('');
-    activePartner = allPartners[0];
-    sel.value = activePartner.name;
-    sel.addEventListener('change', () => {
-      activePartner = allPartners.find(p => p.name === sel.value);
-      loadData();
-    });
+
+    if (userRole === 'partner' && userPartnerId) {
+      // Партнёр видит только себя — селектор скрыт
+      activePartner = allPartners.find(p => p.id === userPartnerId) || null;
+      sel.style.display = 'none';
+      if (!activePartner) {
+        document.getElementById('pg-desc').textContent = 'Ваш магазин не найден в системе';
+        return;
+      }
+    } else {
+      // admin / manager — видит всех, выбор через селектор
+      sel.style.display = '';
+      sel.innerHTML = allPartners.map(p =>
+        `<option value="${escapeHtml(p.id || p.name)}">${escapeHtml(p.name)}</option>`
+      ).join('');
+      activePartner = allPartners[0];
+      sel.value = activePartner.id || activePartner.name;
+      sel.addEventListener('change', () => {
+        activePartner = allPartners.find(p => (p.id || p.name) === sel.value);
+        loadData();
+      });
+    }
     loadData();
   }
 
@@ -153,12 +238,19 @@
     if (!sb) return;
 
     const apps = await PaydDB.list('applications').catch(() => []);
-    allApps = apps.filter(a => a.partner === activePartner.name || a.partner_id === activePartner.id);
+    // Связь по partner_id (правильно), fallback на name (для совместимости со старыми записями)
+    allApps = apps.filter(a => {
+      if (a.partner_id && activePartner.id && a.partner_id === activePartner.id) return true;
+      // backward compat: старые заявки могут хранить только имя в поле partner
+      if (a.partner === activePartner.name && !a.partner_id) return true;
+      return false;
+    });
 
     const reservs = await PaydDB.list('reserv_stages').catch(() => []);
     const reservList = Array.isArray(reservs) ? reservs : Object.values(reservs);
-    allReservs = reservList.filter(r => allApps.some(a => a.id === (r.appId || r.app_id)));
+    allReservs = reservList.filter(r => allApps.some(a => a.id === r.app_id));
 
+    // Выплаты — только если у партнёра uuid id
     const partnerId = (activePartner.id && /^[0-9a-f-]{36}$/i.test(activePartner.id)) ? activePartner.id : null;
     if (partnerId) {
       const { data } = await sb.from('partner_payouts').select('*').eq('partner_id', partnerId).order('created_at', { ascending: false });
@@ -171,27 +263,52 @@
   }
 
   function getAppStage(a) {
-    const r = allReservs.find(x => (x.appId || x.app_id) === a.id);
+    const r = allReservs.find(x => x.app_id === a.id);
     return r?.stage || 'reserved';
+  }
+
+  function applyFilters(apps) {
+    const q = (document.getElementById('pg-search').value || '').toLowerCase().trim();
+    let result = apps;
+    if (activeStage !== 'all') {
+      result = result.filter(a => getAppStage(a) === activeStage);
+    }
+    if (q) {
+      result = result.filter(a => {
+        const blob = ((a.client_name || '') + ' ' + (a.number || '') + ' ' + (a.product || '')).toLowerCase();
+        return blob.includes(q);
+      });
+    }
+    return result;
   }
 
   function render() {
     const desc = document.getElementById('pg-desc');
     desc.textContent = activePartner
-      ? `${activePartner.name} · ${activePartner.address || ''}`
+      ? `${activePartner.name}${activePartner.address ? ' · ' + activePartner.address : ''}`
       : '—';
 
-    document.getElementById('apps-count').textContent = allApps.length;
+    const filtered = applyFilters(allApps);
+    document.getElementById('apps-count').textContent = filtered.length;
+
+    // Счётчики для chip'ов
+    const counts = { all: allApps.length, reserved: 0, sold: 0, contract: 0, delivered: 0 };
+    allApps.forEach(a => { const s = getAppStage(a); if (counts[s] !== undefined) counts[s]++; });
+    document.getElementById('cnt-all').textContent = counts.all;
+    document.getElementById('cnt-reserved').textContent = counts.reserved;
+    document.getElementById('cnt-sold').textContent = counts.sold;
+    document.getElementById('cnt-contract').textContent = counts.contract;
+    document.getElementById('cnt-delivered').textContent = counts.delivered;
 
     const list = document.getElementById('apps-list');
-    if (!allApps.length) {
+    if (!filtered.length) {
       list.innerHTML = `<div class="empty">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" style="margin:0 auto 12px;opacity:.4;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
-        <div>Заявок партнёра пока нет</div>
-        <div style="font-size:12px;margin-top:6px;">Появятся когда клиенты купят у вас через Payd</div>
+        <div>${allApps.length ? 'По фильтрам ничего не нашли' : 'Заявок партнёра пока нет'}</div>
+        <div style="font-size:12px;margin-top:6px;">${allApps.length ? 'Сбросьте фильтр или измените запрос' : 'Появятся когда клиенты купят у вас через Payd'}</div>
       </div>`;
     } else {
-      list.innerHTML = allApps.map(a => {
+      list.innerHTML = filtered.map(a => {
         const stage = getAppStage(a);
         const sl = STAGE_LABELS[stage] || STAGE_LABELS.reserved;
         return `
@@ -211,8 +328,8 @@
       }).join('');
     }
 
-    // KPIs
-    const active = allApps.filter(a => !['delivered'].includes(getAppStage(a))).length;
+    // KPI
+    const active = allApps.filter(a => getAppStage(a) !== 'delivered').length;
     const delivered = allApps.filter(a => getAppStage(a) === 'delivered').length;
     const turnover = allApps.reduce((s, a) => s + (+(a.amount || a.calc?.price) || 0), 0);
     document.getElementById('kpi-active').textContent = active;
@@ -220,40 +337,133 @@
     document.getElementById('kpi-payouts').textContent = allPayouts.length;
     document.getElementById('kpi-turnover').textContent = fmt(turnover);
 
-    // Payouts
+    // Выплаты
     const pl = document.getElementById('payouts-list');
     if (!allPayouts.length) {
       pl.innerHTML = `<div class="empty" style="padding: 30px;">Выплат пока нет</div>`;
     } else {
-      pl.innerHTML = allPayouts.slice(0, 6).map(p => `
-        <div class="payout-card">
-          <div class="head">
-            <span class="amt">${fmt(p.amount)}</span>
-            <span class="badge ${p.status === 'confirmed' ? 'success' : p.status === 'pending' ? 'warning' : 'gray'}">
-              ${p.status === 'confirmed' ? 'Подтверждена' : p.status === 'pending' ? 'Ожидает' : (p.status || '—')}
-            </span>
+      pl.innerHTML = allPayouts.slice(0, 10).map(p => {
+        const cls = p.status === 'confirmed' ? 'confirmed' : p.status === 'disputed' ? 'disputed' : '';
+        const badge = p.status === 'confirmed' ? '<span class="badge success">Подтверждена</span>'
+                    : p.status === 'pending'   ? '<span class="badge warning">Ожидает</span>'
+                    : p.status === 'disputed'  ? '<span class="badge danger">Оспорена</span>'
+                    : `<span class="badge gray">${escapeHtml(p.status || '—')}</span>`;
+        const actions = p.status === 'pending' ? `
+          <div style="display:flex;gap:6px;margin-top:10px;">
+            <button class="btn sm primary" data-confirm="${escapeHtml(p.id)}" data-no-handler="true" style="flex:1;">✓ Подтвердить</button>
+            <button class="btn sm danger" data-dispute="${escapeHtml(p.id)}" data-no-handler="true">Оспорить</button>
           </div>
-          <div class="meta">${escapeHtml(p.description || '')}</div>
-          <div class="meta">${p.delivered_at ? 'Доставлено ' + fmtDate(p.delivered_at) : 'создана ' + fmtDate(p.created_at)}</div>
-          ${p.status === 'pending' ? `<button class="btn sm primary" data-confirm="${escapeHtml(p.id)}" data-no-handler="true" style="margin-top: 10px;">✓ Подтвердить получение</button>` : ''}
-        </div>
-      `).join('');
+        ` : '';
+        return `
+          <div class="payout-card ${cls}">
+            <div class="head">
+              <span class="amt">${fmt(p.amount)}</span>
+              ${badge}
+            </div>
+            <div class="meta">${escapeHtml(p.description || '')}</div>
+            <div class="meta">${p.delivered_at ? 'Доставлено ' + fmtDate(p.delivered_at) : 'Создана ' + fmtDate(p.created_at)}</div>
+            ${p.dispute_reason ? `<div class="meta" style="color:var(--danger);margin-top:4px;">Причина: ${escapeHtml(p.dispute_reason)}</div>` : ''}
+            ${actions}
+          </div>
+        `;
+      }).join('');
       pl.querySelectorAll('[data-confirm]').forEach(b => b.addEventListener('click', () => confirmPayout(b.dataset.confirm)));
+      pl.querySelectorAll('[data-dispute]').forEach(b => b.addEventListener('click', () => openDispute(b.dataset.dispute)));
     }
   }
 
+  // ============ Подтверждение выплаты ============
   async function confirmPayout(payoutId) {
     const sb = PaydDB.cloud.sb();
-    await sb.from('partner_payouts').update({ status: 'confirmed', confirmed_at: new Date().toISOString() }).eq('id', payoutId);
-    PaydApp.toast('Получение подтверждено', 'success');
-    loadData();
+    const payout = allPayouts.find(p => p.id === payoutId);
+    try {
+      await sb.from('partner_payouts').update({
+        status: 'confirmed', confirmed_at: new Date().toISOString()
+      }).eq('id', payoutId);
+
+      // Аудит-лог (правило 4 из CLAUDE.md)
+      const linkedAppId = payout?.app_id || null;
+      if (linkedAppId && PaydDB.audit) {
+        await PaydDB.audit.log(linkedAppId, 'payout.confirmed', {
+          payout_id: payoutId, amount: payout?.amount, partner: activePartner?.name
+        });
+      }
+
+      PaydApp.toast('Получение подтверждено', 'success');
+      loadData();
+    } catch (err) {
+      PaydApp.toast('Ошибка: ' + err.message, 'error');
+    }
   }
 
-  loadPartners();
+  // ============ Оспаривание выплаты ============
+  let disputingPayoutId = null;
+  function openDispute(payoutId) {
+    disputingPayoutId = payoutId;
+    document.getElementById('dispute-reason').value = '';
+    document.getElementById('dispute-modal').classList.add('open');
+    setTimeout(() => document.getElementById('dispute-reason').focus(), 50);
+  }
+  document.getElementById('dispute-cancel').addEventListener('click', () => {
+    document.getElementById('dispute-modal').classList.remove('open');
+    disputingPayoutId = null;
+  });
+  document.getElementById('dispute-modal').addEventListener('click', e => {
+    if (e.target.id === 'dispute-modal') {
+      e.target.classList.remove('open');
+      disputingPayoutId = null;
+    }
+  });
+  document.getElementById('dispute-save').addEventListener('click', async () => {
+    if (!disputingPayoutId) return;
+    const reason = document.getElementById('dispute-reason').value.trim();
+    if (!reason) { PaydApp.toast('Укажите причину', 'error'); return; }
+    const sb = PaydDB.cloud.sb();
+    const payout = allPayouts.find(p => p.id === disputingPayoutId);
+    try {
+      await sb.from('partner_payouts').update({
+        status: 'disputed', dispute_reason: reason
+      }).eq('id', disputingPayoutId);
+
+      const linkedAppId = payout?.app_id || null;
+      if (linkedAppId && PaydDB.audit) {
+        await PaydDB.audit.log(linkedAppId, 'payout.disputed', {
+          payout_id: disputingPayoutId, amount: payout?.amount, reason, partner: activePartner?.name
+        });
+      }
+
+      PaydApp.toast('Выплата оспорена', { type: 'warning', subtitle: 'Менеджер увидит ваш запрос' });
+      document.getElementById('dispute-modal').classList.remove('open');
+      disputingPayoutId = null;
+      loadData();
+    } catch (err) {
+      PaydApp.toast('Ошибка: ' + err.message, 'error');
+    }
+  });
+
+  // ============ Stage chips ============
+  document.querySelectorAll('#stage-chips .chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#stage-chips .chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      activeStage = chip.dataset.stage;
+      render();
+    });
+  });
+
+  document.getElementById('pg-search').addEventListener('input', render);
+
+  // ============ Init ============
+  (async function () {
+    await loadUserContext();
+    loadPartners();
+  })();
+
   setInterval(() => activePartner && loadData(), 15000);
   if (window.PaydDB?.subscribe) {
     PaydDB.subscribe('applications', loadData);
     PaydDB.subscribe('payouts', loadData);
+    PaydDB.subscribe('reserv_stages', loadData);
   }
 </script>
 </body>
