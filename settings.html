@@ -1059,11 +1059,11 @@
             </div>
           </div>
 
-          <div class="field">
+          <div class="field" data-rate-block="murabaha" style="${has(t.types,'murabaha') ? '' : 'display:none;'}">
             <label class="field-label">Ставка Мурабаха (% годовых) по сроку</label>
             <div class="tf-rates">
               ${ALL_TERMS.map(m => `
-                <div class="field">
+                <div class="field" data-rate-cell="${m}" style="${has(t.terms,m) ? '' : 'display:none;'}">
                   <label>${m} мес</label>
                   <input class="input" data-rate="${m}" value="${r[m] ?? ''}" placeholder="—" />
                 </div>
@@ -1072,11 +1072,11 @@
             <div style="font-size: 11px; color: var(--text-3); margin-top: 6px;">Пустое поле = срок недоступен для Мурабахи</div>
           </div>
 
-          <div class="field">
+          <div class="field" data-rate-block="ijara" style="${has(t.types,'ijara') ? '' : 'display:none;'}">
             <label class="field-label">Ставка Иджара (% годовых) по сроку</label>
             <div class="tf-rates">
               ${ALL_TERMS.map(m => `
-                <div class="field">
+                <div class="field" data-irate-cell="${m}" style="${has(t.terms,m) ? '' : 'display:none;'}">
                   <label>${m} мес</label>
                   <input class="input" data-irate="${m}" value="${(t.ijaraRates || {})[m] ?? ''}" placeholder="—" />
                 </div>
@@ -1103,12 +1103,26 @@
         if (sw) {
           e.preventDefault(); e.stopPropagation();
           sw.classList.toggle('on');
+          // При выключении продукта — скрыть блок ставок этого типа
+          const type = sw.dataset.toggle;
+          const block = ed.querySelector(`[data-rate-block="${type}"]`);
+          if (block) block.style.display = sw.classList.contains('on') ? '' : 'none';
           return;
         }
         const ch = e.target.closest('.tf-chip');
         if (ch && ed.contains(ch)) {
           e.preventDefault(); e.stopPropagation();
           ch.classList.toggle('active');
+          // При выключении срока — скрыть ячейку ставки для этого срока
+          const term = ch.dataset.term;
+          const active = ch.classList.contains('active');
+          ed.querySelectorAll(`[data-rate-cell="${term}"], [data-irate-cell="${term}"]`).forEach(cell => {
+            cell.style.display = active ? '' : 'none';
+            // Очистить значение если срок выключен
+            if (!active) {
+              cell.querySelectorAll('input').forEach(inp => inp.value = '');
+            }
+          });
         }
       });
       ed.querySelector('[data-act="cancel"]').addEventListener('click', () => {

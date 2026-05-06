@@ -149,8 +149,13 @@
               </div>
             </div>
             <div class="field">
-              <label class="field-label">Цвет / характеристика</label>
-              <input class="input" id="pd-color" placeholder="например: Белый" />
+              <label class="field-label">Тип сделки *</label>
+              <select class="select" id="deal-type">
+                <option value="Товар со склада">Товар со склада Payd</option>
+                <option value="Товар от партнёра">Товар у партнёра (резерв)</option>
+                <option value="Под заказ">Под заказ</option>
+                <option value="Услуга">Услуга (Иджара)</option>
+              </select>
             </div>
             <div class="field">
               <label class="field-label">Цена закупки (₽)</label>
@@ -161,6 +166,7 @@
               <label class="field-label">Цена продажи клиенту (₽)</label>
               <input class="input" id="pd-sale" type="number" placeholder="0" />
             </div>
+            <input type="hidden" id="pd-color" />
           </div>
         </div>
       </div>
@@ -175,15 +181,6 @@
               <div class="field-help" id="tariff-hint">Выбирается тариф по умолчанию</div>
             </div>
             <div class="field">
-              <label class="field-label">Тип сделки</label>
-              <select class="select" id="deal-type">
-                <option value="Товар со склада">Товар со склада Payd</option>
-                <option value="Товар от партнёра">Товар у партнёра (резерв)</option>
-                <option value="Под заказ">Под заказ</option>
-                <option value="Услуга">Услуга (Иджара)</option>
-              </select>
-            </div>
-            <div class="field">
               <label class="field-label">Срок рассрочки</label>
               <select class="select" id="dl-term"></select>
             </div>
@@ -192,7 +189,7 @@
               <input class="input" id="dl-down" type="number" placeholder="0" />
               <div class="field-help" id="down-hint">Платится в день подписания</div>
             </div>
-            <div class="field" style="grid-column: 1 / -1;">
+            <div class="field" id="partner-field" style="grid-column: 1 / -1;">
               <label class="field-label">Партнёр / магазин</label>
               <div class="combo">
                 <input class="input" id="dl-partner" autocomplete="off" placeholder="Выбрать или ввести название" />
@@ -418,6 +415,28 @@
   bind('dl-partner', 'deal.partner');
 
   document.getElementById('dl-term')?.addEventListener('change', e => { form.deal.term = +e.target.value; recalc(); saveDraft(); });
+
+  // Показать/скрыть поле «Партнёр» в зависимости от типа сделки
+  function updatePartnerVisibility() {
+    const type = form.deal.type;
+    const field = document.getElementById('partner-field');
+    if (!field) return;
+    // Партнёр нужен только когда товар у партнёра / под заказ / услуга
+    if (type === 'Товар со склада') {
+      field.style.display = 'none';
+      form.deal.partner = '';
+      const inp = document.getElementById('dl-partner');
+      if (inp) inp.value = '';
+    } else {
+      field.style.display = '';
+    }
+  }
+  document.getElementById('deal-type')?.addEventListener('change', () => {
+    updatePartnerVisibility();
+    recalc();
+    saveDraft();
+  });
+  setTimeout(updatePartnerVisibility, 0);
   document.getElementById('dl-tariff')?.addEventListener('change', e => {
     form.deal.tariffId = e.target.value;
     applyTariff();
