@@ -118,7 +118,7 @@
     <div class="desc">Обмен данными между Payd и «Управление нашей фирмой» · автоматическое создание документов</div>
   </div>
   <div class="page-head-actions">
-    <button class="btn">
+    <button class="btn" disabled title="Доступно после подключения" style="opacity:.55; cursor:not-allowed;">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
       Синхронизировать сейчас
     </button>
@@ -130,46 +130,43 @@
 </div>
 
 <!-- CONNECTION STATUS HERO -->
-<div class="conn-hero ok" id="conn-status">
-  <div class="ic-big" style="background: white; color: #047857;">
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>
+<div class="conn-hero" id="conn-status" style="background:#f4f6fb; border:1px solid var(--border);">
+  <div class="ic-big" style="background:#fff; color: var(--text-3);">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
   </div>
   <div class="info">
-    <div class="ttl" style="color: #047857;">Подключение установлено</div>
-    <div class="sub">База: <code style="background: white; padding: 2px 6px; border-radius: 3px;">http://1c.payd.local/unf/odata/standard.odata</code></div>
-    <div class="meta">
-      <span><b>Версия:</b> УНФ 3.0.6.142</span>
-      <span><b>Организация:</b> ООО «Payd»</span>
-      <span><b>Последняя синхронизация:</b> 2 минуты назад</span>
-      <span><b>Расписание:</b> каждые 10 минут</span>
+    <div class="ttl" id="conn-title">Интеграция не настроена</div>
+    <div class="sub" id="conn-sub">Заполните параметры подключения во вкладке «Подключение»</div>
+    <div class="meta" id="conn-meta">
+      <span><b>Последняя синхронизация:</b> —</span>
     </div>
   </div>
   <div style="text-align: right;">
-    <span class="badge success dot">Live</span>
+    <span class="badge" style="background: var(--surface-2); color: var(--text-3);" id="conn-badge">Не настроено</span>
   </div>
 </div>
 
 <!-- STATS -->
-<div class="stat-grid cols-4 mb-5">
+<div class="stat-grid cols-4 mb-5" id="int-stats">
   <div class="stat" style="padding: 14px 16px;">
     <div class="stat-label">Документов сегодня</div>
-    <div class="stat-value" style="font-size: 22px;">47</div>
-    <div class="stat-sub" style="color: var(--success);">↑ ПКО, РКО, Поступления</div>
+    <div class="stat-value" style="font-size: 22px;" data-int-stat="docs:total">—</div>
+    <div class="stat-sub" data-int-stat-sub="docs:total">Интеграция не настроена</div>
   </div>
   <div class="stat" style="padding: 14px 16px;">
     <div class="stat-label" style="color: var(--success);">Успешных</div>
-    <div class="stat-value" style="font-size: 22px; color: var(--success);">45</div>
-    <div class="stat-sub">95,7% доставка</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--success);" data-int-stat="docs:ok">—</div>
+    <div class="stat-sub" data-int-stat-sub="docs:ok">Интеграция не настроена</div>
   </div>
   <div class="stat" style="padding: 14px 16px;">
     <div class="stat-label" style="color: var(--danger);">С ошибками</div>
-    <div class="stat-value" style="font-size: 22px; color: var(--danger);">2</div>
-    <div class="stat-sub">Артикулы не найдены</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--danger);" data-int-stat="docs:err">—</div>
+    <div class="stat-sub" data-int-stat-sub="docs:err">Интеграция не настроена</div>
   </div>
   <div class="stat" style="padding: 14px 16px;">
     <div class="stat-label">Справочники синхр.</div>
-    <div class="stat-value" style="font-size: 22px; color: var(--primary);">5 / 5</div>
-    <div class="stat-sub">Все актуальны</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--primary);" data-int-stat="refs">—</div>
+    <div class="stat-sub" data-int-stat-sub="refs">Интеграция не настроена</div>
   </div>
 </div>
 
@@ -178,7 +175,7 @@
   <div class="int-tab active" data-tab="conn">⚙ Подключение</div>
   <div class="int-tab" data-tab="refs">📚 Справочники <span class="badge">5</span></div>
   <div class="int-tab" data-tab="docs">📄 Правила документов <span class="badge">6</span></div>
-  <div class="int-tab" data-tab="log">📋 Журнал обмена <span class="badge">47</span></div>
+  <div class="int-tab" data-tab="log">📋 Журнал обмена</div>
   <div class="int-tab" data-tab="help">💡 Помощь новичку</div>
 </div>
 
@@ -187,7 +184,7 @@
   <div class="card">
     <div class="card-hd">
       <h3>Подключение к базе 1С УНФ 3.0</h3>
-      <span class="status-dot success">Активно</span>
+      <span class="status-dot" style="background: var(--surface-2); color: var(--text-3);">Не настроено</span>
     </div>
     <div class="card-bd">
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
@@ -203,30 +200,29 @@
         <div class="field">
           <label class="field-label">Версия конфигурации</label>
           <select class="select">
-            <option selected>УНФ 3.0 (3.0.6.142)</option>
+            <option selected>УНФ 3.0</option>
             <option>УНФ 1.6</option>
           </select>
         </div>
         <div class="field" style="grid-column: span 2;">
           <label class="field-label">URL базы 1С (OData endpoint)</label>
-          <input class="input" value="http://1c.payd.local/unf/odata/standard.odata" />
+          <input class="input" placeholder="http://адрес-сервера/unf/odata/standard.odata" />
           <div class="field-help">Откройте 1С → Администрирование → Сервис → Публикация на веб-сервере → скопируйте адрес</div>
         </div>
         <div class="field">
           <label class="field-label">Логин</label>
-          <input class="input" value="payd_api" />
+          <input class="input" placeholder="payd_api" />
         </div>
         <div class="field">
           <label class="field-label">Пароль</label>
-          <input class="input" type="password" value="••••••••••••" />
+          <input class="input" type="password" placeholder="" />
         </div>
         <div class="field">
           <label class="field-label">Организация в 1С</label>
-          <select class="select">
-            <option selected>ООО «Payd»</option>
-            <option>ИП Джабраилов И.М.</option>
+          <select class="select" disabled title="Доступно после подключения">
+            <option>— подключитесь, чтобы выбрать организацию —</option>
           </select>
-          <div class="field-help">От лица какой организации создавать документы</div>
+          <div class="field-help">Подгружается из 1С после успешного подключения</div>
         </div>
         <div class="field">
           <label class="field-label">Расписание обмена</label>
@@ -246,12 +242,12 @@
       </div>
 
       <div style="display: flex; gap: 8px;">
-        <button class="btn primary">
+        <button class="btn primary" disabled title="В разработке" style="opacity:.55; cursor:not-allowed;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>
           Сохранить настройки
         </button>
-        <button class="btn">Тест соединения</button>
-        <button class="btn danger" style="margin-left: auto;">Отключить интеграцию</button>
+        <button class="btn" disabled title="В разработке" style="opacity:.55; cursor:not-allowed;">Тест соединения</button>
+        <button class="btn danger" style="margin-left: auto;" disabled title="Доступно после подключения" style="opacity:.55; cursor:not-allowed;">Отключить интеграцию</button>
       </div>
     </div>
   </div>
@@ -285,7 +281,7 @@
 <div class="int-content" data-content="refs">
   <div class="alert info mb-4">
     <div class="ai">📚</div>
-    <div><b>Сопоставление справочников</b> — это правила, по которым Payd «находит» совпадение между записью у нас и записью в 1С. Например, клиент «Даурбекова Луиза» в Payd и контрагент «Даурбекова Луиза Саид-Усмановна» в 1С — это один и тот же человек. Сопоставление по ИНН/паспорту самое надёжное.</div>
+    <div><b>Сопоставление справочников</b> — это правила, по которым Payd «находит» совпадение между записью у нас и записью в 1С. Например, один и тот же клиент может быть записан в Payd с короткой формой ФИО, а в 1С — с полной (с отчеством). Сопоставление по ИНН/паспорту самое надёжное.</div>
   </div>
 
   <div class="ref-grid">
@@ -306,11 +302,11 @@
       </div>
       <div style="font-size: 12px; color: var(--text-2); padding: 8px 0;"><b>Сопоставление по:</b> Паспорт (серия+номер) → ИНН → ФИО+телефон</div>
       <div class="ref-stats">
-        <div class="stat-mini ok"><div class="l">Сопоставлено</div><div class="v">1 244</div></div>
-        <div class="stat-mini warn"><div class="l">Дубликаты</div><div class="v">3</div></div>
-        <div class="stat-mini"><div class="l">Создано в 1С</div><div class="v">+ 18</div></div>
+        <div class="stat-mini"><div class="l">Сопоставлено</div><div class="v">—</div></div>
+        <div class="stat-mini"><div class="l">Дубликаты</div><div class="v">—</div></div>
+        <div class="stat-mini"><div class="l">Создано в 1С</div><div class="v">—</div></div>
       </div>
-      <button class="btn sm" style="width: 100%; justify-content: center; margin-top: 10px;">Открыть таблицу сопоставления →</button>
+      <button class="btn sm" style="width: 100%; justify-content: center; margin-top: 10px;" disabled title="Доступно после подключения" style="opacity:.55; cursor:not-allowed;">Открыть таблицу сопоставления →</button>
     </div>
 
     <!-- 2. Номенклатура -->
@@ -330,11 +326,11 @@
       </div>
       <div style="font-size: 12px; color: var(--text-2); padding: 8px 0;"><b>Сопоставление по:</b> Артикул (внутренний код)<br/><b>Источник цен:</b> 1С (вид цены «Розничная»)</div>
       <div class="ref-stats">
-        <div class="stat-mini ok"><div class="l">Сопоставлено</div><div class="v">384</div></div>
-        <div class="stat-mini warn"><div class="l">Без артикула</div><div class="v">2</div></div>
-        <div class="stat-mini"><div class="l">Из 1С</div><div class="v">100%</div></div>
+        <div class="stat-mini"><div class="l">Сопоставлено</div><div class="v">—</div></div>
+        <div class="stat-mini"><div class="l">Без артикула</div><div class="v">—</div></div>
+        <div class="stat-mini"><div class="l">Из 1С</div><div class="v">—</div></div>
       </div>
-      <button class="btn sm" style="width: 100%; justify-content: center; margin-top: 10px;">Открыть таблицу сопоставления →</button>
+      <button class="btn sm" style="width: 100%; justify-content: center; margin-top: 10px;" disabled title="Доступно после подключения" style="opacity:.55; cursor:not-allowed;">Открыть таблицу сопоставления →</button>
     </div>
 
     <!-- 3. Кассы -->
@@ -348,21 +344,9 @@
         <div class="switch on"></div>
       </div>
       <div class="map-row">
-        <div class="from"><div class="map-label">Payd · Касса</div><div class="map-val">Главная касса (Аргун)</div></div>
-        <div class="arrow">→</div>
-        <div class="to"><div class="map-label">1С УНФ · Касса</div><div class="map-val">Касса организации (основная)</div></div>
+        <div style="font-size: 12px; color: var(--text-3); text-align: center; padding: 12px 0;">Сопоставлений ещё нет — добавьте кассы Payd и счета 1С после подключения.</div>
       </div>
-      <div class="map-row">
-        <div class="from"><div class="map-label">Payd · Карта</div><div class="map-val">Эквайринг СБЕР</div></div>
-        <div class="arrow">→</div>
-        <div class="to"><div class="map-label">1С УНФ · Банк</div><div class="map-val">Расчётный счёт Сбербанк ··· 4218</div></div>
-      </div>
-      <div class="map-row">
-        <div class="from"><div class="map-label">Payd · СБП</div><div class="map-val">СБП Тинькофф</div></div>
-        <div class="arrow">→</div>
-        <div class="to"><div class="map-label">1С УНФ · Банк</div><div class="map-val">Расчётный счёт Тинькофф ··· 8821</div></div>
-      </div>
-      <button class="btn sm" style="width: 100%; justify-content: center; margin-top: 10px;">Изменить сопоставление →</button>
+      <button class="btn sm" style="width: 100%; justify-content: center; margin-top: 10px;" disabled title="Доступно после подключения" style="opacity:.55; cursor:not-allowed;">Изменить сопоставление →</button>
     </div>
 
     <!-- 4. Сотрудники -->
@@ -382,9 +366,9 @@
       </div>
       <div style="font-size: 12px; color: var(--text-2); padding: 8px 0;"><b>Сопоставление по:</b> Email → ФИО</div>
       <div class="ref-stats">
-        <div class="stat-mini ok"><div class="l">Сопоставлено</div><div class="v">18 / 18</div></div>
-        <div class="stat-mini"><div class="l">С зарплатой</div><div class="v">12</div></div>
-        <div class="stat-mini"><div class="l">% начислений</div><div class="v">10%</div></div>
+        <div class="stat-mini"><div class="l">Сопоставлено</div><div class="v">—</div></div>
+        <div class="stat-mini"><div class="l">С зарплатой</div><div class="v">—</div></div>
+        <div class="stat-mini"><div class="l">% начислений</div><div class="v">—</div></div>
       </div>
     </div>
 
@@ -399,19 +383,12 @@
         <div class="switch on"></div>
       </div>
       <div class="map-row">
-        <div class="from"><div class="map-label">Payd · Партнёр</div><div class="map-val">ТехноМир — Грозный</div></div>
-        <div class="arrow">↔</div>
-        <div class="to"><div class="map-label">1С · Контрагент</div><div class="map-val">ИП Тагаев Р.А. (ТехноМир)</div></div>
-      </div>
-      <div class="map-row">
-        <div class="from"><div class="map-label">Payd · Партнёр</div><div class="map-val">ДигиМаркет — Грозный Сити</div></div>
-        <div class="arrow">↔</div>
-        <div class="to"><div class="map-label">1С · Контрагент</div><div class="map-val">ООО «Альянс»</div></div>
+        <div style="font-size: 12px; color: var(--text-3); text-align: center; padding: 12px 0;">Сопоставлений ещё нет.</div>
       </div>
       <div class="ref-stats">
-        <div class="stat-mini ok"><div class="l">Сопоставлено</div><div class="v">26 / 28</div></div>
-        <div class="stat-mini warn"><div class="l">Не сопост.</div><div class="v">2</div></div>
-        <div class="stat-mini"><div class="l">Договоров</div><div class="v">28</div></div>
+        <div class="stat-mini"><div class="l">Сопоставлено</div><div class="v">—</div></div>
+        <div class="stat-mini"><div class="l">Не сопост.</div><div class="v">—</div></div>
+        <div class="stat-mini"><div class="l">Договоров</div><div class="v">—</div></div>
       </div>
     </div>
   </div>
@@ -449,9 +426,8 @@
       <div class="doc-field"><div class="l">Когда</div><div class="v">мгновенно при приёме платежа</div></div>
     </div>
     <div style="display: flex; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border);">
-      <span class="badge success">42 ПКО создано сегодня</span>
       <span class="badge gray">Шаблон по умолчанию</span>
-      <button class="btn sm" style="margin-left: auto;">Изменить шаблон</button>
+      <button class="btn sm" style="margin-left: auto;" disabled title="В разработке">Изменить шаблон</button>
     </div>
   </div>
 
@@ -565,70 +541,9 @@
       <div>Время</div><div>Документ Payd</div><div>Действие</div><div>Документ 1С</div><div>Статус</div>
     </div>
 
-    <div class="log-row">
-      <div class="time">14:23</div>
-      <div class="doc">Платёж #PMT-1248<div style="font-size: 11px; color: var(--text-3); font-weight: 400;">Даурбекова Л. · 3 500 ₽</div></div>
-      <div class="arrow">→ создать ПКО</div>
-      <div class="doc">ПКО №000042 от 02.05.2026<div style="font-size: 11px; color: var(--text-3); font-weight: 400;">Касса организации</div></div>
-      <div><span class="badge success dot">Успешно</span></div>
-    </div>
-
-    <div class="log-row">
-      <div class="time">13:42</div>
-      <div class="doc">Платёж #PMT-1247<div style="font-size: 11px; color: var(--text-3); font-weight: 400;">Хасиев А. · 10 500 ₽</div></div>
-      <div class="arrow">→ создать ПКО</div>
-      <div class="doc">ПКО №000041 от 02.05.2026<div style="font-size: 11px; color: var(--text-3); font-weight: 400;">Эквайринг СБЕР</div></div>
-      <div><span class="badge success dot">Успешно</span></div>
-    </div>
-
-    <div class="log-row" style="background: #fef2f2;">
-      <div class="time">12:18</div>
-      <div class="doc">Закупка #ZP-018<div style="font-size: 11px; color: var(--text-3); font-weight: 400;">ТехноМир · 4 шт iPhone</div></div>
-      <div class="arrow">→ Поступление</div>
-      <div class="doc" style="color: var(--danger);">Ошибка: Артикул 000001892 не найден в 1С</div>
-      <div><span class="badge danger dot">Ошибка</span></div>
-    </div>
-
-    <div class="log-row">
-      <div class="time">12:30</div>
-      <div class="doc">Зарплата · Бекуев М.<div style="font-size: 11px; color: var(--text-3); font-weight: 400;">209 800 ₽</div></div>
-      <div class="arrow">→ РКО + Начисление</div>
-      <div class="doc">РКО №000040 + Начисление<div style="font-size: 11px; color: var(--text-3); font-weight: 400;">Документы связаны</div></div>
-      <div><span class="badge success dot">Успешно</span></div>
-    </div>
-
-    <div class="log-row">
-      <div class="time">11:08</div>
-      <div class="doc">Партнёрская комиссия<div style="font-size: 11px; color: var(--text-3); font-weight: 400;">ТехноМир · 62 430 ₽</div></div>
-      <div class="arrow">→ создать РКО</div>
-      <div class="doc">РКО №000039 от 02.05.2026<div style="font-size: 11px; color: var(--text-3); font-weight: 400;">Расч. счёт СБЕР</div></div>
-      <div><span class="badge success dot">Успешно</span></div>
-    </div>
-
-    <div class="log-row">
-      <div class="time">10:45</div>
-      <div class="doc">Первоначальный взнос #147<div style="font-size: 11px; color: var(--text-3); font-weight: 400;">Тазуев Р. · 8 420 ₽</div></div>
-      <div class="arrow">→ создать ПКО</div>
-      <div class="doc">ПКО №000038 от 02.05.2026<div style="font-size: 11px; color: var(--text-3); font-weight: 400;">СБП Тинькофф</div></div>
-      <div><span class="badge success dot">Успешно</span></div>
-    </div>
-
-    <div class="log-row" style="background: #fef2f2;">
-      <div class="time">10:12</div>
-      <div class="doc">Новый клиент<div style="font-size: 11px; color: var(--text-3); font-weight: 400;">Магомадов Л.</div></div>
-      <div class="arrow">→ создать контрагента</div>
-      <div class="doc" style="color: var(--danger);">Ошибка: Дубликат по ИНН с контрагентом 1С</div>
-      <div><span class="badge danger dot">Конфликт</span></div>
-    </div>
-
-    <div class="pagination">
-      <div class="pagination-info">Показано 1–7 из 47 за сегодня</div>
-      <div class="pagination-controls">
-        <button class="page-btn" disabled>‹</button>
-        <button class="page-btn active">1</button>
-        <button class="page-btn">2</button>
-        <button class="page-btn">3</button>
-        <button class="page-btn">›</button>
+    <div id="sync-log-list">
+      <div style="padding: 48px 18px; text-align: center; color: var(--text-3); font-size: 13px;">
+        Журнал пуст. Записи появятся после первой синхронизации.
       </div>
     </div>
   </div>
@@ -773,7 +688,7 @@
       <div style="flex: 1;">
         <h3 style="margin-bottom: 8px;">Видео-урок: Подключение 1С УНФ 3.0 за 5 минут</h3>
         <p style="font-size: 13px; opacity: .85; margin-bottom: 14px; line-height: 1.6;">Все 7 шагов с реальной демонстрацией экрана. Покажем как опубликовать базу, создать пользователя и подключить Payd. Если делаете впервые — обязательно посмотрите.</p>
-        <button class="btn" style="background: white; color: var(--primary); border: none;">▶ Смотреть видео</button>
+        <button class="btn" style="background: white; color: var(--primary); border: none;" disabled title="В разработке">▶ Смотреть видео</button>
       </div>
     </div>
   </div>
@@ -807,13 +722,10 @@
     });
   });
 
-  // Test connection button
+  // Test connection button — пока не реализовано (нет реального обмена с 1С)
   document.getElementById('btn-test-conn')?.addEventListener('click', e => {
     e.preventDefault(); e.stopImmediatePropagation();
-    PaydApp.toast('Проверка соединения...', 'info');
-    setTimeout(() => {
-      PaydApp.toast('Соединение установлено', { type: 'success', subtitle: 'УНФ 3.0.6.142 · ООО «Payd» · 384 товара, 1 248 контрагентов' });
-    }, 1500);
+    PaydApp.toast('Тест соединения в разработке', { type: 'info', subtitle: 'Подключите URL и пользователя 1С во вкладке «Подключение»' });
   }, true);
 </script>
 </body>
