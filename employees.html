@@ -9,12 +9,22 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <style>
-  .role-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
-  .role-admin { background: #fef2f2; color: #dc2626; }
-  .role-manager { background: var(--primary-soft); color: var(--primary); }
-  .role-cashier { background: var(--success-soft); color: var(--success); }
-  .role-sb { background: #1a2332; color: white; }
-  .role-collector { background: var(--warning-soft); color: #92400e; }
+  .emp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .emp-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; cursor: pointer; transition: all .15s; }
+  .emp-card:hover { border-color: var(--primary); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+  .emp-head { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+  .emp-name { font-size: 14px; font-weight: 700; }
+  .emp-pos { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+  .emp-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 11px; }
+  .emp-stats .l { color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; font-size: 10px; }
+  .emp-stats .v { font-weight: 700; margin-top: 2px; font-size: 13px; }
+
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(15,23,42,.55); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+  .modal-bg.open { display: flex; }
+  .modal { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-lg); max-width: 540px; width: 100%; padding: 24px; max-height: 90vh; overflow-y: auto; }
+  .modal h3 { font-size: 17px; font-weight: 700; margin-bottom: 16px; }
+  .modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 </style>
 </head>
 <body>
@@ -24,14 +34,10 @@
 <div class="page-head">
   <div>
     <h1>Сотрудники</h1>
-    <div class="desc">Команда платформы · 18 человек</div>
+    <div class="desc" id="emp-desc">База сотрудников</div>
   </div>
   <div class="page-head-actions">
-    <button class="btn">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-      Роли и доступы
-    </button>
-    <button class="btn primary" id="btn-new-employee">
+    <button class="btn primary" id="btn-new-emp" data-no-handler="true">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Новый сотрудник
     </button>
@@ -41,687 +47,228 @@
 <div class="stat-grid cols-4 mb-5">
   <div class="stat" style="padding: 14px 16px;">
     <div class="stat-label">Всего сотрудников</div>
-    <div class="stat-value" style="font-size: 22px;">18</div>
-    <div class="stat-sub">в команде</div>
+    <div class="stat-value" style="font-size: 22px;" id="kpi-total">0</div>
   </div>
   <div class="stat" style="padding: 14px 16px;">
-    <div class="stat-label">Менеджеры</div>
-    <div class="stat-value" style="font-size: 22px; color: var(--primary);">6</div>
-    <div class="stat-sub">по продажам</div>
+    <div class="stat-label">Активные</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--success);" id="kpi-active">0</div>
   </div>
   <div class="stat" style="padding: 14px 16px;">
-    <div class="stat-label">Онлайн сейчас</div>
-    <div class="stat-value" style="font-size: 22px; color: var(--success);">12</div>
-    <div class="stat-sub">в системе</div>
+    <div class="stat-label">По ролям</div>
+    <div class="stat-value" style="font-size: 14px;" id="kpi-roles">—</div>
   </div>
   <div class="stat" style="padding: 14px 16px;">
-    <div class="stat-label">ФОТ за месяц</div>
-    <div class="stat-value" style="font-size: 22px;">₽ 1.4 млн</div>
-    <div class="stat-sub">с премиями</div>
+    <div class="stat-label">ФОТ (план)</div>
+    <div class="stat-value" style="font-size: 18px; color: var(--purple);" id="kpi-fot">0 ₽</div>
   </div>
-</div>
-
-<div class="chip-row mb-4" id="emp-chips">
-  <div class="chip active" data-role="all">Все <span class="count">18</span></div>
-  <div class="chip" data-role="admin">Администраторы <span class="count">2</span></div>
-  <div class="chip" data-role="manager">Менеджеры <span class="count">6</span></div>
-  <div class="chip" data-role="cashier">Кассиры <span class="count">3</span></div>
-  <div class="chip" data-role="sb">Служба безопасности <span class="count">2</span></div>
-  <div class="chip" data-role="collector">Взыскание <span class="count">2</span></div>
-  <div class="chip" data-role="bookkeeper">Бухгалтерия <span class="count">2</span></div>
-  <div class="chip" data-role="blocked">Заблокированы <span class="count">1</span></div>
 </div>
 
 <div class="filter-bar">
   <div class="filter-search">
     <span class="si"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
-    <input type="text" id="emp-search" placeholder="Поиск по ФИО, должности, телефону..." />
+    <input type="text" id="emp-search" placeholder="Поиск по ФИО, должности, отделу..." />
   </div>
 </div>
 
-<div class="card">
-  <table class="tbl">
-    <thead>
-      <tr>
-        <th>Сотрудник</th>
-        <th>Роль</th>
-        <th>Контакты</th>
-        <th class="t-center">Сделок</th>
-        <th class="t-right">Оборот</th>
-        <th>Зарплата</th>
-        <th>Статус</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr class="clickable" data-role="admin">
-        <td>
-          <div class="row-client">
-            <div class="avatar c7">ДИ</div>
-            <div>
-              <div class="t-strong">Джабраилов Ибрагим Магомедович</div>
-              <div class="text-xs text-muted">Владелец · основатель компании</div>
-            </div>
-          </div>
-        </td>
-        <td><span class="role-badge role-admin">Администратор</span></td>
-        <td>
-          <div class="text-strong">+7 928 100-00-00</div>
-          <div class="text-xs text-muted">i.dzhabrailov@payd.ru</div>
-        </td>
-        <td class="t-center"><span class="t-strong">—</span></td>
-        <td class="t-right t-mono">—</td>
-        <td>
-          <div class="t-strong">—</div>
-          <div class="text-xs text-muted">владелец</div>
-        </td>
-        <td><span class="status-dot success">Онлайн</span></td>
-        <td><button class="icon-btn" style="width: 28px; height: 28px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
-      </tr>
-
-      <tr class="clickable" data-role="manager">
-        <td>
-          <div class="row-client">
-            <div class="avatar c2">БМ</div>
-            <div>
-              <div class="t-strong">Бекуев Муслим Денисович</div>
-              <div class="text-xs text-muted">Старший менеджер · 3 года в компании</div>
-            </div>
-          </div>
-        </td>
-        <td><span class="role-badge role-manager">Старший менеджер</span></td>
-        <td>
-          <div class="text-strong">+7 928 100-00-01</div>
-          <div class="text-xs text-muted">m.bekuev@payd.ru</div>
-        </td>
-        <td class="t-center"><span class="t-strong">38</span></td>
-        <td class="t-right t-strong t-mono">1 248 600 ₽</td>
-        <td>
-          <div class="t-strong">85 000 ₽ + %</div>
-          <div class="text-xs text-muted">премия 124 800</div>
-        </td>
-        <td><span class="status-dot success">Онлайн</span></td>
-        <td><button class="icon-btn" style="width: 28px; height: 28px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button></td>
-      </tr>
-
-      <tr class="clickable" data-role="manager">
-        <td>
-          <div class="row-client">
-            <div class="avatar c3">АС</div>
-            <div>
-              <div class="t-strong">Алиев Султан Магомедович</div>
-              <div class="text-xs text-muted">Менеджер · 2 года в компании</div>
-            </div>
-          </div>
-        </td>
-        <td><span class="role-badge role-manager">Менеджер</span></td>
-        <td>
-          <div class="text-strong">+7 928 100-00-02</div>
-          <div class="text-xs text-muted">s.aliev@payd.ru</div>
-        </td>
-        <td class="t-center"><span class="t-strong">32</span></td>
-        <td class="t-right t-strong t-mono">982 400 ₽</td>
-        <td>
-          <div class="t-strong">65 000 ₽ + %</div>
-          <div class="text-xs text-muted">премия 98 200</div>
-        </td>
-        <td><span class="status-dot success">Онлайн</span></td>
-        <td><button class="icon-btn" style="width: 28px; height: 28px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button></td>
-      </tr>
-
-      <tr class="clickable" data-role="manager">
-        <td>
-          <div class="row-client">
-            <div class="avatar c4">ИИ</div>
-            <div>
-              <div class="t-strong">Исаев Ислам Русланович</div>
-              <div class="text-xs text-muted">Менеджер · 1 год в компании</div>
-            </div>
-          </div>
-        </td>
-        <td><span class="role-badge role-manager">Менеджер</span></td>
-        <td>
-          <div class="text-strong">+7 928 100-00-03</div>
-          <div class="text-xs text-muted">i.isaev@payd.ru</div>
-        </td>
-        <td class="t-center"><span class="t-strong">28</span></td>
-        <td class="t-right t-strong t-mono">784 200 ₽</td>
-        <td>
-          <div class="t-strong">55 000 ₽ + %</div>
-          <div class="text-xs text-muted">премия 78 400</div>
-        </td>
-        <td><span class="status-dot success">Онлайн</span></td>
-        <td><button class="icon-btn" style="width: 28px; height: 28px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button></td>
-      </tr>
-
-      <tr class="clickable" data-role="manager">
-        <td>
-          <div class="row-client">
-            <div class="avatar c5">МА</div>
-            <div>
-              <div class="t-strong">Мусаева Аминат Хасановна</div>
-              <div class="text-xs text-muted">Менеджер · 1.5 года в компании</div>
-            </div>
-          </div>
-        </td>
-        <td><span class="role-badge role-manager">Менеджер</span></td>
-        <td>
-          <div class="text-strong">+7 928 100-00-04</div>
-          <div class="text-xs text-muted">a.musaeva@payd.ru</div>
-        </td>
-        <td class="t-center"><span class="t-strong">24</span></td>
-        <td class="t-right t-strong t-mono">624 800 ₽</td>
-        <td>
-          <div class="t-strong">55 000 ₽ + %</div>
-          <div class="text-xs text-muted">премия 62 400</div>
-        </td>
-        <td><span class="status-dot warning">Перерыв</span></td>
-        <td><button class="icon-btn" style="width: 28px; height: 28px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button></td>
-      </tr>
-
-      <tr class="clickable" data-role="collector">
-        <td>
-          <div class="row-client">
-            <div class="avatar c6">ХА</div>
-            <div>
-              <div class="t-strong">Хасанов Адам Усманович</div>
-              <div class="text-xs text-muted">Специалист по взысканию · 2 года</div>
-            </div>
-          </div>
-        </td>
-        <td><span class="role-badge role-collector">Взыскание</span></td>
-        <td>
-          <div class="text-strong">+7 928 100-00-05</div>
-          <div class="text-xs text-muted">a.khasanov@payd.ru</div>
-        </td>
-        <td class="t-center"><span class="t-strong">— </span></td>
-        <td class="t-right t-mono">186 200 ₽ <span class="text-xs text-muted">возвр.</span></td>
-        <td>
-          <div class="t-strong">60 000 ₽</div>
-          <div class="text-xs text-muted">премия 18 600</div>
-        </td>
-        <td><span class="status-dot success">Онлайн</span></td>
-        <td><button class="icon-btn" style="width: 28px; height: 28px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button></td>
-      </tr>
-
-      <tr class="clickable" data-role="cashier">
-        <td>
-          <div class="row-client">
-            <div class="avatar c7">ТР</div>
-            <div>
-              <div class="t-strong">Тагаев Руслан Беканович</div>
-              <div class="text-xs text-muted">Кассир · 1 год в компании</div>
-            </div>
-          </div>
-        </td>
-        <td><span class="role-badge role-cashier">Кассир</span></td>
-        <td>
-          <div class="text-strong">+7 928 100-00-06</div>
-          <div class="text-xs text-muted">r.tagaev@payd.ru</div>
-        </td>
-        <td class="t-center"><span class="t-strong">— </span></td>
-        <td class="t-right t-mono">386 400 ₽ <span class="text-xs text-muted">принято</span></td>
-        <td>
-          <div class="t-strong">45 000 ₽</div>
-          <div class="text-xs text-muted">фикс</div>
-        </td>
-        <td><span class="status-dot success">Онлайн</span></td>
-        <td><button class="icon-btn" style="width: 28px; height: 28px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button></td>
-      </tr>
-
-      <tr class="clickable" data-role="sb">
-        <td>
-          <div class="row-client">
-            <div class="avatar c1">МУ</div>
-            <div>
-              <div class="t-strong">Мусаев Умар Исаевич</div>
-              <div class="text-xs text-muted">СБ · 3 года в компании</div>
-            </div>
-          </div>
-        </td>
-        <td><span class="role-badge role-sb">СБ</span></td>
-        <td>
-          <div class="text-strong">+7 928 100-00-07</div>
-          <div class="text-xs text-muted">u.musaev@payd.ru</div>
-        </td>
-        <td class="t-center"><span class="t-strong">— </span></td>
-        <td class="t-right t-mono">82 проверки</td>
-        <td>
-          <div class="t-strong">70 000 ₽</div>
-          <div class="text-xs text-muted">фикс</div>
-        </td>
-        <td><span class="status-dot success">Онлайн</span></td>
-        <td><button class="icon-btn" style="width: 28px; height: 28px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button></td>
-      </tr>
-
-      <tr class="clickable" data-role="manager">
-        <td>
-          <div class="row-client">
-            <div class="avatar c3">АИ</div>
-            <div>
-              <div class="t-strong">Ахмадова Иман Рустамовна</div>
-              <div class="text-xs text-muted">Бухгалтер · 4 года в компании</div>
-            </div>
-          </div>
-        </td>
-        <td><span class="role-badge" style="background: var(--purple-soft); color: var(--purple);">Бухгалтерия</span></td>
-        <td>
-          <div class="text-strong">+7 928 100-00-08</div>
-          <div class="text-xs text-muted">i.akhmadova@payd.ru</div>
-        </td>
-        <td class="t-center"><span class="t-strong">— </span></td>
-        <td class="t-right t-mono">—</td>
-        <td>
-          <div class="t-strong">75 000 ₽</div>
-          <div class="text-xs text-muted">фикс</div>
-        </td>
-        <td><span class="status-dot success">Онлайн</span></td>
-        <td><button class="icon-btn" style="width: 28px; height: 28px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button></td>
-      </tr>
-
-      <tr class="clickable" data-role="manager">
-        <td>
-          <div class="row-client">
-            <div class="avatar c4">ИУ</div>
-            <div>
-              <div class="t-strong">Идрисов Усман Шамилевич</div>
-              <div class="text-xs text-muted">Менеджер · 6 мес в компании</div>
-            </div>
-          </div>
-        </td>
-        <td><span class="role-badge role-manager">Менеджер</span></td>
-        <td>
-          <div class="text-strong">+7 928 100-00-09</div>
-          <div class="text-xs text-muted">u.idrisov@payd.ru</div>
-        </td>
-        <td class="t-center"><span class="t-strong">14</span></td>
-        <td class="t-right t-strong t-mono">324 000 ₽</td>
-        <td>
-          <div class="t-strong">45 000 ₽ + %</div>
-          <div class="text-xs text-muted">премия 32 400</div>
-        </td>
-        <td><span class="status-dot">Оффлайн</span></td>
-        <td><button class="icon-btn" style="width: 28px; height: 28px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button></td>
-      </tr>
-    </tbody>
-  </table>
+<div class="emp-grid" id="emp-grid">
+  <div style="grid-column:1/-1;padding:60px;text-align:center;color:var(--text-3);">Загрузка...</div>
 </div>
 
+</div>
+
+<div class="modal-bg" id="emp-modal">
+  <div class="modal">
+    <h3 id="emp-modal-title">Сотрудник</h3>
+    <div class="modal-row">
+      <div class="field">
+        <label class="field-label">ФИО *</label>
+        <input class="input" id="m-name" placeholder="Иванов Иван Иванович" />
+      </div>
+      <div class="field">
+        <label class="field-label">Роль *</label>
+        <select class="select" id="m-role">
+          <option value="manager">Менеджер</option>
+          <option value="cashier">Кассир</option>
+          <option value="sb">СБ</option>
+          <option value="collector">Взыскание</option>
+          <option value="inkassator">Инкассатор</option>
+          <option value="warehouse">Склад</option>
+          <option value="admin">Администратор</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="field"><label class="field-label">Должность</label><input class="input" id="m-position" placeholder="Старший менеджер" /></div>
+      <div class="field"><label class="field-label">Отдел</label><input class="input" id="m-department" placeholder="Продажи" /></div>
+    </div>
+    <div class="modal-row">
+      <div class="field"><label class="field-label">Телефон</label><input class="input" id="m-phone" placeholder="+7 ___ ___-__-__" /></div>
+      <div class="field"><label class="field-label">Дата рождения</label><input class="input" id="m-birthday" type="date" /></div>
+    </div>
+    <div class="modal-row">
+      <div class="field"><label class="field-label">Принят</label><input class="input" id="m-hired" type="date" /></div>
+      <div class="field"><label class="field-label">Оклад (₽)</label><input class="input" id="m-salary" type="number" placeholder="0" /></div>
+    </div>
+    <div class="field" style="margin-bottom: 12px;">
+      <label class="field-label">Заметки</label>
+      <textarea class="textarea" id="m-notes" placeholder="Любая дополнительная информация"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn danger" id="m-delete" data-no-handler="true" style="display:none;">Деактивировать</button>
+      <button class="btn" id="m-cancel" data-no-handler="true" style="margin-left:auto;">Отмена</button>
+      <button class="btn primary" id="m-save" data-no-handler="true">Сохранить</button>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="db.js"></script>
 <script src="app.js"></script>
 <script>
-  PaydApp.mountShell({
-    active: 'employees',
-    title: 'Сотрудники',
-    breadcrumbs: [{ label: 'Главная', href: 'dashboard.html' }, { label: 'Сотрудники' }]
+  PaydApp.mountShell({ active: 'employees', title: 'Сотрудники', breadcrumbs: [] });
+
+  const ROLE_LABELS = {
+    admin: 'Администратор', manager: 'Менеджер', cashier: 'Кассир',
+    sb: 'СБ', collector: 'Взыскание', inkassator: 'Инкассатор',
+    warehouse: 'Склад', partner: 'Партнёр', client: 'Клиент'
+  };
+  const fmt = v => Math.round(+v || 0).toLocaleString('ru-RU').replace(/,/g, ' ') + ' ₽';
+  function escapeHtml(s) { return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
+  function getInitials(n) { const p = (n || '').trim().split(/\s+/); return ((p[0]?.[0] || '') + (p[1]?.[0] || '')).toUpperCase() || '?'; }
+
+  let editingId = null;
+  let allEmployees = [];
+
+  async function loadEmployees() {
+    if (!window.PaydDB?.cloud?.isOnline?.()) return [];
+    const sb = PaydDB.cloud.sb();
+    if (!sb) return [];
+    const { data } = await sb.from('profiles').select('*').order('full_name');
+    return data || [];
+  }
+
+  async function refresh() {
+    allEmployees = await loadEmployees();
+    render();
+  }
+
+  function render() {
+    const q = (document.getElementById('emp-search').value || '').toLowerCase().trim();
+    const filtered = q
+      ? allEmployees.filter(e => (e.full_name || '').toLowerCase().includes(q)
+        || (e.position || '').toLowerCase().includes(q)
+        || (e.department || '').toLowerCase().includes(q))
+      : allEmployees;
+
+    const grid = document.getElementById('emp-grid');
+    if (!filtered.length) {
+      grid.innerHTML = `
+        <div style="grid-column:1/-1;padding:60px;text-align:center;color:var(--text-3);">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 12px;opacity:.4;"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          <div>${q ? 'Никого не нашли' : 'Сотрудников пока нет'}</div>
+          <div style="font-size:12px;margin-top:6px;">Сотрудники создаются через Supabase Authentication → Users.<br>После создания auth-аккаунта здесь появится профиль для редактирования.</div>
+        </div>`;
+    } else {
+      const colors = ['c1','c2','c3','c4','c5','c6','c7'];
+      grid.innerHTML = filtered.map((e, i) => `
+        <div class="emp-card" data-id="${escapeHtml(e.id)}">
+          <div class="emp-head">
+            <div class="avatar ${colors[i % colors.length]} lg">${getInitials(e.full_name)}</div>
+            <div style="flex:1;min-width:0;">
+              <div class="emp-name">${escapeHtml(e.full_name || '—')}</div>
+              <div class="emp-pos">${escapeHtml(e.position || ROLE_LABELS[e.role] || e.role || '—')}</div>
+              <div style="margin-top:4px;"><span class="badge ${e.active === false ? 'gray' : 'success'}">${e.active === false ? 'Неактивен' : 'Активный'}</span></div>
+            </div>
+          </div>
+          <div class="emp-stats">
+            <div><div class="l">Роль</div><div class="v">${escapeHtml(ROLE_LABELS[e.role] || e.role || '—')}</div></div>
+            <div><div class="l">Оклад</div><div class="v">${e.base_salary ? fmt(e.base_salary) : '—'}</div></div>
+          </div>
+        </div>
+      `).join('');
+      grid.querySelectorAll('.emp-card').forEach(c => c.addEventListener('click', () => openEdit(c.dataset.id)));
+    }
+
+    document.getElementById('kpi-total').textContent = allEmployees.length;
+    document.getElementById('kpi-active').textContent = allEmployees.filter(e => e.active !== false).length;
+    const roleCounts = {};
+    allEmployees.forEach(e => { roleCounts[e.role] = (roleCounts[e.role] || 0) + 1; });
+    document.getElementById('kpi-roles').textContent = Object.entries(roleCounts)
+      .map(([r, n]) => `${ROLE_LABELS[r] || r}: ${n}`).slice(0, 3).join(' · ') || '—';
+    const fot = allEmployees.filter(e => e.active !== false).reduce((s, e) => s + (+e.base_salary || 0), 0);
+    document.getElementById('kpi-fot').textContent = fmt(fot);
+    document.getElementById('emp-desc').textContent = 'База сотрудников · ' + allEmployees.length + ' чел.';
+  }
+
+  const modal = document.getElementById('emp-modal');
+  function openNew() {
+    PaydApp.toast('Сначала создай auth-аккаунт в Supabase Dashboard → Authentication → Users → Add user', { type: 'info', subtitle: 'После этого профиль появится здесь и его можно отредактировать' });
+  }
+  function openEdit(id) {
+    const e = allEmployees.find(x => x.id === id);
+    if (!e) return;
+    editingId = id;
+    document.getElementById('emp-modal-title').textContent = 'Сотрудник: ' + (e.full_name || '');
+    document.getElementById('m-delete').style.display = '';
+    document.getElementById('m-name').value = e.full_name || '';
+    document.getElementById('m-position').value = e.position || '';
+    document.getElementById('m-department').value = e.department || '';
+    document.getElementById('m-phone').value = e.phone || '';
+    document.getElementById('m-birthday').value = e.birthday || '';
+    document.getElementById('m-hired').value = e.hired_at || '';
+    document.getElementById('m-salary').value = e.base_salary || '';
+    document.getElementById('m-notes').value = e.notes || '';
+    document.getElementById('m-role').value = e.role || 'manager';
+    modal.classList.add('open');
+  }
+
+  document.getElementById('btn-new-emp').addEventListener('click', openNew);
+  document.getElementById('m-cancel').addEventListener('click', () => modal.classList.remove('open'));
+  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
+  document.getElementById('emp-search').addEventListener('input', render);
+
+  document.getElementById('m-save').addEventListener('click', async () => {
+    if (!editingId) return;
+    const data = {
+      full_name: document.getElementById('m-name').value.trim(),
+      role: document.getElementById('m-role').value,
+      position: document.getElementById('m-position').value.trim() || null,
+      department: document.getElementById('m-department').value.trim() || null,
+      phone: document.getElementById('m-phone').value.trim() || null,
+      birthday: document.getElementById('m-birthday').value || null,
+      hired_at: document.getElementById('m-hired').value || null,
+      base_salary: +document.getElementById('m-salary').value || null,
+      notes: document.getElementById('m-notes').value.trim() || null
+    };
+    if (!data.full_name) { PaydApp.toast('Укажите ФИО', 'error'); return; }
+    const sb = PaydDB.cloud.sb();
+    try {
+      const { error } = await sb.from('profiles').update(data).eq('id', editingId);
+      if (error) throw error;
+      PaydApp.toast('Сотрудник обновлён', 'success');
+      modal.classList.remove('open');
+      refresh();
+    } catch (err) { PaydApp.toast('Ошибка: ' + err.message, 'error'); }
   });
 
-  // ============================================================
-  // EMPLOYEES CRUD + FILTERS
-  // ============================================================
-  (function () {
-    const ROLE_LABELS = {
-      admin:      { label: 'Администратор', cls: 'role-admin' },
-      manager:    { label: 'Менеджер', cls: 'role-manager' },
-      senior:     { label: 'Старший менеджер', cls: 'role-manager' },
-      cashier:    { label: 'Кассир', cls: 'role-cashier' },
-      sb:         { label: 'СБ', cls: 'role-sb' },
-      collector:  { label: 'Взыскание', cls: 'role-collector' },
-      bookkeeper: { label: 'Бухгалтерия', cls: 'role-bookkeeper' }
-    };
-    const COLORS = ['c1','c2','c3','c4','c5','c6','c7'];
-    const tbody = document.querySelector('table.tbl tbody');
-
-    // ===== FILTER LOGIC (chips + search combined) =====
-    let activeRole = 'all';
-    function applyFilters() {
-      const q = document.getElementById('emp-search').value.trim().toLowerCase();
-      let visible = 0;
-      tbody.querySelectorAll('tr').forEach(r => {
-        const role = r.dataset.role || 'manager';
-        let show = true;
-        // Role filter
-        if (activeRole === 'manager' && role !== 'manager' && role !== 'senior') show = false;
-        else if (activeRole === 'admin' && role !== 'admin') show = false;
-        else if (activeRole === 'cashier' && role !== 'cashier') show = false;
-        else if (activeRole === 'sb' && role !== 'sb') show = false;
-        else if (activeRole === 'collector' && role !== 'collector') show = false;
-        else if (activeRole === 'bookkeeper' && role !== 'bookkeeper') show = false;
-        else if (activeRole === 'blocked' && role !== 'blocked') show = false;
-        // Search
-        if (q && !r.textContent.toLowerCase().includes(q)) show = false;
-        r.style.display = show ? '' : 'none';
-        if (show) visible++;
-      });
-      // Update subtitle
-      const desc = document.querySelector('.page-head .desc');
-      if (desc) desc.textContent = `Команда платформы · ${visible} ${visible === 1 ? 'человек' : 'человек'}`;
-    }
-
-    // Wire chips
-    document.querySelectorAll('#emp-chips .chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        document.querySelectorAll('#emp-chips .chip').forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-        activeRole = chip.dataset.role || 'all';
-        applyFilters();
-      });
-    });
-
-    // Wire search
-    document.getElementById('emp-search')?.addEventListener('input', applyFilters);
-
-    // ===== EMPLOYEE FORM =====
-    function makeModal({ title, body, ok = 'Сохранить', cancel = 'Отмена', onOk, dangerBtn }) {
-      const backdrop = document.createElement('div');
-      backdrop.className = 'payd-modal-backdrop';
-      backdrop.innerHTML = `
-        <div class="payd-modal" style="max-width: 560px;">
-          <h3>${title}</h3>
-          ${body}
-          <div class="payd-modal-actions" style="margin-top: 18px;">
-            ${dangerBtn ? `<button class="btn danger danger-btn" style="margin-right: auto;">${dangerBtn}</button>` : ''}
-            <button class="btn cancel-btn">${cancel}</button>
-            <button class="btn primary ok-btn">${ok}</button>
-          </div>
-        </div>
-      `;
-      document.body.appendChild(backdrop);
-      requestAnimationFrame(() => backdrop.classList.add('show'));
-      const close = () => { backdrop.classList.remove('show'); setTimeout(() => backdrop.remove(), 150); };
-      backdrop.querySelector('.cancel-btn').onclick = close;
-      backdrop.onclick = e => { if (e.target === backdrop) close(); };
-      backdrop.querySelector('.ok-btn').onclick = () => {
-        const r = onOk?.(backdrop.querySelector('.payd-modal'));
-        if (r !== false) close();
-      };
-      return backdrop;
-    }
-
-    function empForm(d = {}) {
-      const sel = (val, opts) => opts.map(([v, l]) => `<option value="${v}"${v===val?' selected':''}>${l}</option>`).join('');
-      return `
-        <div style="display: grid; gap: 14px;">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-            <div class="field" style="grid-column: span 2;">
-              <label class="field-label">ФИО полностью *</label>
-              <input class="input" id="e-name" value="${d.name || ''}" placeholder="Иванов Иван Иванович" />
-            </div>
-            <div class="field">
-              <label class="field-label">Должность</label>
-              <input class="input" id="e-title" value="${d.title || ''}" placeholder="Менеджер по продажам" />
-            </div>
-            <div class="field">
-              <label class="field-label">Стаж в компании</label>
-              <input class="input" id="e-tenure" value="${d.tenure || ''}" placeholder="2 года" />
-            </div>
-            <div class="field">
-              <label class="field-label">Телефон *</label>
-              <input class="input" id="e-phone" value="${d.phone || ''}" placeholder="+7 928 ___ __ __" />
-            </div>
-            <div class="field">
-              <label class="field-label">Email</label>
-              <input class="input" id="e-email" value="${d.email || ''}" placeholder="i.ivanov@payd.ru" />
-            </div>
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
-            <div class="field">
-              <label class="field-label">Роль *</label>
-              <select class="select" id="e-role">${sel(d.role || 'manager', [
-                ['admin','Администратор'],['senior','Старший менеджер'],['manager','Менеджер'],
-                ['cashier','Кассир'],['sb','Служба безопасности'],
-                ['collector','Взыскание'],['bookkeeper','Бухгалтерия']
-              ])}</select>
-            </div>
-            <div class="field">
-              <label class="field-label">Цвет аватара</label>
-              <select class="select" id="e-color">${sel(d.color || 'c2', COLORS.map(c => [c, c.toUpperCase()]))}</select>
-            </div>
-            <div class="field">
-              <label class="field-label">Статус</label>
-              <select class="select" id="e-status">${sel(d.status || 'online', [
-                ['online','Онлайн'],['break','Перерыв'],['offline','Оффлайн'],['blocked','Заблокирован']
-              ])}</select>
-            </div>
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-            <div class="field">
-              <label class="field-label">Оклад</label>
-              <input class="input" id="e-salary" value="${d.salary || ''}" placeholder="55 000 ₽" />
-            </div>
-            <div class="field">
-              <label class="field-label">Бонусы / премия</label>
-              <input class="input" id="e-bonus" value="${d.bonus || ''}" placeholder="+ % от продаж" />
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    function readForm(modal) {
-      return {
-        name: modal.querySelector('#e-name').value.trim(),
-        title: modal.querySelector('#e-title').value.trim(),
-        tenure: modal.querySelector('#e-tenure').value.trim(),
-        phone: modal.querySelector('#e-phone').value.trim(),
-        email: modal.querySelector('#e-email').value.trim(),
-        role: modal.querySelector('#e-role').value,
-        color: modal.querySelector('#e-color').value,
-        status: modal.querySelector('#e-status').value,
-        salary: modal.querySelector('#e-salary').value.trim(),
-        bonus: modal.querySelector('#e-bonus').value.trim()
-      };
-    }
-
-    function buildRow(d, isNew = false) {
-      const initials = d.name.split(' ').slice(0, 2).map(s => s[0] || '').join('').toUpperCase();
-      const roleInfo = ROLE_LABELS[d.role === 'senior' ? 'senior' : d.role] || ROLE_LABELS.manager;
-      const roleLabel = d.role === 'senior' ? 'Старший менеджер' : roleInfo.label;
-      const statusDot = {
-        online:   '<span class="status-dot success">Онлайн</span>',
-        break:    '<span class="status-dot warning">Перерыв</span>',
-        offline:  '<span class="status-dot">Оффлайн</span>',
-        blocked:  '<span class="status-dot danger">Заблокирован</span>'
-      }[d.status || 'online'];
-      // Determine role-tag for filter
-      const filterRole = d.role === 'senior' ? 'manager' : (d.status === 'blocked' ? 'blocked' : d.role);
-
-      const row = document.createElement('tr');
-      row.className = 'clickable';
-      row.dataset.role = filterRole;
-      row.dataset.emp = JSON.stringify(d);
-      row.innerHTML = `
-        <td>
-          <div class="row-client">
-            <div class="avatar ${d.color || 'c2'}">${initials}</div>
-            <div>
-              <div class="t-strong">${d.name}</div>
-              <div class="text-xs text-muted">${d.title || roleLabel}${d.tenure ? ' · ' + d.tenure : ''}</div>
-            </div>
-          </div>
-        </td>
-        <td><span class="role-badge ${roleInfo.cls}">${roleLabel}</span></td>
-        <td>
-          <div class="text-strong">${d.phone || '—'}</div>
-          <div class="text-xs text-muted">${d.email || ''}</div>
-        </td>
-        <td class="t-center"><span class="t-strong">${isNew ? '0' : (d.deals || '—')}</span></td>
-        <td class="t-right t-strong t-mono">${isNew ? '—' : (d.turnover || '—')}</td>
-        <td>
-          <div class="t-strong">${d.salary || '—'}</div>
-          <div class="text-xs text-muted">${d.bonus || ''}</div>
-        </td>
-        <td>${statusDot}</td>
-        <td><button class="icon-btn" style="width: 28px; height: 28px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button></td>
-      `;
-      return row;
-    }
-
-    // ===== NEW EMPLOYEE =====
-    document.getElementById('btn-new-employee')?.addEventListener('click', e => {
-      e.preventDefault(); e.stopImmediatePropagation();
-      makeModal({
-        title: 'Новый сотрудник',
-        body: empForm(),
-        ok: 'Создать',
-        onOk: (modal) => {
-          const data = readForm(modal);
-          if (!data.name || data.name.split(' ').length < 2) { PaydApp.toast('Введите ФИО полностью', 'warning'); return false; }
-          if (!data.phone) { PaydApp.toast('Укажите телефон', 'warning'); return false; }
-          const row = buildRow(data, true);
-          attachRowClick(row);
-          tbody.prepend(row);
-          row.style.transition = 'background .8s';
-          row.style.background = 'rgba(37,99,235,.08)';
-          setTimeout(() => { row.style.background = ''; }, 100);
-          // Update total counter
-          const total = document.querySelector('.stat .stat-value');
-          if (total) total.textContent = String(parseInt(total.textContent, 10) + 1);
-          PaydApp.toast(`Сотрудник создан: ${data.name}`, 'success');
-          applyFilters();
-          return true;
-        }
-      });
-    }, true);
-
-    // ===== EDIT (click on row) =====
-    function attachRowClick(row) {
-      // Avoid double-binding
-      row.querySelector('td')?.style.setProperty('cursor', 'pointer');
-      row.addEventListener('click', e => {
-        // Skip if clicked the kebab button
-        if (e.target.closest('.icon-btn')) return;
-
-        let data = {};
-        try { data = JSON.parse(row.dataset.emp || '{}'); } catch(_) {}
-        if (!data.name) {
-          // Parse from DOM (legacy rows)
-          data.name = row.querySelector('.t-strong')?.textContent.trim() || '';
-          data.title = row.querySelector('.text-xs.text-muted')?.textContent.split(' · ')[0] || '';
-          data.tenure = row.querySelector('.text-xs.text-muted')?.textContent.split(' · ')[1] || '';
-          const phoneEl = row.querySelectorAll('.text-strong')[1];
-          if (phoneEl) data.phone = phoneEl.textContent.trim();
-          const emailEl = row.querySelectorAll('.text-xs.text-muted')[1];
-          if (emailEl) data.email = emailEl.textContent.trim();
-          // Role from badge
-          const badge = row.querySelector('.role-badge');
-          if (badge) {
-            if (badge.textContent.includes('Старший')) data.role = 'senior';
-            else if (badge.textContent.includes('Администратор')) data.role = 'admin';
-            else if (badge.textContent.includes('Кассир')) data.role = 'cashier';
-            else if (badge.textContent.includes('Бухгалтерия')) data.role = 'bookkeeper';
-            else if (badge.textContent.includes('Взыскание')) data.role = 'collector';
-            else if (badge.textContent === 'СБ') data.role = 'sb';
-            else data.role = 'manager';
-          }
-          // Color from avatar
-          const av = row.querySelector('.avatar');
-          if (av) {
-            const cClass = [...av.classList].find(c => /^c[1-7]$/.test(c));
-            data.color = cClass || 'c2';
-          }
-          // Salary / bonus
-          const salaryEls = row.querySelectorAll('td .t-strong');
-          data.salary = salaryEls[salaryEls.length - 2]?.textContent.trim();
-          data.bonus = row.querySelectorAll('.text-xs.text-muted')[2]?.textContent.trim();
-          // Status
-          const dot = row.querySelector('.status-dot');
-          if (dot?.classList.contains('success')) data.status = 'online';
-          else if (dot?.classList.contains('warning')) data.status = 'break';
-          else if (dot?.classList.contains('danger')) data.status = 'blocked';
-          else data.status = 'offline';
-          // Deals/turnover (read-only)
-          data.deals = row.querySelector('.t-center .t-strong')?.textContent.trim();
-          data.turnover = row.querySelector('.t-right.t-strong.t-mono')?.textContent.trim();
-        }
-
-        const m = makeModal({
-          title: `Редактирование: ${data.name}`,
-          body: empForm(data),
-          ok: 'Сохранить',
-          dangerBtn: 'Удалить сотрудника',
-          onOk: (modal) => {
-            const upd = readForm(modal);
-            if (!upd.name) { PaydApp.toast('Введите ФИО', 'warning'); return false; }
-            upd.deals = data.deals;
-            upd.turnover = data.turnover;
-            const newRow = buildRow(upd);
-            attachRowClick(newRow);
-            row.replaceWith(newRow);
-            newRow.style.transition = 'background .8s';
-            newRow.style.background = 'rgba(245,158,11,.12)';
-            setTimeout(() => { newRow.style.background = ''; }, 100);
-            PaydApp.toast(`Сохранено: ${upd.name}`, 'success');
-            applyFilters();
-            return true;
-          }
-        });
-
-        // Wire delete button (after modal is rendered)
-        setTimeout(() => {
-          const dangerBtn = m.querySelector('.danger-btn');
-          if (!dangerBtn) return;
-          dangerBtn.onclick = () => {
-            m.classList.remove('show');
-            setTimeout(() => m.remove(), 150);
-            PaydApp.confirmDialog({
-              title: `Удалить сотрудника «${data.name}»?`,
-              message: 'Доступ будет заблокирован. Связанные сделки и история останутся в системе.',
-              okText: 'Удалить',
-              onOk: () => {
-                row.style.transition = 'opacity .25s, max-height .25s';
-                row.style.opacity = '0';
-                setTimeout(() => row.remove(), 250);
-                const total = document.querySelector('.stat .stat-value');
-                if (total) total.textContent = String(Math.max(0, parseInt(total.textContent, 10) - 1));
-                PaydApp.toast('Сотрудник удалён', 'error');
-                applyFilters();
-              }
-            });
-          };
-        }, 0);
-      });
-    }
-
-    // Wire all existing rows
-    tbody.querySelectorAll('tr').forEach(attachRowClick);
-
-    // ===== "Роли и доступы" button =====
-    [...document.querySelectorAll('button.btn')].forEach(b => {
-      if (b.textContent.trim() === 'Роли и доступы') {
-        b.addEventListener('click', e => {
-          e.preventDefault(); e.stopImmediatePropagation();
-          makeModal({
-            title: 'Роли и доступы',
-            body: `
-              <p style="font-size: 13px; color: var(--text-2); margin-bottom: 14px;">Настройка прав каждой роли в системе. Для тонкой настройки конкретного сотрудника откройте его карточку.</p>
-              <div style="display: grid; gap: 10px;">
-                ${[
-                  ['Администратор', 'Полный доступ ко всему. Может создавать пользователей, менять настройки, видеть финансы.'],
-                  ['Старший менеджер', 'Доступ к CRM, всем заявкам, новой заявке, договорам. Видит свою и чужие сделки.'],
-                  ['Менеджер', 'Своя CRM-воронка, свои заявки, создание новых. Чужие заявки только просмотр.'],
-                  ['Кассир', 'Только касса и подтверждение платежей. Не видит CRM и финансовые отчёты.'],
-                  ['СБ', 'Только очередь СБ. Может одобрять/отклонять, видит скоринг и личные данные.'],
-                  ['Взыскание', 'Раздел просрочек. Может звонить, отправлять SMS, фиксировать договорённости.'],
-                  ['Бухгалтерия', 'Финансовые отчёты, журнал ДДС, выгрузка в 1С. Не видит CRM.']
-                ].map(([r, d]) => `
-                  <div style="display: flex; gap: 12px; padding: 12px; background: var(--surface-2); border-radius: 8px;">
-                    <div style="font-size: 13px; font-weight: 700; min-width: 140px;">${r}</div>
-                    <div style="font-size: 12px; color: var(--text-2); flex: 1;">${d}</div>
-                  </div>
-                `).join('')}
-              </div>
-            `,
-            ok: 'Понятно',
-            cancel: 'Закрыть'
-          });
-        }, true);
+  document.getElementById('m-delete').addEventListener('click', () => {
+    if (!editingId) return;
+    PaydApp.confirmDialog({
+      title: 'Деактивировать сотрудника?',
+      message: 'Сотрудник пометится как неактивный. Полное удаление — только в Supabase Dashboard.',
+      okText: 'Деактивировать',
+      onOk: async () => {
+        const sb = PaydDB.cloud.sb();
+        await sb.from('profiles').update({ active: false, fired_at: new Date().toISOString().slice(0, 10) }).eq('id', editingId);
+        modal.classList.remove('open');
+        PaydApp.toast('Сотрудник деактивирован', 'success');
+        refresh();
       }
     });
-  })();
+  });
+
+  refresh();
+  setInterval(refresh, 15000);
 </script>
 </body>
 </html>

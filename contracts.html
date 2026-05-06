@@ -9,22 +9,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <style>
-  .contracts-grid { display: grid; grid-template-columns: 1fr 320px; gap: 16px; }
-  @media (max-width: 1300px) { .contracts-grid { grid-template-columns: 1fr; } }
-
-  .doc-row { display: grid; grid-template-columns: 36px 1fr 200px 130px 130px 100px 80px; gap: 12px; align-items: center; padding: 12px 18px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .12s; }
-  .doc-row:hover { background: var(--surface-2); }
-  .doc-row .ico { width: 36px; height: 36px; background: var(--surface-2); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text-2); }
-  .doc-row .name { font-size: 13px; font-weight: 600; }
-  .doc-row .meta { font-size: 11px; color: var(--text-3); margin-top: 2px; }
-
-  .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
-  .tmpl-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; cursor: pointer; transition: all .15s; }
-  .tmpl-card:hover { border-color: var(--primary); box-shadow: var(--shadow-md); }
-  .tmpl-card .ic { width: 38px; height: 38px; background: var(--primary-soft); color: var(--primary); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
-  .tmpl-card .t { font-size: 13px; font-weight: 700; }
-  .tmpl-card .s { font-size: 11px; color: var(--text-3); margin-top: 4px; }
-  .tmpl-card .meta { display: flex; justify-content: space-between; padding-top: 10px; margin-top: 10px; border-top: 1px solid var(--border); font-size: 10px; color: var(--text-3); }
+  .ct-row { display: grid; grid-template-columns: 130px 1fr 130px 110px 110px 80px; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--border); align-items: center; cursor: pointer; transition: background .12s; }
+  .ct-row:hover { background: var(--surface-2); }
+  .ct-row .num { font-weight: 700; font-family: 'Courier New', monospace; }
+  .ct-row .client { font-size: 13px; font-weight: 600; }
+  .ct-row .meta { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+  .empty { padding: 60px 20px; text-align: center; color: var(--text-3); }
 </style>
 </head>
 <body>
@@ -33,272 +23,55 @@
 
 <div class="page-head">
   <div>
-    <h1>Договоры и документы</h1>
-    <div class="desc">Шаблоны, конструктор, электронная подпись · 412 договоров</div>
-  </div>
-  <div class="page-head-actions">
-    <button class="btn">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
-      Конструктор шаблона
-    </button>
-    <button class="btn primary">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Создать договор
-    </button>
+    <h1>Договоры</h1>
+    <div class="desc" id="ct-desc">Все договоры рассрочки</div>
   </div>
 </div>
 
-<!-- STATS -->
 <div class="stat-grid cols-4 mb-5">
   <div class="stat" style="padding: 14px 16px;">
-    <div class="stat-label">Всего договоров</div>
-    <div class="stat-value" style="font-size: 22px;">412</div>
-    <div class="stat-sub">за всё время</div>
+    <div class="stat-label">Всего</div>
+    <div class="stat-value" style="font-size: 22px;" id="kpi-total">0</div>
   </div>
   <div class="stat" style="padding: 14px 16px;">
     <div class="stat-label" style="color: var(--success);">Подписаны</div>
-    <div class="stat-value" style="font-size: 22px; color: var(--success);">368</div>
-    <div class="stat-sub">89% — e-sign по SMS</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--success);" id="kpi-signed">0</div>
   </div>
   <div class="stat" style="padding: 14px 16px;">
-    <div class="stat-label" style="color: var(--warning);">Ожидают подписи</div>
-    <div class="stat-value" style="font-size: 22px; color: var(--warning);">5</div>
-    <div class="stat-sub">отправлены клиентам</div>
+    <div class="stat-label" style="color: var(--primary);">Черновик</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--primary);" id="kpi-draft">0</div>
   </div>
   <div class="stat" style="padding: 14px 16px;">
-    <div class="stat-label" style="color: var(--text-3);">Черновики</div>
-    <div class="stat-value" style="font-size: 22px;">3</div>
-    <div class="stat-sub">не отправлены</div>
+    <div class="stat-label" style="color: var(--danger);">Расторгнут</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--danger);" id="kpi-terminated">0</div>
   </div>
-</div>
-
-<!-- TEMPLATES -->
-<div style="margin-bottom: 24px;">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-    <h2 style="font-size: 16px; font-weight: 700;">Шаблоны договоров</h2>
-    <a href="#" class="text-sm" style="color: var(--primary); font-weight: 600;">Все шаблоны →</a>
-  </div>
-  <div class="template-grid">
-    <a class="tmpl-card" href="template.html?t=standard" style="text-decoration: none; color: inherit;">
-      <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
-      <div class="t">Договор рассрочки (стандарт)</div>
-      <div class="s">Базовый шаблон для всех стандартных сделок</div>
-      <div class="meta"><span>14 переменных</span><span>v 2.4</span></div>
-    </a>
-    <a class="tmpl-card" href="template.html?t=murabaha" style="border-color: #a7f3d0; text-decoration: none; color: inherit;">
-      <div class="ic" style="background: var(--success-soft); color: var(--success);"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5L9.1 8.4 2.5 9.4l4.7 4.6-1.1 6.6L12 17.5l5.9 3.1-1.1-6.6 4.7-4.6-6.6-1z"/></svg></div>
-      <div class="t">Договор Мурабаха</div>
-      <div class="s">Рассрочка с раскрытой надбавкой, без процентов</div>
-      <div class="meta"><span>16 переменных</span><span>v 1.8</span></div>
-    </a>
-    <a class="tmpl-card" href="template.html?t=guarantee" style="text-decoration: none; color: inherit;">
-      <div class="ic" style="background: var(--purple-soft); color: var(--purple);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
-      <div class="t">Договор поручительства</div>
-      <div class="s">Для сделок свыше 100 000 ₽</div>
-      <div class="meta"><span>8 переменных</span><span>v 1.2</span></div>
-    </a>
-    <a class="tmpl-card" href="template.html?t=act" style="text-decoration: none; color: inherit;">
-      <div class="ic" style="background: var(--warning-soft); color: var(--warning);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
-      <div class="t">Акт приёма-передачи</div>
-      <div class="s">Подписывается при выдаче товара</div>
-      <div class="meta"><span>10 переменных</span><span>v 2.1</span></div>
-    </a>
-    <a class="tmpl-card" href="template.html?t=partner" style="text-decoration: none; color: inherit;">
-      <div class="ic" style="background: var(--pink-soft); color: var(--pink);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg></div>
-      <div class="t">Соглашение с партнёром</div>
-      <div class="s">Договор с магазином-партнёром</div>
-      <div class="meta"><span>12 переменных</span><span>v 1.5</span></div>
-    </a>
-    <a class="tmpl-card" href="template.html?t=notice" style="text-decoration: none; color: inherit;">
-      <div class="ic" style="background: var(--warning-soft); color: var(--warning);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-      <div class="t">Уведомление о просрочке</div>
-      <div class="s">Напоминание клиенту о пропущенном платеже</div>
-      <div class="meta"><span>7 переменных</span><span>v 1.2</span></div>
-    </a>
-  </div>
-</div>
-
-<!-- FILTERS -->
-<div class="chip-row mb-4">
-  <div class="chip active">Все <span class="count">412</span></div>
-  <div class="chip">Подписаны <span class="count">368</span></div>
-  <div class="chip">На подписи <span class="count">5</span></div>
-  <div class="chip">Черновики <span class="count">3</span></div>
-  <div class="chip">Архив <span class="count">38</span></div>
-  <div class="chip">Расторгнуты <span class="count">1</span></div>
 </div>
 
 <div class="filter-bar">
   <div class="filter-search">
     <span class="si"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
-    <input type="text" placeholder="Поиск по номеру договора, клиенту, заявке..." />
+    <input type="text" id="ct-search" placeholder="Поиск по номеру, клиенту..." />
+  </div>
+  <div class="filter-extras">
+    <select id="ct-status">
+      <option value="all">Все статусы</option>
+      <option value="signed">Подписан</option>
+      <option value="draft">Черновик</option>
+      <option value="terminated">Расторгнут</option>
+    </select>
   </div>
 </div>
 
-<div class="contracts-grid">
-  <div class="card">
-    <div style="background: var(--surface-2); padding: 10px 18px; font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .04em; display: grid; grid-template-columns: 36px 1fr 200px 130px 130px 100px 80px; gap: 12px; border-bottom: 1px solid var(--border);">
-      <div></div>
-      <div>Документ</div>
-      <div>Клиент</div>
-      <div>Заявка</div>
-      <div>Подписан</div>
-      <div>Статус</div>
-      <div></div>
-    </div>
-
-    <div class="doc-row" onclick="window.location='contract.html?back=contracts.html'">
-      <div class="ico" style="background: var(--success-soft); color: var(--success);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg></div>
-      <div>
-        <div class="name">Договор рассрочки №ДР-0142/2026</div>
-        <div class="meta">PDF · 84 КБ · Шаблон «Стандарт» v2.4</div>
-      </div>
-      <div style="font-size: 12px;">Даурбекова Л. С.</div>
-      <div style="font-size: 12px;"><a href="zayavka.html" style="color: var(--primary);">#142</a></div>
-      <div style="font-size: 12px;">19.04.2026 16:09<div style="font-size: 10px; color: var(--text-3);">e-sign по SMS</div></div>
-      <div><span class="badge success dot">Подписан</span></div>
-      <div style="text-align: right;"><button class="btn sm">⋮</button></div>
-    </div>
-
-    <div class="doc-row" onclick="window.location='contract.html?back=contracts.html'">
-      <div class="ico" style="background: var(--success-soft); color: var(--success);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg></div>
-      <div>
-        <div class="name">Акт приёма-передачи №АПП-0144/2026</div>
-        <div class="meta">PDF · 42 КБ · Шаблон «Акт» v2.1</div>
-      </div>
-      <div style="font-size: 12px;">Хасиев А. Х.</div>
-      <div style="font-size: 12px;"><a href="zayavka.html" style="color: var(--primary);">#144</a></div>
-      <div style="font-size: 12px;">29.04.2026 14:42<div style="font-size: 10px; color: var(--text-3);">собственноручно</div></div>
-      <div><span class="badge success dot">Подписан</span></div>
-      <div style="text-align: right;"><button class="btn sm">⋮</button></div>
-    </div>
-
-    <div class="doc-row" onclick="window.location='contract.html?back=contracts.html'">
-      <div class="ico" style="background: var(--warning-soft); color: var(--warning);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg></div>
-      <div>
-        <div class="name">Договор Мурабаха №ДМ-0145/2026</div>
-        <div class="meta">PDF · 96 КБ · Шаблон «Мурабаха» v1.8</div>
-      </div>
-      <div style="font-size: 12px;">Гайтаев И. М.</div>
-      <div style="font-size: 12px;"><a href="zayavka.html" style="color: var(--primary);">#145</a></div>
-      <div style="font-size: 12px;">SMS отправлен 14:51<div style="font-size: 10px; color: var(--warning);">ожидание подписи</div></div>
-      <div><span class="badge warning dot">На подписи</span></div>
-      <div style="text-align: right;"><button class="btn sm primary">Напомнить</button></div>
-    </div>
-
-    <div class="doc-row" onclick="window.location='contract.html?back=contracts.html'">
-      <div class="ico" style="background: var(--success-soft); color: var(--success);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg></div>
-      <div>
-        <div class="name">Договор рассрочки №ДР-0143/2026</div>
-        <div class="meta">PDF · 82 КБ · Шаблон «Стандарт» v2.4</div>
-      </div>
-      <div style="font-size: 12px;">Магомедов А. С.</div>
-      <div style="font-size: 12px;"><a href="zayavka.html" style="color: var(--primary);">#143</a></div>
-      <div style="font-size: 12px;">29.04.2026 15:21<div style="font-size: 10px; color: var(--text-3);">e-sign по SMS</div></div>
-      <div><span class="badge success dot">Подписан</span></div>
-      <div style="text-align: right;"><button class="btn sm">⋮</button></div>
-    </div>
-
-    <div class="doc-row" onclick="window.location='contract.html?back=contracts.html'">
-      <div class="ico" style="background: var(--text-3); color: white;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg></div>
-      <div>
-        <div class="name">Договор рассрочки №ДР-0148/2026</div>
-        <div class="meta">DRAFT · 0 КБ · черновик</div>
-      </div>
-      <div style="font-size: 12px;">Магомадов Л. Х.</div>
-      <div style="font-size: 12px;"><a href="zayavka.html" style="color: var(--primary);">#148</a></div>
-      <div style="font-size: 12px; color: var(--text-3);">—</div>
-      <div><span class="badge gray dot">Черновик</span></div>
-      <div style="text-align: right;"><button class="btn sm primary">Отправить</button></div>
-    </div>
-
-    <div class="doc-row" onclick="window.location='contract.html?back=contracts.html'">
-      <div class="ico" style="background: var(--success-soft); color: var(--success);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg></div>
-      <div>
-        <div class="name">Соглашение о партнёрстве №СП-014/2026</div>
-        <div class="meta">PDF · 124 КБ · Шаблон «Партнёр» v1.5</div>
-      </div>
-      <div style="font-size: 12px;">ТехноМир — Грозный</div>
-      <div style="font-size: 12px; color: var(--text-3);">—</div>
-      <div style="font-size: 12px;">15.04.2026<div style="font-size: 10px; color: var(--text-3);">бумажный оригинал</div></div>
-      <div><span class="badge success dot">Подписан</span></div>
-      <div style="text-align: right;"><button class="btn sm">⋮</button></div>
-    </div>
-
-    <div class="doc-row" onclick="window.location='contract.html?back=contracts.html'">
-      <div class="ico" style="background: var(--warning-soft); color: var(--warning);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-      <div>
-        <div class="name">Уведомление о просрочке №УП-001/2026</div>
-        <div class="meta">PDF · 28 КБ · Шаблон «Уведомление» v1.2</div>
-      </div>
-      <div style="font-size: 12px;">Исраилов Я. А.</div>
-      <div style="font-size: 12px;"><a href="zayavka.html" style="color: var(--primary);">#140</a></div>
-      <div style="font-size: 12px;">28.04.2026<div style="font-size: 10px; color: var(--text-3);">отправлено по SMS</div></div>
-      <div><span class="badge warning dot">Отправлено</span></div>
-      <div style="text-align: right;"><button class="btn sm">⋮</button></div>
-    </div>
-
-    <div class="pagination">
-      <div class="pagination-info">Показано 1–7 из 412</div>
-      <div class="pagination-controls">
-        <button class="page-btn" disabled>‹</button>
-        <button class="page-btn active">1</button>
-        <button class="page-btn">2</button>
-        <button class="page-btn">3</button>
-        <button class="page-btn">›</button>
-      </div>
-    </div>
+<div class="card">
+  <div style="background: var(--surface-2); padding: 10px 18px; font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .04em; display: grid; grid-template-columns: 130px 1fr 130px 110px 110px 80px; gap: 12px; border-bottom: 1px solid var(--border);">
+    <div>Номер</div>
+    <div>Клиент / товар</div>
+    <div>Тип</div>
+    <div>Сумма</div>
+    <div>Статус</div>
+    <div></div>
   </div>
-
-  <!-- SIDE PANEL -->
-  <div style="display: flex; flex-direction: column; gap: 16px;">
-    <div class="card" style="padding: 18px; background: linear-gradient(135deg, var(--primary-soft), white);">
-      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        <div style="font-size: 13px; font-weight: 700; color: var(--primary);">E-подпись по SMS</div>
-      </div>
-      <div style="font-size: 12px; color: var(--text-2); line-height: 1.5;">Клиент получает ссылку, читает договор, вводит код из SMS. Подпись юридически валидна по 63-ФЗ.</div>
-      <div style="display: flex; justify-content: space-between; padding-top: 12px; margin-top: 12px; border-top: 1px solid #bfdbfe;">
-        <div>
-          <div style="font-size: 11px; color: var(--text-3);">Скорость</div>
-          <div style="font-size: 14px; font-weight: 700;">~ 4 минуты</div>
-        </div>
-        <div>
-          <div style="font-size: 11px; color: var(--text-3);">Конверсия</div>
-          <div style="font-size: 14px; font-weight: 700; color: var(--success);">94,2%</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-hd">
-        <h3>Свежие действия</h3>
-      </div>
-      <div style="padding: 8px 0;">
-        <div style="padding: 10px 18px; display: flex; gap: 10px; border-bottom: 1px solid var(--border);">
-          <div style="width: 26px; height: 26px; background: var(--success-soft); color: var(--success); border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <div style="flex: 1; min-width: 0;">
-            <div style="font-size: 12px; font-weight: 600;">Подписан №ДР-0143</div>
-            <div style="font-size: 11px; color: var(--text-3);">Магомедов А. · 15:21</div>
-          </div>
-        </div>
-        <div style="padding: 10px 18px; display: flex; gap: 10px; border-bottom: 1px solid var(--border);">
-          <div style="width: 26px; height: 26px; background: var(--warning-soft); color: var(--warning); border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-          <div style="flex: 1; min-width: 0;">
-            <div style="font-size: 12px; font-weight: 600;">SMS отправлено №ДМ-0145</div>
-            <div style="font-size: 11px; color: var(--text-3);">Гайтаев И. · 14:51</div>
-          </div>
-        </div>
-        <div style="padding: 10px 18px; display: flex; gap: 10px;">
-          <div style="width: 26px; height: 26px; background: var(--primary-soft); color: var(--primary); border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg></div>
-          <div style="flex: 1; min-width: 0;">
-            <div style="font-size: 12px; font-weight: 600;">Создан №ДР-0148 (черновик)</div>
-            <div style="font-size: 11px; color: var(--text-3);">Магомадов Л. · 14:21</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <div id="ct-tbody"><div class="empty">Загрузка...</div></div>
 </div>
 
 </div>
@@ -307,11 +80,94 @@
 <script src="db.js"></script>
 <script src="app.js"></script>
 <script>
-  PaydApp.mountShell({
-    active: 'contracts',
-    title: 'Договоры',
-    breadcrumbs: [{ label: 'Главная', href: 'dashboard.html' }, { label: 'Договоры' }]
-  });
+  PaydApp.mountShell({ active: 'contracts', title: 'Договоры', breadcrumbs: [] });
+
+  const fmt = v => Math.round(+v || 0).toLocaleString('ru-RU').replace(/,/g, ' ') + ' ₽';
+  const fmtDate = iso => { const d = new Date(iso); if (isNaN(d.getTime())) return '—'; const p = n => String(n).padStart(2, '0'); return `${p(d.getDate())}.${p(d.getMonth()+1)}.${d.getFullYear()}`; };
+  function escapeHtml(s) { return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
+
+  const TYPE_LABELS = { murabaha: 'Мурабаха', standard: 'Стандарт', ijara: 'Иджара' };
+  const STATUS_LABELS = { draft: 'Черновик', signed: 'Подписан', terminated: 'Расторгнут' };
+  const STATUS_CLASS = { draft: 'primary', signed: 'success', terminated: 'danger' };
+
+  let allContracts = [];
+  let appsById = {};
+
+  async function load() {
+    const sb = window.PaydDB?.cloud?.sb?.();
+    if (!sb) { renderEmpty('Войдите в облако чтобы увидеть договоры'); return; }
+    try {
+      const [{ data: contracts }, apps] = await Promise.all([
+        sb.from('contracts').select('*').order('created_at', { ascending: false }),
+        PaydDB.list('applications').catch(() => [])
+      ]);
+      allContracts = contracts || [];
+      appsById = {};
+      apps.forEach(a => { appsById[a.id] = a; });
+      render();
+    } catch (e) { renderEmpty('Ошибка загрузки: ' + e.message); }
+  }
+
+  function applyFilters() {
+    const q = (document.getElementById('ct-search').value || '').toLowerCase().trim();
+    const status = document.getElementById('ct-status').value;
+    return allContracts.filter(c => {
+      if (status !== 'all' && c.status !== status) return false;
+      if (q) {
+        const app = appsById[c.app_id] || {};
+        const blob = (c.number + ' ' + (app.client_name || '') + ' ' + (app.product || '')).toLowerCase();
+        if (!blob.includes(q)) return false;
+      }
+      return true;
+    });
+  }
+
+  function renderEmpty(msg) {
+    document.getElementById('ct-tbody').innerHTML = `<div class="empty">${escapeHtml(msg)}</div>`;
+  }
+
+  function render() {
+    const filtered = applyFilters();
+    const tbody = document.getElementById('ct-tbody');
+
+    if (!filtered.length) {
+      tbody.innerHTML = `<div class="empty">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 12px;opacity:.4;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <div>${allContracts.length ? 'Ничего не нашли' : 'Договоров пока нет'}</div>
+        <div style="font-size:12px;margin-top:6px;">${allContracts.length ? '' : 'Договоры создаются автоматически на этапе подписания заявки'}</div>
+      </div>`;
+    } else {
+      tbody.innerHTML = filtered.map(c => {
+        const app = appsById[c.app_id] || {};
+        return `
+          <div class="ct-row" data-id="${escapeHtml(c.id)}">
+            <div class="num">${escapeHtml(c.number)}</div>
+            <div>
+              <div class="client">${escapeHtml(app.client_name || '—')}</div>
+              <div class="meta">${escapeHtml(app.product || '—')}</div>
+            </div>
+            <div><span class="badge primary">${TYPE_LABELS[c.type] || c.type || '—'}</span></div>
+            <div style="font-weight:700;font-variant-numeric:tabular-nums;">${app.amount ? fmt(app.amount) : '—'}</div>
+            <div><span class="badge ${STATUS_CLASS[c.status] || 'gray'}">${STATUS_LABELS[c.status] || c.status}</span></div>
+            <div style="text-align:right;color:var(--text-3);">→</div>
+          </div>
+        `;
+      }).join('');
+      tbody.querySelectorAll('.ct-row').forEach(r => r.addEventListener('click', () => location.href = 'contract.html?id=' + encodeURIComponent(r.dataset.id)));
+    }
+
+    document.getElementById('kpi-total').textContent = allContracts.length;
+    document.getElementById('kpi-signed').textContent = allContracts.filter(c => c.status === 'signed').length;
+    document.getElementById('kpi-draft').textContent = allContracts.filter(c => c.status === 'draft').length;
+    document.getElementById('kpi-terminated').textContent = allContracts.filter(c => c.status === 'terminated').length;
+    document.getElementById('ct-desc').textContent = 'Все договоры · ' + allContracts.length + ' шт.';
+  }
+
+  document.getElementById('ct-search').addEventListener('input', render);
+  document.getElementById('ct-status').addEventListener('change', render);
+
+  load();
+  setInterval(load, 15000);
 </script>
 </body>
 </html>
