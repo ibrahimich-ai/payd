@@ -25,7 +25,7 @@
   .cat-kebab { width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-3); }
   .cat-kebab:hover { background: var(--surface-2); color: var(--text); }
 
-  .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+  .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; align-items: start; }
   .pcard {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -33,25 +33,25 @@
     overflow: hidden;
     cursor: pointer;
     transition: all .15s;
+    display: flex;
+    flex-direction: column;
   }
   .pcard:hover { border-color: var(--primary); box-shadow: var(--shadow-md); transform: translateY(-2px); }
   .pcard-img {
-    height: 160px;
+    height: 90px;
     background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
     display: flex; align-items: center; justify-content: center;
-    font-size: 48px;
     position: relative;
+    flex-shrink: 0;
   }
-  .pcard-badge { position: absolute; top: 10px; left: 10px; }
-  .pcard-fav { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); cursor: pointer; }
-  .pcard-body { padding: 14px; }
-  .pcard-name { font-size: 13px; font-weight: 600; line-height: 1.3; margin-bottom: 4px; }
-  .pcard-code { font-size: 11px; color: var(--text-3); }
-  .pcard-prices { display: flex; align-items: baseline; gap: 6px; margin-top: 10px; }
-  .pcard-price { font-size: 16px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
-  .pcard-old { font-size: 12px; color: var(--text-3); text-decoration: line-through; font-variant-numeric: tabular-nums; }
-  .pcard-stats { display: flex; justify-content: space-between; padding-top: 10px; margin-top: 10px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-3); }
-  .pcard-stats b { color: var(--text); font-weight: 700; }
+  .pcard-img svg { width: 36px; height: 36px; opacity: .7; }
+  .pcard-badge { position: absolute; top: 6px; left: 6px; font-size: 10px; padding: 2px 6px; }
+  .pcard-body { padding: 10px 12px 12px; display: flex; flex-direction: column; flex: 1; }
+  .pcard-name { font-size: 12px; font-weight: 600; line-height: 1.3; margin-bottom: 3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 30px; }
+  .pcard-code { font-size: 10px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pcard-prices { display: flex; align-items: baseline; gap: 6px; margin-top: 6px; }
+  .pcard-price { font-size: 14px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+  .pcard-old { font-size: 11px; color: var(--text-3); text-decoration: line-through; font-variant-numeric: tabular-nums; }
 
   .empty { padding: 60px 20px; text-align: center; color: var(--text-3); grid-column: 1 / -1; }
 
@@ -211,6 +211,20 @@
       <input class="input" id="cat-new-name" placeholder="Название новой категории" />
       <button class="btn primary" id="cat-add" data-no-handler="true">+ Добавить</button>
     </div>
+
+    <div style="margin-top: 14px; padding: 12px; background: var(--surface-2); border-radius: 8px; font-size: 12px;">
+      <div style="font-weight: 700; margin-bottom: 8px;">Готовые шаблоны (добавит группы и подгруппы):</div>
+      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+        <button class="btn sm" id="seed-iphone" data-no-handler="true">📱 iPhone (13 моделей)</button>
+        <button class="btn sm" id="seed-samsung" data-no-handler="true">📱 Samsung Galaxy</button>
+        <button class="btn sm" id="seed-laptops" data-no-handler="true">💻 Ноутбуки (5 брендов)</button>
+        <button class="btn sm" id="seed-fix-tree" data-no-handler="true" style="background:var(--warning-soft);color:var(--warning-2);">🔧 Привязать к родителям</button>
+      </div>
+      <div style="margin-top: 8px; color: var(--text-3); font-size: 11px;">
+        «Привязать к родителям» — переместит iPhone-подкатегории под «Смартфоны → iPhone»
+      </div>
+    </div>
+
     <div class="modal-actions">
       <button class="btn primary" id="cat-close" data-no-handler="true">Готово</button>
     </div>
@@ -881,6 +895,148 @@
   });
   document.getElementById('cat-new-name').addEventListener('keydown', e => {
     if (e.key === 'Enter') document.getElementById('cat-add').click();
+  });
+
+  // ============ Seed templates ============
+  function seedTree(rootName, brandName, models, fields = []) {
+    const cats = loadCats();
+    let root = cats.find(c => c.name === rootName && !c.parent);
+    if (!root) {
+      root = { id: newCatId(), name: rootName, parent: null, fields };
+      cats.push(root);
+    } else if (fields.length && (!root.fields || !root.fields.length)) {
+      root.fields = fields;
+    }
+    let brand = cats.find(c => c.name === brandName && c.parent === root.id);
+    if (!brand) {
+      brand = { id: newCatId(), name: brandName, parent: root.id, fields: [] };
+      cats.push(brand);
+    }
+    let added = 0;
+    models.forEach(m => {
+      if (!cats.some(c => c.name === m && c.parent === brand.id)) {
+        cats.push({ id: newCatId(), name: m, parent: brand.id, fields: [] });
+        added++;
+      }
+    });
+    saveCats(cats);
+    expandedCats.add(root.id);
+    expandedCats.add(brand.id);
+    return added;
+  }
+
+  document.getElementById('seed-iphone').addEventListener('click', () => {
+    const fields = [
+      { label: 'Модель', example: 'iPhone 15 Pro Max' },
+      { label: 'Память', example: '256GB' },
+      { label: 'Цвет',   example: 'Black Titanium' }
+    ];
+    const added = seedTree('Смартфоны', 'iPhone', [
+      'iPhone 12','iPhone 13','iPhone 14','iPhone 15',
+      'iPhone 16E','iPhone 16','iPhone 16 Pro','iPhone 16 Pro Max',
+      'iPhone 17 Air','iPhone 17','iPhone 17 Pro','iPhone 17 Pro Max','iPhone 17E'
+    ], fields);
+    PaydApp.toast(added ? `Добавлено ${added} моделей в iPhone` : 'Все модели уже есть', added ? 'success' : 'info');
+    renderCatManage();
+    refresh();
+  });
+
+  document.getElementById('seed-samsung').addEventListener('click', () => {
+    const fields = [
+      { label: 'Модель', example: 'Galaxy S25 Ultra' },
+      { label: 'Память', example: '512GB' },
+      { label: 'Цвет',   example: 'Titanium Black' }
+    ];
+    const added = seedTree('Смартфоны', 'Samsung', [
+      'Galaxy S25','Galaxy S25 Ultra','Galaxy S24','Galaxy S24 Ultra',
+      'Galaxy A55','Galaxy A35','Galaxy A25',
+      'Galaxy Z Fold 6','Galaxy Z Flip 6'
+    ], fields);
+    PaydApp.toast(added ? `Добавлено ${added} моделей в Samsung` : 'Все модели уже есть', added ? 'success' : 'info');
+    renderCatManage();
+    refresh();
+  });
+
+  document.getElementById('seed-laptops').addEventListener('click', () => {
+    const cats = loadCats();
+    let root = cats.find(c => c.name === 'Ноутбуки' && !c.parent);
+    if (!root) {
+      root = {
+        id: newCatId(), name: 'Ноутбуки', parent: null,
+        fields: [
+          { label: 'Модель', example: 'MacBook Air M3 13"' },
+          { label: 'Память', example: '512GB' },
+          { label: 'RAM', example: '16GB' },
+          { label: 'Цвет', example: 'Space Gray' }
+        ]
+      };
+      cats.push(root);
+    }
+    let added = 0;
+    ['Apple', 'Dell', 'Lenovo', 'HP', 'ASUS'].forEach(name => {
+      if (!cats.some(c => c.name === name && c.parent === root.id)) {
+        cats.push({ id: newCatId(), name, parent: root.id, fields: [] });
+        added++;
+      }
+    });
+    saveCats(cats);
+    expandedCats.add(root.id);
+    PaydApp.toast(added ? `Добавлено ${added} брендов в Ноутбуки` : 'Все бренды уже есть', added ? 'success' : 'info');
+    renderCatManage();
+    refresh();
+  });
+
+  // Fix tree — ищет orphan iPhone* категории и привязывает к Смартфоны → iPhone
+  document.getElementById('seed-fix-tree').addEventListener('click', () => {
+    const cats = loadCats();
+    let phones = cats.find(c => c.name === 'Смартфоны' && !c.parent);
+    if (!phones) {
+      phones = { id: newCatId(), name: 'Смартфоны', parent: null, fields: [
+        { label: 'Модель', example: 'iPhone 15 Pro Max' },
+        { label: 'Память', example: '256GB' },
+        { label: 'Цвет',   example: 'Black Titanium' }
+      ]};
+      cats.push(phones);
+    }
+    let iphone = cats.find(c => c.name === 'iPhone' && c.parent === phones.id);
+    let iphoneOrphan = cats.find(c => c.name === 'iPhone' && c.parent !== phones.id);
+    if (!iphone && iphoneOrphan) {
+      iphoneOrphan.parent = phones.id;
+      iphone = iphoneOrphan;
+    } else if (!iphone) {
+      iphone = { id: newCatId(), name: 'iPhone', parent: phones.id, fields: [] };
+      cats.push(iphone);
+    }
+    let samsung = cats.find(c => c.name === 'Samsung' && c.parent === phones.id);
+    let samsungOrphan = cats.find(c => c.name === 'Samsung' && c.parent !== phones.id);
+    if (!samsung && samsungOrphan) {
+      samsungOrphan.parent = phones.id;
+      samsung = samsungOrphan;
+    }
+    let xiaomi = cats.find(c => c.name === 'Xiaomi' && c.parent === phones.id);
+    let xiaomiOrphan = cats.find(c => c.name === 'Xiaomi' && c.parent !== phones.id);
+    if (!xiaomi && xiaomiOrphan) {
+      xiaomiOrphan.parent = phones.id;
+    }
+
+    // iPhone 12..17* → parent = iphone.id
+    let moved = 0;
+    cats.forEach(c => {
+      if (/^iPhone\s*\d/.test(c.name) && c.name !== 'iPhone' && c.parent !== iphone.id) {
+        c.parent = iphone.id;
+        moved++;
+      }
+      if (/^Galaxy\s/.test(c.name) && samsung && c.parent !== samsung.id) {
+        c.parent = samsung.id;
+        moved++;
+      }
+    });
+    saveCats(cats);
+    expandedCats.add(phones.id);
+    expandedCats.add(iphone.id);
+    PaydApp.toast(moved ? `Перепривязано ${moved} категорий` : 'Дерево уже корректное', moved ? 'success' : 'info');
+    renderCatManage();
+    refresh();
   });
 
 
