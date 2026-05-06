@@ -74,15 +74,15 @@
     <div class="desc">Движение денежных средств за текущий месяц</div>
   </div>
   <div class="page-head-actions">
-    <button class="btn">
+    <button class="btn" disabled title="В разработке" style="opacity:.55; cursor:not-allowed;">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
       Текущий месяц <span class="chev"></span>
     </button>
-    <button class="btn">
+    <button class="btn" disabled title="В разработке" style="opacity:.55; cursor:not-allowed;">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/></svg>
       Экспорт в 1С
     </button>
-    <button class="btn primary">
+    <button class="btn primary" disabled title="В разработке" style="opacity:.55; cursor:not-allowed;">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Новая операция
     </button>
@@ -94,19 +94,19 @@
   <div>
     <div class="balance-hero mb-4">
       <div class="l">Текущий остаток (все счета)</div>
-      <div class="v" data-live="kpi:cash:total">₽ 0</div>
+      <div class="v" data-live="kpi:cash:total">—</div>
       <div class="row">
         <div>
           <div class="l">Поступления (мес)</div>
-          <div class="v" style="color: #6ee7b7;" data-live="kpi:cash:income_month">0 ₽</div>
+          <div class="v" style="color: #6ee7b7;" data-live="kpi:cash:income_month">—</div>
         </div>
         <div>
           <div class="l">Расходы (мес)</div>
-          <div class="v" style="color: #fca5a5;" data-live="kpi:cash:expense_month">0 ₽</div>
+          <div class="v" style="color: #fca5a5;" data-live="kpi:cash:expense_month">—</div>
         </div>
         <div>
           <div class="l">Чистый поток</div>
-          <div class="v" data-live="kpi:cash:net_month">0 ₽</div>
+          <div class="v" data-live="kpi:cash:net_month">—</div>
         </div>
       </div>
     </div>
@@ -133,7 +133,7 @@
 
     <div style="padding: 14px 18px; border-top: 1px solid var(--border); background: var(--surface-2); display: flex; justify-content: space-between; align-items: center;">
       <span style="font-size: 13px; color: var(--text-2); font-weight: 600;">Итого</span>
-      <span style="font-size: 16px; font-weight: 800;" data-live="kpi:cash:total">0 ₽</span>
+      <span style="font-size: 16px; font-weight: 800;" data-live="kpi:cash:total">—</span>
     </div>
   </div>
 </div>
@@ -159,19 +159,19 @@
     </div>
     <div class="cat-bar">
       <div class="cat-item">
-        <div class="head"><span class="n">Поступления (мес)</span><span class="v" data-live="kpi:cash:income_month">0 ₽</span></div>
+        <div class="head"><span class="n">Поступления (мес)</span><span class="v" data-live="kpi:cash:income_month">—</span></div>
         <div class="bar"><div class="fill" style="width:100%;background:var(--success);"></div></div>
       </div>
       <div class="cat-item">
-        <div class="head"><span class="n">Расходы (мес)</span><span class="v" data-live="kpi:cash:expense_month">0 ₽</span></div>
+        <div class="head"><span class="n">Расходы (мес)</span><span class="v" data-live="kpi:cash:expense_month">—</span></div>
         <div class="bar"><div class="fill" style="width:100%;background:var(--danger);"></div></div>
       </div>
       <div class="cat-item">
-        <div class="head"><span class="n">Чистый поток</span><span class="v" data-live="kpi:cash:net_month">0 ₽</span></div>
+        <div class="head"><span class="n">Чистый поток</span><span class="v" data-live="kpi:cash:net_month">—</span></div>
         <div class="bar"><div class="fill" style="width:100%;background:var(--primary);"></div></div>
       </div>
       <div class="cat-item">
-        <div class="head"><span class="n">Остаток на счетах</span><span class="v" data-live="kpi:cash:total">0 ₽</span></div>
+        <div class="head"><span class="n">Остаток на счетах</span><span class="v" data-live="kpi:cash:total">—</span></div>
         <div class="bar"><div class="fill" style="width:100%;background:var(--purple);"></div></div>
       </div>
     </div>
@@ -194,13 +194,133 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="db.js"></script>
 <script src="app.js"></script>
-<script src="reports-data.js"></script>
 <script>
   PaydApp.mountShell({
     active: 'finance',
     title: 'Финансы · ДДС',
     breadcrumbs: [{ label: 'Главная', href: 'dashboard.html' }, { label: 'Финансы' }]
   });
+
+  // ============================================================
+  //  Загрузка реальных KPI ДДС из cash_ops + cashes.
+  //  Если данных за текущий месяц нет — показываем "Нет данных за период".
+  // ============================================================
+  const fmtRub = (n) => (n == null || isNaN(n))
+    ? '—'
+    : Number(n).toLocaleString('ru-RU', { maximumFractionDigits: 0 }) + ' ₽';
+
+  function setLive(key, value) {
+    document.querySelectorAll(`[data-live="${key}"]`).forEach(el => {
+      el.textContent = value;
+    });
+  }
+
+  function isCurrentMonth(dateStr) {
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return false;
+    const now = new Date();
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }
+
+  async function loadFinance() {
+    if (!window.PaydDB) return;
+    let ops = [];
+    let cashes = [];
+    try {
+      ops = await PaydDB.list('cash_ops') || [];
+      cashes = await PaydDB.list('cashes') || [];
+    } catch (e) {
+      console.warn('[finance] load', e.message);
+    }
+
+    // Текущий остаток (все кассы)
+    const totalBalance = cashes.reduce((s, c) => s + Number(c.balance || 0), 0);
+    if (cashes.length === 0) {
+      setLive('kpi:cash:total', 'Нет данных');
+    } else {
+      setLive('kpi:cash:total', fmtRub(totalBalance));
+    }
+
+    // Операции за текущий месяц
+    const monthOps = ops.filter(op => isCurrentMonth(op.date || op.created_at));
+    const incomeMonth = monthOps.filter(op => op.dir === 'in' || op.dir === 'income').reduce((s, op) => s + Number(op.amount || 0), 0);
+    const expenseMonth = monthOps.filter(op => op.dir === 'out' || op.dir === 'expense').reduce((s, op) => s + Number(op.amount || 0), 0);
+    const noPeriod = monthOps.length === 0;
+
+    setLive('kpi:cash:income_month', noPeriod ? 'Нет данных за период' : fmtRub(incomeMonth));
+    setLive('kpi:cash:expense_month', noPeriod ? 'Нет данных за период' : fmtRub(expenseMonth));
+    setLive('kpi:cash:net_month', noPeriod ? 'Нет данных за период' : fmtRub(incomeMonth - expenseMonth));
+
+    // Список касс
+    const accBox = document.querySelector('[data-live="list:cash:accounts"]');
+    if (accBox) {
+      if (!cashes.length) {
+        accBox.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-3);font-size:13px;">Касс нет</div>';
+      } else {
+        accBox.innerHTML = cashes.map(c => `
+          <div class="acc-row">
+            <div class="ic" style="background: var(--surface-2);">💰</div>
+            <div class="info">
+              <div class="name">${c.name || '—'}</div>
+              <div class="meta">${c.address || ''}</div>
+            </div>
+            <div class="balance">${fmtRub(c.balance)}</div>
+          </div>
+        `).join('');
+      }
+    }
+
+    // По статьям ДДС
+    const articleBox = document.querySelector('[data-live="chart:by:article"]');
+    if (articleBox) {
+      const byArticle = {};
+      monthOps.forEach(op => {
+        const k = op.article_name || op.articleName || 'Без статьи';
+        byArticle[k] = (byArticle[k] || 0) + Number(op.amount || 0);
+      });
+      const entries = Object.entries(byArticle).sort((a, b) => b[1] - a[1]).slice(0, 10);
+      if (!entries.length) {
+        articleBox.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-3);font-size:13px;">Нет операций за период</div>';
+      } else {
+        const max = entries[0][1] || 1;
+        articleBox.innerHTML = entries.map(([n, v]) => `
+          <div class="cat-item">
+            <div class="head"><span class="n">${n}</span><span class="v">${fmtRub(v)}</span></div>
+            <div class="bar"><div class="fill" style="width:${Math.round(v / max * 100)}%;background:var(--primary);"></div></div>
+          </div>
+        `).join('');
+      }
+    }
+
+    // Журнал операций (последние 20 за месяц)
+    const opsBox = document.querySelector('[data-live="list:cash:operations"]');
+    if (opsBox) {
+      const sorted = [...monthOps].sort((a, b) => String(b.date || b.created_at).localeCompare(String(a.date || a.created_at))).slice(0, 20);
+      if (!sorted.length) {
+        opsBox.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-3);font-size:13px;">Нет операций за период</div>';
+      } else {
+        opsBox.innerHTML = sorted.map(op => {
+          const isIn = op.dir === 'in' || op.dir === 'income';
+          return `
+            <div class="op-row ${isIn ? 'income' : 'expense'}">
+              <div class="ico">${isIn ? '↓' : '↑'}</div>
+              <div>
+                <div class="desc">${op.article_name || op.articleName || '—'}</div>
+                <div class="meta">${op.note || op.party || ''}</div>
+              </div>
+              <div class="meta">${op.party || ''}</div>
+              <div class="meta">${op.date || ''}</div>
+              <div class="amount">${isIn ? '+ ' : '− '}${fmtRub(op.amount)}</div>
+              <div class="meta">${op.num || ''}</div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', loadFinance);
 </script>
 </body>
 </html>
