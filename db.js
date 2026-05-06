@@ -626,6 +626,59 @@
   //  PUBLIC API
   // ============================================================
   // ============================================================
+  //  FILES — Supabase Storage (bucket payd-docs)
+  // ============================================================
+  async function uploadFile(file, entityType, entityId, docType = 'attachment') {
+    if (!_isOnline) throw new Error('Сначала войдите в облако');
+    const sb = getSb();
+    if (!sb) throw new Error('Supabase SDK недоступен');
+    const ext = (file.name || 'file').split('.').pop();
+    const safeName = (file.name || 'file').replace(/[^a-zA-Z0-9_.-]/g, '_');
+    const path = `${entityType}/${entityId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`;
+    const { error: upErr } = await sb.storage.from('payd-docs').upload(path, file);
+    if (upErr) throw upErr;
+    const { data, error } = await sb.from('documents').insert({
+      entity_type: entityType,
+      entity_id:   entityId,
+      doc_type:    docType,
+      filename:    file.name,
+      storage_path: path,
+      size_bytes:  file.size,
+      mime_type:   file.type
+    }).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  async function listFiles(entityType, entityId) {
+    if (!_isOnline) return [];
+    const sb = getSb();
+    if (!sb) return [];
+    const { data, error } = await sb.from('documents')
+      .select('*')
+      .eq('entity_type', entityType)
+      .eq('entity_id', entityId)
+      .order('uploaded_at', { ascending: false });
+    if (error) { console.warn('[PaydDB] listFiles', error.message); return []; }
+    return data || [];
+  }
+
+  async function getFileUrl(storagePath, expiresInSec = 300) {
+    const sb = getSb();
+    if (!sb) return null;
+    const { data, error } = await sb.storage.from('payd-docs').createSignedUrl(storagePath, expiresInSec);
+    if (error) { console.warn('[PaydDB] getFileUrl', error.message); return null; }
+    return data?.signedUrl || null;
+  }
+
+  async function deleteFile(documentId, storagePath) {
+    const sb = getSb();
+    if (!sb) return;
+    if (storagePath) await sb.storage.from('payd-docs').remove([storagePath]).catch(e => console.warn(e));
+    await sb.from('documents').delete().eq('id', documentId);
+  }
+
+  // ============================================================
   //  AUDIT LOG — запись действий в application_history
   // ============================================================
   async function auditLog(appId, action, meta = {}) {
@@ -650,6 +703,7 @@
     list, get, upsert, remove, count, bulkReplace,
     subscribe, exportAll, importAll, COLLECTIONS,
     audit: { log: auditLog },
+    files: { upload: uploadFile, list: listFiles, getUrl: getFileUrl, delete: deleteFile },
     cloud: {
       connect: cloudConnect,
       signIn: cloudSignIn,

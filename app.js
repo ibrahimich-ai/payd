@@ -1569,7 +1569,123 @@ function openMiniCalc(opts = {}) {
   setTimeout(() => priceInput.focus(), 250);
 }
 
-window.PaydApp = { mountShell, toast, confirmDialog, showDropdown, liveSearch, openMiniCalc };
+// ============================================================
+//  ATTACHMENTS WIDGET — загрузка / список / удаление файлов
+//  Использование:
+//   <div data-attachments data-entity-type="application" data-entity-id="..."></div>
+// ============================================================
+function mountAttachments(host, entityType, entityId, docType = 'attachment') {
+  if (!host || !entityType || !entityId) return;
+
+  host.innerHTML = `
+    <div class="att-widget">
+      <div class="att-list" data-att-list></div>
+      <label class="att-upload">
+        <input type="file" data-att-input style="display:none;" />
+        <span class="btn sm">📎 Прикрепить файл</span>
+        <span class="att-status" data-att-status></span>
+      </label>
+    </div>
+  `;
+  if (!document.getElementById('att-styles')) {
+    const s = document.createElement('style');
+    s.id = 'att-styles';
+    s.textContent = `
+      .att-widget { padding: 8px 0; }
+      .att-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+      .att-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--surface-2); border-radius: 8px; font-size: 12px; }
+      .att-item .ic { color: var(--text-3); font-size: 16px; }
+      .att-item .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+      .att-item .size { color: var(--text-3); font-size: 11px; flex-shrink: 0; }
+      .att-item a { color: var(--primary); text-decoration: none; }
+      .att-item .del { color: var(--danger); cursor: pointer; opacity: .6; padding: 0 6px; }
+      .att-item .del:hover { opacity: 1; }
+      .att-upload { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; }
+      .att-status { font-size: 12px; color: var(--text-3); }
+    `;
+    document.head.appendChild(s);
+  }
+
+  const listEl = host.querySelector('[data-att-list]');
+  const inputEl = host.querySelector('[data-att-input]');
+  const statusEl = host.querySelector('[data-att-status]');
+
+  function fmtSize(b) {
+    if (!b) return '';
+    if (b < 1024) return b + ' Б';
+    if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' КБ';
+    return (b / 1024 / 1024).toFixed(1) + ' МБ';
+  }
+
+  async function refresh() {
+    if (!window.PaydDB) return;
+    const items = await PaydDB.files.list(entityType, entityId);
+    if (!items.length) {
+      listEl.innerHTML = '<div style="font-size:12px;color:var(--text-3);padding:8px;">Файлов пока нет</div>';
+      return;
+    }
+    listEl.innerHTML = items.map(d => `
+      <div class="att-item" data-id="${d.id}">
+        <span class="ic">📎</span>
+        <span class="name">${escAtt(d.filename)}</span>
+        <span class="size">${fmtSize(d.size_bytes)}</span>
+        <a href="#" data-action="open" data-path="${d.storage_path}">Открыть</a>
+        <span class="del" data-action="delete" data-path="${d.storage_path}">×</span>
+      </div>
+    `).join('');
+    listEl.querySelectorAll('[data-action="open"]').forEach(a => {
+      a.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const url = await PaydDB.files.getUrl(a.dataset.path);
+        if (url) window.open(url, '_blank');
+      });
+    });
+    listEl.querySelectorAll('[data-action="delete"]').forEach(d => {
+      d.addEventListener('click', () => {
+        const item = d.closest('.att-item');
+        confirmDialog({
+          title: 'Удалить файл?',
+          message: 'Файл будет удалён без возможности восстановления.',
+          okText: 'Удалить',
+          onOk: async () => {
+            await PaydDB.files.delete(item.dataset.id, d.dataset.path);
+            toast('Файл удалён', 'success');
+            refresh();
+          }
+        });
+      });
+    });
+  }
+
+  inputEl.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast('Файл больше 10 МБ', 'error');
+      return;
+    }
+    statusEl.textContent = 'Загрузка ' + file.name + '...';
+    try {
+      await PaydDB.files.upload(file, entityType, entityId, docType);
+      statusEl.textContent = '';
+      toast('Файл прикреплён', 'success');
+      e.target.value = '';
+      refresh();
+    } catch (err) {
+      statusEl.textContent = '';
+      toast('Ошибка: ' + err.message, 'error');
+    }
+  });
+
+  refresh();
+  return { refresh };
+}
+
+function escAtt(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+}
+
+window.PaydApp = { mountShell, toast, confirmDialog, showDropdown, liveSearch, openMiniCalc, mountAttachments };
 
 document.addEventListener('DOMContentLoaded', () => {
   // Wait for shell to mount
