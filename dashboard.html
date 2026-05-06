@@ -76,7 +76,7 @@
 <!-- ====================== KPI CARDS ====================== -->
 <div class="page-head">
   <div>
-    <h1>Доброе утро, Ибрагим 👋</h1>
+    <h1 id="dash-greeting">Здравствуйте 👋</h1>
     <div class="desc" id="dash-period-label">Загрузка...</div>
   </div>
   <div class="page-head-actions">
@@ -225,6 +225,28 @@
     title: 'Дашборд',
     breadcrumbs: [{ label: 'Главная', href: 'dashboard.html' }, { label: 'Дашборд' }]
   });
+
+  // Приветствие — имя из profiles текущего пользователя.
+  // Время суток — реальное.
+  (async function () {
+    const greetEl = document.getElementById('dash-greeting');
+    if (!greetEl || !window.PaydDB) return;
+    const h = new Date().getHours();
+    const partOfDay = h < 5 ? 'Доброй ночи' : h < 12 ? 'Доброе утро' : h < 18 ? 'Добрый день' : 'Добрый вечер';
+
+    let name = '';
+    try {
+      await PaydDB.cloud.connect().catch(() => {});
+      const profile = await PaydDB.profiles?.me?.().catch(() => null);
+      const user = PaydDB.cloud.user?.();
+      name = profile?.full_name
+        || user?.user_metadata?.full_name
+        || (user?.email ? user.email.split('@')[0] : '');
+    } catch (_) {}
+    // Берём первое слово (имя), если ФИО полное
+    const firstName = name ? String(name).trim().split(/\s+/)[0] : '';
+    greetEl.textContent = firstName ? `${partOfDay}, ${firstName} 👋` : `${partOfDay} 👋`;
+  })();
 </script>
 </body>
 </html>
