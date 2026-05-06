@@ -1042,13 +1042,23 @@
   }
 
   let _app;
-  if (_appId.startsWith('A')) {
-    let list = [];
-    try { list = JSON.parse(localStorage.getItem('payd.calc.applications') || '[]'); } catch (_) {}
-    const rec = list.find(a => a.id === _appId);
-    if (rec) _app = buildAppFromCalc(rec);
+  // 1. Сначала ищем заявку в реальной БД (через PaydDB / localStorage cache)
+  let allApps = [];
+  try { allApps = JSON.parse(localStorage.getItem('payd.calc.applications') || '[]'); } catch (_) {}
+  const realApp = allApps.find(a => a.id === _appId || a.number === _appId);
+  if (realApp) {
+    _app = buildAppFromCalc(realApp);
+  } else if (window.APPLICATIONS && window.APPLICATIONS[_appId]) {
+    // 2. Fallback на demo data (для legacy ссылок типа ?id=142)
+    _app = window.APPLICATIONS[_appId];
+  } else {
+    // 3. Не нашли — редирект на журнал
+    setTimeout(() => {
+      if (window.PaydApp?.toast) PaydApp.toast('Заявка не найдена', 'error');
+      location.href = 'zhurnal.html';
+    }, 300);
+    _app = window.APPLICATIONS && window.APPLICATIONS['142']; // временная заглушка пока редирект
   }
-  if (!_app) _app = (window.APPLICATIONS && window.APPLICATIONS[_appId]) || window.APPLICATIONS['142'];
 
   // Source-aware sidebar / breadcrumb / return URL
   const SECTION_MAP = {

@@ -188,6 +188,9 @@
       _user = session.user;
       _isOnline = true;
       window.dispatchEvent(new CustomEvent('payd:cloud:connected', { detail: { user: _user } }));
+      // Background pull + realtime subscribe — для актуальных данных на разных устройствах
+      backgroundPull().catch(e => console.warn('[PaydDB] background pull', e.message));
+      subscribeRealtime();
       return true;
     }
     return false;
@@ -201,7 +204,94 @@
     _user = data.user;
     _isOnline = true;
     window.dispatchEvent(new CustomEvent('payd:cloud:connected', { detail: { user: _user } }));
+    backgroundPull().catch(e => console.warn('[PaydDB] background pull', e.message));
+    subscribeRealtime();
     return _user;
+  }
+
+  // ============================================================
+  //  BACKGROUND PULL — при заходе на страницу подтягивает данные из БД,
+  //  чтобы локальный кэш не отставал от облака
+  // ============================================================
+  let _pullDone = false;
+  async function backgroundPull() {
+    if (_pullDone) return;
+    _pullDone = true;
+    const sb = getSb();
+    if (!sb) return;
+    for (const [coll, def] of Object.entries(COLLECTIONS)) {
+      if (!def.table) continue;
+      try {
+        const { data, error } = await sb.from(def.table).select('*');
+        if (error) throw error;
+        const items = (data || []).map(it => denormalizeFromCloud(coll, it));
+        if (def.type === 'list') {
+          // Перезаписываем без notify, чтобы не было двойного рендера
+          localStorage.setItem(def.ls, JSON.stringify(items));
+        } else {
+          const map = {};
+          items.forEach(it => { map[it[def.pk]] = it; });
+          localStorage.setItem(def.ls, JSON.stringify(map));
+        }
+        notify(coll);
+      } catch (e) {
+        // Тихо — например, если RLS не пускает (нет роли) — пропускаем
+        console.warn('[PaydDB] pull ' + coll, e.message);
+      }
+    }
+  }
+
+  // ============================================================
+  //  REALTIME SUBSCRIPTIONS — реакция на изменения от других сотрудников
+  // ============================================================
+  let _realtimeChannel = null;
+  function subscribeRealtime() {
+    if (_realtimeChannel) return;
+    const sb = getSb();
+    if (!sb || !sb.channel) return;
+
+    _realtimeChannel = sb.channel('payd-changes');
+    Object.entries(COLLECTIONS).forEach(([coll, def]) => {
+      if (!def.table) return;
+      _realtimeChannel.on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: def.table },
+        (payload) => {
+          handleRealtimeChange(coll, payload);
+        }
+      );
+    });
+    _realtimeChannel.subscribe();
+  }
+
+  function handleRealtimeChange(coll, payload) {
+    const def = COLLECTIONS[coll];
+    if (!def) return;
+    const newRow = payload.new && Object.keys(payload.new).length ? denormalizeFromCloud(coll, payload.new) : null;
+    const oldRow = payload.old && Object.keys(payload.old).length ? denormalizeFromCloud(coll, payload.old) : null;
+
+    const raw = loadLocal(coll);
+    if (def.type === 'list') {
+      let arr = Array.isArray(raw) ? [...raw] : [];
+      if (payload.eventType === 'DELETE' && oldRow) {
+        arr = arr.filter(x => x[def.pk] !== oldRow[def.pk]);
+      } else if (newRow) {
+        const idx = arr.findIndex(x => x[def.pk] === newRow[def.pk]);
+        if (idx >= 0) arr[idx] = newRow;
+        else arr.unshift(newRow);
+      }
+      // saveLocal без триггера upsert обратно (используем _origSetItem чтобы не зациклить auto-sync)
+      _origSetItem.call(localStorage, def.ls, JSON.stringify(arr));
+    } else {
+      const map = raw && typeof raw === 'object' ? { ...raw } : {};
+      if (payload.eventType === 'DELETE' && oldRow) {
+        delete map[oldRow[def.pk]];
+      } else if (newRow) {
+        map[newRow[def.pk]] = newRow;
+      }
+      _origSetItem.call(localStorage, def.ls, JSON.stringify(map));
+    }
+    notify(coll);
   }
 
   async function cloudSignUp(email, password, fullName) {
@@ -535,9 +625,31 @@
   // ============================================================
   //  PUBLIC API
   // ============================================================
+  // ============================================================
+  //  AUDIT LOG — запись действий в application_history
+  // ============================================================
+  async function auditLog(appId, action, meta = {}) {
+    if (!appId || !action) return;
+    if (!_isOnline) return;
+    const sb = getSb();
+    if (!sb) return;
+    try {
+      const byUser = _user?.email || _user?.user_metadata?.full_name || 'system';
+      await sb.from('application_history').insert({
+        app_id: appId,
+        action,
+        by_user: byUser,
+        meta
+      });
+    } catch (e) {
+      console.warn('[PaydDB] audit log', e.message);
+    }
+  }
+
   window.PaydDB = {
     list, get, upsert, remove, count, bulkReplace,
     subscribe, exportAll, importAll, COLLECTIONS,
+    audit: { log: auditLog },
     cloud: {
       connect: cloudConnect,
       signIn: cloudSignIn,
@@ -549,7 +661,8 @@
     },
     sync: {
       push: syncPush,
-      pull: syncPull
+      pull: syncPull,
+      pullCollection: backgroundPull
     }
   };
 })();

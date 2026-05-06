@@ -191,9 +191,24 @@ function buildTopbar(opts = {}) {
   `;
 }
 
-function mountShell({ active, title, breadcrumbs, actions }) {
+async function mountShell({ active, title, breadcrumbs, actions }) {
   const root = document.getElementById('app-root');
   if (!root) return;
+
+  // ===== AUTH GUARD =====
+  // Если на странице есть PaydDB и нет активной сессии — редирект на логин
+  if (window.PaydDB && !window.location.pathname.includes('index.html') && !window.location.pathname.includes('calculator.html')) {
+    const connected = await window.PaydDB.cloud.connect().catch(() => false);
+    if (!connected && !window.PaydDB.cloud.user()) {
+      // Локальный fallback: если есть данные в localStorage — пускаем, иначе на логин
+      // (даём 1 секунду на восстановление сессии)
+      await new Promise(r => setTimeout(r, 800));
+      if (!window.PaydDB.cloud.user()) {
+        const hasSession = !!localStorage.getItem('sb-' + 'ehxfjvcyqvpjtahkmncf' + '-auth-token');
+        if (!hasSession) { window.location.href = 'index.html'; return; }
+      }
+    }
+  }
 
   const main = root.innerHTML;
   root.innerHTML = `

@@ -221,12 +221,12 @@
       <div class="lf-tab">QR-код</div>
     </div>
 
-    <form class="lf-form" onsubmit="window.location='dashboard.html'; return false;">
+    <form class="lf-form" id="login-form">
       <div class="field">
-        <label class="field-label">Email или телефон</label>
+        <label class="field-label">Email</label>
         <div class="input-with-icon">
           <span class="ico left"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8993a6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"/></svg></span>
-          <input class="input has-icon-left" placeholder="i.dzhabrailov@payd.ru" value="i.dzhabrailov@payd.ru" />
+          <input id="login-email" type="email" class="input has-icon-left" placeholder="ibrahimich@gmail.com" autocomplete="email" />
         </div>
       </div>
 
@@ -234,10 +234,10 @@
         <label class="field-label">Пароль</label>
         <div class="input-with-icon">
           <span class="ico left"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8993a6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
-          <input type="password" class="input has-icon-left" value="••••••••" />
-          <span class="ico" style="cursor: pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
+          <input id="login-password" type="password" class="input has-icon-left" placeholder="••••••••" autocomplete="current-password" />
         </div>
       </div>
+      <div id="login-error" style="display:none; color: var(--danger); font-size: 12px; padding: 8px 12px; background: var(--danger-soft); border-radius: 8px; margin-bottom: 8px;"></div>
 
       <div class="lf-options">
         <label class="lf-checkbox">
@@ -279,5 +279,76 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="db.js"></script>
 <script src="app.js"></script>
+<script>
+  // ============ Real Supabase Auth ============
+  const ROLE_HOMEPAGE = {
+    admin:      'dashboard.html',
+    manager:    'manager.html',
+    cashier:    'kassir.html',
+    sb:         'sb.html',
+    collector:  'collector.html',
+    inkassator: 'inkassator.html',
+    partner:    'partner.html',
+    client:     'lk-client.html'
+  };
+
+  // Если уже залогинен — редирект сразу
+  (async function () {
+    if (!window.PaydDB) return;
+    const ok = await PaydDB.cloud.connect().catch(() => false);
+    if (ok) {
+      const home = await getHomeForUser();
+      location.href = home;
+    }
+  })();
+
+  async function getHomeForUser() {
+    const sb = PaydDB.cloud.sb();
+    const user = PaydDB.cloud.user();
+    if (!sb || !user) return 'dashboard.html';
+    try {
+      const { data } = await sb.from('profiles').select('role').eq('id', user.id).maybeSingle();
+      const role = data?.role || 'admin';
+      return ROLE_HOMEPAGE[role] || 'dashboard.html';
+    } catch (_) {
+      return 'dashboard.html';
+    }
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('login-error');
+    el.textContent = msg;
+    el.style.display = '';
+  }
+  function clearError() {
+    document.getElementById('login-error').style.display = 'none';
+  }
+
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearError();
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    if (!email || !password) { showError('Заполните email и пароль'); return; }
+
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    const origText = btn.innerHTML;
+    btn.innerHTML = 'Вход...';
+
+    try {
+      await PaydDB.cloud.signIn(email, password);
+      const home = await getHomeForUser();
+      location.href = home;
+    } catch (err) {
+      const msg = err?.message || '';
+      if (msg.toLowerCase().includes('invalid')) showError('Неверный email или пароль');
+      else if (msg.toLowerCase().includes('email not confirmed')) showError('Email не подтверждён — проверь почту');
+      else showError(msg || 'Ошибка входа');
+      btn.disabled = false;
+      btn.innerHTML = origText;
+    }
+  });
+</script>
 </body>
 </html>
