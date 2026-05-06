@@ -796,7 +796,7 @@ function handleSemanticButton(e, btn) {
   }
   if (text.includes('массовая рассылка')) {
     e.preventDefault();
-    toast('Рассылка запущена', { type: 'info', subtitle: 'Будет отправлено 23 SMS' });
+    toast('Рассылка запущена', { type: 'info', subtitle: 'Получатели определяются по фильтру' });
     return;
   }
 
@@ -1492,7 +1492,7 @@ function openMiniCalc(opts = {}) {
       <form id="pmc-form" autocomplete="off">
         <div class="pmc-field">
           <div class="pmc-label" style="margin-bottom: 6px;">ФИО клиента *</div>
-          <div class="pmc-form-row single"><input id="pmc-name" placeholder="Иванов Иван Иванович" required /></div>
+          <div class="pmc-form-row single"><input id="pmc-name" placeholder="ФИО клиента" required /></div>
         </div>
         <div class="pmc-field">
           <div class="pmc-label" style="margin-bottom: 6px;">WhatsApp / телефон *</div>
