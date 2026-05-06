@@ -119,13 +119,25 @@
   let selectedApp = null;
   let selectedMethod = 'cash';
 
+  let pendingPayments = [];
+
   async function load() {
     const [apps, cashes] = await Promise.all([
       PaydDB.list('applications').catch(() => []),
       PaydDB.list('cashes').catch(() => [])
     ]);
-    allApps = apps.filter(a => !a.rejected); // не показываем отклонённые
+    allApps = apps.filter(a => !a.rejected);
     allCashes = cashes.filter(c => c.status !== 'archived');
+
+    // Подтянуть очередь pending платежей
+    const sb = window.PaydDB?.cloud?.sb?.();
+    if (sb) {
+      const today = new Date().toISOString().slice(0, 10);
+      const { data } = await sb.from('payments').select('*').eq('status', 'pending').lte('due_date', today).order('due_date');
+      pendingPayments = data || [];
+    } else {
+      pendingPayments = [];
+    }
 
     const sel = document.getElementById('kk-cash');
     if (allCashes.length === 0) {
@@ -141,63 +153,82 @@
     refreshShift();
   }
 
-  // ===== Search =====
+  // ===== Search / Queue =====
   function refreshSearch() {
     const q = (document.getElementById('kk-search').value || '').toLowerCase().trim();
     const list = document.getElementById('kk-search-results');
-    let matches = q
-      ? allApps.filter(a => {
-          const blob = ((a.client_name || a.client?.name || '') + ' ' + (a.client_phone || a.client?.phone || '') + ' ' + (a.number || '')).toLowerCase();
-          return blob.includes(q);
-        })
-      : allApps.slice(0, 5);
 
-    if (!matches.length) {
-      list.innerHTML = `<div style="padding:14px;text-align:center;color:var(--text-3);font-size:12px;">${q ? 'Ничего не нашли' : 'Заявок нет'}</div>`;
+    let items;
+    if (q) {
+      items = allApps.filter(a => {
+        const blob = ((a.client_name || a.client?.name || '') + ' ' + (a.client_phone || a.client?.phone || '') + ' ' + (a.number || '')).toLowerCase();
+        return blob.includes(q);
+      }).map(a => ({ app: a, payment: null }));
+    } else {
+      // По умолчанию — очередь pending платежей
+      items = pendingPayments.map(p => {
+        const app = allApps.find(a => a.id === p.app_id);
+        return app ? { app, payment: p } : null;
+      }).filter(Boolean).slice(0, 20);
+    }
+
+    if (!items.length) {
+      list.innerHTML = `<div style="padding:14px;text-align:center;color:var(--text-3);font-size:12px;">${q ? 'Ничего не нашли' : 'Очередь пуста — все платежи приняты'}</div>`;
       return;
     }
-    list.innerHTML = matches.slice(0, 10).map(a => {
+
+    list.innerHTML = items.map(({ app: a, payment: p }) => {
       const colors = ['c1','c2','c3','c4','c5','c6'];
       const cls = colors[Math.abs((a.client_name || '').length) % colors.length];
       const name = a.client_name || a.client?.name || '—';
+      const isFirst = p && p.num === 0;
+      const tag = p ? (isFirst ? '<span class="badge primary" style="font-size:10px;">Первый взнос</span>' : `<span class="badge success" style="font-size:10px;">Платёж #${p.num}</span>`) : '';
+      const amt = p ? p.amount : (a.amount || a.calc?.price || 0);
       return `
-        <div class="search-row" data-id="${escapeHtml(a.id)}" style="display:flex;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;align-items:center;">
+        <div class="search-row" data-app="${escapeHtml(a.id)}" ${p ? `data-pay="${escapeHtml(p.id)}"` : ''} style="display:flex;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;align-items:center;">
           <div class="avatar ${cls} sm">${getInitials(name)}</div>
           <div style="flex:1;min-width:0;">
-            <div style="font-size:13px;font-weight:600;">${escapeHtml(name)}</div>
+            <div style="font-size:13px;font-weight:600;">${escapeHtml(name)} ${tag}</div>
             <div style="font-size:11px;color:var(--text-3);">#${escapeHtml(a.number || '')} · ${escapeHtml(a.product || '')}</div>
           </div>
-          <div style="font-weight:700;font-variant-numeric:tabular-nums;">${fmt(a.amount || a.calc?.price || 0)}</div>
+          <div style="font-weight:700;font-variant-numeric:tabular-nums;">${fmt(amt)}</div>
         </div>
       `;
     }).join('');
+
     list.querySelectorAll('.search-row').forEach(r => {
-      r.addEventListener('click', () => selectApp(r.dataset.id));
+      r.addEventListener('click', () => selectApp(r.dataset.app, r.dataset.pay));
     });
   }
   document.getElementById('kk-search').addEventListener('input', refreshSearch);
 
   // ===== Select app =====
-  async function selectApp(appId) {
+  let selectedPayment = null;
+  async function selectApp(appId, paymentId) {
     const app = allApps.find(a => a.id === appId);
     if (!app) return;
     selectedApp = app;
+    selectedPayment = paymentId ? pendingPayments.find(p => p.id === paymentId) : null;
     selectedMethod = 'cash';
     renderPay();
   }
 
   function renderPay() {
     const a = selectedApp;
+    const p = selectedPayment;
     const sale = +(a.amount || a.calc?.price) || 0;
     const down = +(a.down_payment || a.calc?.dpAmount) || 0;
     const term = a.term || a.calc?.term || 0;
     const monthly = +(a.monthly || a.calc?.monthly) || 0;
     const phone = a.client_phone || a.client?.phone || '';
 
+    const payAmount = p ? p.amount : (monthly || down || 0);
+    const payLabel = p ? (p.num === 0 ? 'Первоначальный взнос' : `Платёж ${p.num} из ${term}`) : 'Платёж';
+
     document.getElementById('pay-area').innerHTML = `
       <div class="pay-app-head">
         <div>
-          <div class="num">Заявка #${escapeHtml(a.number || '')}</div>
+          <div class="num">Заявка #${escapeHtml(a.number || '')} · ${escapeHtml(payLabel)}</div>
           <div class="client">${escapeHtml(a.client_name || a.client?.name || '—')}</div>
           <div class="product">${escapeHtml(a.product || '')} · ${escapeHtml(phone)}</div>
         </div>
@@ -211,7 +242,7 @@
 
       <div style="margin-top: 18px;">
         <label class="field-label">Сумма к приёму</label>
-        <input class="input amount-input" id="pay-amount" type="number" value="${monthly || down || 0}" />
+        <input class="input amount-input" id="pay-amount" type="number" value="${payAmount}" />
       </div>
 
       <div style="margin-top: 14px;">
@@ -225,7 +256,7 @@
 
       <div style="display: flex; gap: 8px; margin-top: 20px;">
         <button class="btn primary" id="pay-confirm" data-no-handler="true" style="flex: 1; padding: 14px; font-size: 15px; font-weight: 700;">
-          ✓ Принять платёж
+          ✓ Принять ${payLabel.toLowerCase()}
         </button>
       </div>
     `;
@@ -246,24 +277,36 @@
 
     const sb = PaydDB.cloud.sb();
     const a = selectedApp;
+    const p = selectedPayment;
     const num = 'PD-' + String(Date.now()).slice(-6);
+    const isFirst = p && p.num === 0;
+    const articleId = isFirst ? 'a_first_pay' : 'a_installment';
+    const articleName = isFirst ? 'Первоначальный взнос' : 'Платёж по графику';
 
     try {
-      // 1. payments
-      const { error: payErr } = await sb.from('payments').insert({
-        app_id: a.id, amount, method: selectedMethod, cash_id: activeCashId
-      });
-      if (payErr) throw payErr;
+      // 1. Если есть конкретный payment в графике — пометить его paid
+      if (p) {
+        await sb.from('payments').update({
+          status: 'paid', paid_at: new Date().toISOString(),
+          cash_id: activeCashId, method: selectedMethod, amount
+        }).eq('id', p.id);
+      } else {
+        // Платёж вне графика — создаём новую запись
+        await sb.from('payments').insert({
+          app_id: a.id, amount, method: selectedMethod, cash_id: activeCashId,
+          status: 'paid', paid_at: new Date().toISOString(), kind: 'installment'
+        });
+      }
 
-      // 2. cash_ops
-      const { error: opErr } = await sb.from('cash_ops').insert({
+      // 2. cash_op (приход)
+      await sb.from('cash_ops').insert({
         num, dir: 'in', cash_id: activeCashId, amount,
-        article_name: 'Платежи рассрочки', party: a.client_name || a.client?.name,
+        article_id: articleId, article_name: articleName,
+        party: a.client_name || a.client?.name,
         app_id: a.id, note: 'Заявка #' + (a.number || '')
       });
-      if (opErr) throw opErr;
 
-      // 3. update cash balance
+      // 3. cash balance
       const cash = allCashes.find(c => c.id === activeCashId);
       if (cash) {
         const newBalance = (+cash.balance || 0) + amount;
@@ -272,18 +315,19 @@
       }
 
       // 4. audit log
-      await PaydDB.audit.log(a.id, 'payment.accepted', { amount, method: selectedMethod, cash_id: activeCashId });
+      const auditAction = isFirst ? 'payment.first_paid' : 'payment.accepted';
+      await PaydDB.audit.log(a.id, auditAction, { amount, method: selectedMethod, payment_num: p?.num });
 
-      PaydApp.toast(`Платёж ${fmt(amount)} принят`, { type: 'success', subtitle: 'Чек #' + num });
+      PaydApp.toast(`${isFirst ? 'Первый взнос' : 'Платёж'} ${fmt(amount)} принят`, { type: 'success', subtitle: 'Чек #' + num });
       selectedApp = null;
+      selectedPayment = null;
       document.getElementById('kk-search').value = '';
       document.getElementById('pay-area').innerHTML = `<div class="pay-empty">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" style="margin:0 auto 14px;"><polyline points="20 6 9 17 4 12"/></svg>
         <div style="font-size:14px;">Платёж принят</div>
-        <div style="font-size:12px;margin-top:6px;">Найдите следующую заявку</div>
+        <div style="font-size:12px;margin-top:6px;">Очередь обновлена</div>
       </div>`;
-      refreshSearch();
-      refreshShift();
+      load();
     } catch (err) {
       PaydApp.toast('Ошибка: ' + err.message, 'error');
     }

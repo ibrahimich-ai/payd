@@ -157,17 +157,18 @@
         <div class="card-bd">
           <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 14px;">
             <div class="field">
-              <label class="field-label">Наименование товара / услуги</label>
+              <label class="field-label">Товар / услуга *</label>
               <div class="combo" style="display: flex; gap: 6px;">
                 <div style="flex: 1; position: relative;">
-                  <input class="input" id="pd-name" autocomplete="off" placeholder="Введите название или выберите из каталога" />
+                  <input class="input" id="pd-name" autocomplete="off" placeholder="Выберите из каталога →" readonly style="background: var(--surface-2); cursor: pointer;" />
                   <div class="combo-list" id="pd-name-list"></div>
                 </div>
-                <button class="btn" id="pd-pick-btn" data-no-handler="true" type="button" title="Выбрать из каталога">
+                <button class="btn primary" id="pd-pick-btn" data-no-handler="true" type="button">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
                   Каталог
                 </button>
               </div>
+              <div class="field-help">Выберите из справочника товаров — цена закупки подставится автоматически</div>
             </div>
             <div class="field">
               <label class="field-label">Тип сделки *</label>
@@ -178,16 +179,12 @@
                 <option value="Услуга">Услуга (Иджара)</option>
               </select>
             </div>
-            <div class="field" id="purchase-field">
-              <label class="field-label">Цена закупки (₽)</label>
-              <input class="input" id="pd-purchase" type="number" placeholder="0" />
-              <div class="field-help">Сколько вы платите поставщику</div>
-            </div>
             <div class="field" style="grid-column: 1 / -1;">
-              <label class="field-label">Цена продажи клиенту (₽) *</label>
-              <input class="input" id="pd-sale" type="number" placeholder="0" />
-              <div class="field-help" id="markup-hint" style="font-size:11px;color:var(--text-3);margin-top:4px;"></div>
+              <label class="field-label">Цена закупки (₽) — база для наценки *</label>
+              <input class="input" id="pd-purchase" type="number" placeholder="0" />
+              <div class="field-help">К этой цене применяется наценка из тарифа</div>
             </div>
+            <input type="hidden" id="pd-sale" />
             <input type="hidden" id="pd-color" />
           </div>
         </div>
@@ -198,76 +195,76 @@
         <div class="card-bd">
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
             <div class="field">
-              <label class="field-label">Тариф</label>
+              <label class="field-label">Тариф *</label>
               <select class="select" id="dl-tariff"></select>
-              <div class="field-help" id="tariff-hint">Выбирается тариф по умолчанию</div>
+              <div class="field-help" id="tariff-hint">—</div>
             </div>
             <div class="field">
-              <label class="field-label">Срок рассрочки</label>
+              <label class="field-label">Срок рассрочки *</label>
               <select class="select" id="dl-term"></select>
+              <div class="field-help" id="rate-hint">—</div>
             </div>
             <div class="field">
-              <label class="field-label">Первоначальный взнос (₽)</label>
+              <label class="field-label">Первоначальный взнос (₽) *</label>
               <input class="input" id="dl-down" type="number" placeholder="0" />
-              <div class="field-help" id="down-hint">Платится в день подписания</div>
+              <div class="field-help" id="down-hint">—</div>
             </div>
-            <div class="field" id="partner-field" style="grid-column: 1 / -1;">
+            <div class="field" id="partner-field">
               <label class="field-label">Партнёр / магазин</label>
               <div class="combo">
                 <input class="input" id="dl-partner" autocomplete="off" placeholder="Выбрать или ввести название" />
                 <div class="combo-list" id="dl-partner-list"></div>
               </div>
-              <div class="field-help">Если новый партнёр — введите название, он добавится в базу</div>
             </div>
           </div>
 
+          <!-- ============ КАРТОЧКА РАСЧЁТА ============ -->
           <div class="calc-result" id="calc-box">
             <div class="ttl">Расчёт сделки</div>
 
-            <!-- Базовая цена -->
-            <div class="row" style="font-size: 14px; padding: 6px 0;">
-              <span style="font-weight: 600;">Цена товара</span>
-              <span class="v" id="r-sale">0 ₽</span>
-            </div>
-            <div class="row" id="r-margin-row" style="display:none;font-size:12px;color:var(--text-3);">
-              <span>↳ из них наценка по тарифу</span>
-              <span class="v" id="r-margin" style="color: var(--success);">0 ₽</span>
-            </div>
-            <div class="row" id="r-purchase-row" style="display:none;font-size:12px;color:var(--text-3);">
-              <span>↳ цена закупки</span>
-              <span class="v" id="r-purchase">0 ₽</span>
-            </div>
-
-            <div style="border-top: 1px dashed #93c5fd; margin: 8px 0;"></div>
-
-            <!-- Графика платежей -->
             <div class="row" style="font-size: 14px;">
-              <span style="font-weight: 600;">Первоначальный взнос</span>
+              <span>Цена товара (база)</span>
+              <span class="v" id="r-base">0 ₽</span>
+            </div>
+            <div class="row" style="color: var(--success); font-size: 13px;">
+              <span id="r-markup-label">+ Наценка по тарифу</span>
+              <span class="v" id="r-markup">0 ₽</span>
+            </div>
+
+            <div style="border-top: 1px solid #93c5fd; margin: 8px 0;"></div>
+
+            <div class="row" style="font-size: 16px;">
+              <span style="font-weight: 700; color: var(--primary-2);">ЦЕНА ДЛЯ КЛИЕНТА</span>
+              <span class="v" id="r-final" style="color: var(--primary-2); font-size: 18px; font-weight: 800;">0 ₽</span>
+            </div>
+
+            <div style="border-top: 1px dashed #93c5fd; margin: 10px 0;"></div>
+
+            <div class="row" style="font-size: 13px;">
+              <span>Первоначальный взнос <span id="r-down-pct" style="color: var(--text-3);">(0%)</span></span>
               <span class="v" id="r-down">0 ₽</span>
             </div>
-            <div class="row" style="font-size: 11px; color: var(--text-3);">
-              <span>↳ % от цены</span>
-              <span class="v" id="r-down-pct">0%</span>
-            </div>
-
-            <div class="row" style="font-size: 14px; margin-top: 6px;">
-              <span style="font-weight: 600;">Остаток к рассрочке</span>
+            <div class="row" style="font-size: 13px;">
+              <span>Остаток к рассрочке</span>
               <span class="v" id="r-remaining">0 ₽</span>
             </div>
-            <div class="row" style="font-size: 14px;">
-              <span style="font-weight: 600;">Ежемесячный платёж</span>
+            <div class="row" style="font-size: 13px;">
+              <span>Ежемесячный платёж × <span id="r-term-count">0</span></span>
               <span class="v" id="r-monthly">0 ₽</span>
             </div>
-            <div class="row" style="font-size: 11px; color: var(--text-3);">
-              <span>↳ количество платежей</span>
-              <span class="v" id="r-count">0 × 0 ₽</span>
-            </div>
-            <div class="row" style="font-size: 11px; color: var(--text-3); margin-top: 4px;">
-              <span>Штрафные проценты при просрочке</span>
-              <span style="color: var(--success); font-weight: 600;">не применяются (Шариат)</span>
-            </div>
+          </div>
 
-            <div class="row big"><span>Всего клиент заплатит</span><span class="v" id="r-total">0 ₽</span></div>
+          <!-- ============ ГРАФИК ПЛАТЕЖЕЙ ============ -->
+          <div id="schedule-card" style="margin-top: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <div style="font-size: 12px; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: .04em;">График платежей</div>
+              <div style="font-size: 11px; color: var(--text-3);"><span id="sch-count">0</span> платежей</div>
+            </div>
+            <div id="schedule-list"></div>
+          </div>
+
+          <div style="margin-top: 12px; font-size: 11px; color: var(--text-3); text-align: center;">
+            ⚠ Штрафные проценты при просрочке не применяются (Шариат-совместимая Мурабаха)
           </div>
         </div>
       </div>
@@ -563,20 +560,25 @@
   });
   setTimeout(updateTypeVisibility, 0);
 
-  // Автозаполнение первого взноса 20% — вызывается при любом изменении цены
+  // Автозаполнение первого взноса — % от ИТОГОВОЙ цены (база + наценка)
   function autoFillDown() {
-    const sale = +form.product.sale || 0;
-    const downIn = document.getElementById('dl-down');
+    const base = +form.product.purchase || 0;
     const tariff = allTariffs.find(t => t.id === form.deal.tariffId);
+    const term = +form.deal.term || 0;
+    const rates = tariff?.murabahaRates || tariff?.murabaha_rates || {};
+    const markupPct = +rates[term] || 0;
+    const final = base + base * markupPct / 100;
+
     const minDpPct = (+tariff?.minDp || +tariff?.min_dp || 0);
-    const targetPct = minDpPct > 0 ? minDpPct : 20;  // если в тарифе 0% — берём 20%
-    const auto = Math.round(sale * targetPct / 100);
-    if (downIn && sale > 0 && (!form.deal.down || form.deal.down === 0)) {
+    const targetPct = minDpPct > 0 ? minDpPct : 20;
+    const auto = Math.round(final * targetPct / 100);
+    const downIn = document.getElementById('dl-down');
+    if (downIn && final > 0 && (!form.deal.down || form.deal.down === 0)) {
       downIn.value = auto;
       form.deal.down = auto;
     }
   }
-  document.getElementById('pd-sale')?.addEventListener('input', () => {
+  document.getElementById('pd-purchase')?.addEventListener('input', () => {
     autoFillDown();
     recalc();
     saveDraft();
@@ -600,82 +602,73 @@
     terms.forEach(m => {
       const opt = document.createElement('option');
       opt.value = m;
-      opt.textContent = m + ' ' + (m === 1 ? 'месяц' : (m < 5 ? 'месяца' : 'месяцев'));
+      const rate = +(t?.murabahaRates || t?.murabaha_rates || {})[m] || 0;
+      opt.textContent = m + ' мес' + (rate > 0 ? '  (наценка ' + rate + '%)' : '');
       termSel.appendChild(opt);
     });
-    // Pick a sensible default term within the tariff
     const defaultTerm = terms.includes(6) ? 6 : terms[0];
     termSel.value = defaultTerm;
     form.deal.term = defaultTerm;
 
     if (t) {
-      hint.textContent = 'Тариф: ' + t.name + (t.description ? ' — ' + t.description : '');
+      hint.textContent = t.description || '—';
       const minDp = +t.minDp || +t.min_dp || 0;
-      if (minDp > 0) {
-        downHint.textContent = `Минимальный взнос ${minDp}% от цены`;
-      } else {
-        downHint.textContent = 'Без минимального взноса';
-      }
+      downHint.textContent = minDp > 0 ? `Мин. ${minDp}% от цены клиента` : 'Без минимального взноса';
     }
   }
 
+  // Главная функция расчёта по ТЗ:
+  //   base (закупка) → markup из тарифа на срок → final = base + markup
+  //   down = final × minDp%; monthly = (final − down) ÷ term
   function recalc() {
-    const sale = +form.product.sale || 0;
-    let purchase = +form.product.purchase || 0;
+    const base = +form.product.purchase || 0;
     const tariff = allTariffs.find(t => t.id === form.deal.tariffId);
     const term = +form.deal.term || 0;
     const isWarehouse = form.deal.type === 'Товар со склада';
 
-    // Auto-markup для «Товар со склада» + Мурабаха-тариф со ставкой на этот срок
-    const murabahaRates = tariff?.murabahaRates || tariff?.murabaha_rates || {};
-    const annualRate = +murabahaRates[term] || 0;
-    const totalMarkupPct = isWarehouse && annualRate > 0
-      ? annualRate * term / 12
-      : null;
+    const rates = tariff?.murabahaRates || tariff?.murabaha_rates || {};
+    const markupPct = +rates[term] || 0;
+    const markup = Math.round(base * markupPct / 100);
+    const final = base + markup;
 
-    let margin = 0;
-    const markupHint = document.getElementById('markup-hint');
-    if (isWarehouse) {
-      // Цена закупки = sale минус наценка из тарифа
-      if (totalMarkupPct !== null && totalMarkupPct > 0) {
-        margin = sale * totalMarkupPct / (100 + totalMarkupPct);
-        purchase = sale - margin;
-        if (markupHint) markupHint.textContent = `По тарифу ${annualRate}% годовых × ${term} мес = ${totalMarkupPct.toFixed(1)}% наценка`;
-      } else {
-        // Без наценки (например тариф 0%)
-        purchase = sale;
-        margin = 0;
-        if (markupHint) markupHint.textContent = tariff ? 'По тарифу — без наценки (0%)' : '';
-      }
-    } else {
-      margin = Math.max(0, sale - purchase);
-      if (markupHint) markupHint.textContent = '';
-    }
-
-    const down = Math.min(+form.deal.down || 0, sale);
-    const remaining = Math.max(0, sale - down);
+    const down = Math.min(+form.deal.down || 0, final);
+    const remaining = Math.max(0, final - down);
     const monthly = term ? Math.round(remaining / term) : 0;
 
-    // Расчёт сделки — обновлённая карточка
-    document.getElementById('r-sale').textContent = fmt(sale);
+    // Сохраняем snapshot
+    form.product.sale = final;
+    form.deal.markup_pct = markupPct;
+    form.deal.markup_amount = markup;
 
-    const marginPct = sale ? (margin / sale * 100).toFixed(1) : 0;
-    const marginRow = document.getElementById('r-margin-row');
-    if (marginRow) marginRow.style.display = margin > 0 ? '' : 'none';
-    document.getElementById('r-margin').textContent = '+ ' + fmt(margin) + ' (' + marginPct + '%)';
-
-    const purchaseRow = document.getElementById('r-purchase-row');
-    if (purchaseRow) purchaseRow.style.display = (!isWarehouse && purchase > 0) ? '' : 'none';
-    document.getElementById('r-purchase').textContent = fmt(purchase);
-
+    // Карточка расчёта
+    document.getElementById('r-base').textContent = fmt(base);
+    document.getElementById('r-markup').textContent = '+ ' + fmt(markup);
+    document.getElementById('r-markup-label').textContent = markupPct > 0
+      ? `+ Наценка по тарифу (${markupPct}% × ${term} мес)`
+      : '+ Наценка по тарифу';
+    document.getElementById('r-final').textContent = fmt(final);
     document.getElementById('r-down').textContent = fmt(down);
-    document.getElementById('r-down-pct').textContent = sale ? (down / sale * 100).toFixed(1) + '%' : '0%';
+    document.getElementById('r-down-pct').textContent = '(' + (final ? (down / final * 100).toFixed(1) : 0) + '%)';
     document.getElementById('r-remaining').textContent = fmt(remaining);
     document.getElementById('r-monthly').textContent = fmt(monthly);
-    document.getElementById('r-count').textContent = term + ' × ' + fmt(monthly);
-    document.getElementById('r-total').textContent = fmt(sale);
+    document.getElementById('r-term-count').textContent = term;
 
-    // Сводка
+    // Подсказка по ставке
+    const rateHint = document.getElementById('rate-hint');
+    if (rateHint) {
+      if (markupPct > 0 && term) {
+        rateHint.textContent = `${markupPct}% наценка = ${fmt(markup)}`;
+        rateHint.style.color = 'var(--success)';
+      } else {
+        rateHint.textContent = 'Ставка 0% для этого срока';
+        rateHint.style.color = 'var(--text-3)';
+      }
+    }
+
+    // График
+    renderSchedule(down, monthly, term);
+
+    // Сводка справа
     document.getElementById('sm-client').textContent = form.client.name || '—';
     document.getElementById('sm-tariff').textContent = tariff?.name || '—';
     document.getElementById('sm-type').textContent = form.deal.type;
@@ -684,14 +677,56 @@
     document.getElementById('sm-term').textContent = term + ' мес';
     document.getElementById('sm-down').textContent = fmt(down);
     document.getElementById('sm-monthly').textContent = fmt(monthly);
-    document.getElementById('sm-total').textContent = fmt(sale);
-    document.getElementById('sm-margin').textContent = (margin > 0 ? '+ ' : '') + fmt(margin);
+    document.getElementById('sm-total').textContent = fmt(final);
+    document.getElementById('sm-margin').textContent = (markup > 0 ? '+ ' : '') + fmt(markup);
 
-    // Партнёр и маржа — скрываем если не нужны
     const partnerRow = document.getElementById('sm-partner-row');
     if (partnerRow) partnerRow.style.display = (isWarehouse || !form.deal.partner) ? 'none' : '';
     const marginRow = document.getElementById('sm-margin-row');
-    if (marginRow) marginRow.style.display = margin > 0 ? '' : 'none';
+    if (marginRow) marginRow.style.display = markup > 0 ? '' : 'none';
+  }
+
+  // Рендер графика платежей
+  function renderSchedule(down, monthly, term) {
+    const card = document.getElementById('schedule-card');
+    const list = document.getElementById('schedule-list');
+    const count = document.getElementById('sch-count');
+    if (!card || !list || !term || !monthly) {
+      if (card) card.style.display = 'none';
+      return;
+    }
+    card.style.display = '';
+    count.textContent = term + 1;
+
+    const today = new Date();
+    const fmtD = (d) => { const p = n => String(n).padStart(2, '0'); return p(d.getDate()) + '.' + p(d.getMonth() + 1) + '.' + d.getFullYear(); };
+
+    const rows = [];
+    rows.push(`
+      <div style="display:grid;grid-template-columns:32px 1fr 110px;gap:10px;padding:8px 4px;align-items:center;border-bottom:1px solid var(--border);">
+        <div style="width:28px;height:28px;background:var(--primary);color:white;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;">✦</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;">Первый взнос</div>
+          <div style="font-size:11px;color:var(--text-3);">сегодня · ${fmtD(today)}</div>
+        </div>
+        <div style="text-align:right;font-weight:700;font-variant-numeric:tabular-nums;">${fmt(down)}</div>
+      </div>
+    `);
+    for (let i = 1; i <= term; i++) {
+      const due = new Date(today);
+      due.setMonth(due.getMonth() + i);
+      rows.push(`
+        <div style="display:grid;grid-template-columns:32px 1fr 110px;gap:10px;padding:8px 4px;align-items:center;${i < term ? 'border-bottom:1px solid var(--border);' : ''}">
+          <div style="width:28px;height:28px;background:var(--surface-2);color:var(--text-2);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">${i}</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;">Платёж ${i} из ${term}</div>
+            <div style="font-size:11px;color:var(--text-3);">${fmtD(due)}</div>
+          </div>
+          <div style="text-align:right;font-weight:700;font-variant-numeric:tabular-nums;">${fmt(monthly)}</div>
+        </div>
+      `);
+    }
+    list.innerHTML = rows.join('');
   }
 
   // ============ Load data + setup comboboxes ============
@@ -899,17 +934,15 @@
       const remaining = Math.max(0, sale - down);
       const monthly = form.deal.term ? Math.round(remaining / form.deal.term) : 0;
 
-      // 1. Сначала клиента — если ещё не в базе
+      // 1. Клиент → справочник
       try {
         if (form.client.name && form.client.phone) {
           let map = {};
           try { map = JSON.parse(localStorage.getItem('payd.clients.v1') || '{}'); } catch (_) {}
           if (!map[form.client.phone]) {
             map[form.client.phone] = {
-              name: form.client.name,
-              phone: form.client.phone,
-              passport: form.client.passport || '',
-              address: form.client.address || '',
+              name: form.client.name, phone: form.client.phone,
+              passport: form.client.passport || '', address: form.client.address || '',
               created_at: new Date().toISOString()
             };
             localStorage.setItem('payd.clients.v1', JSON.stringify(map));
@@ -922,34 +955,76 @@
         try { await PaydDB.upsert('partners', { name: form.deal.partner, status: 'active', commission: 4 }); } catch (_) {}
       }
 
-      // 3. Заявка
+      // 3. Заявка с snapshot полями + FK
+      const base = +form.product.purchase || 0;
+      const final = +form.product.sale || 0;
+      const markupPct = +form.deal.markup_pct || 0;
+      const markupAmount = +form.deal.markup_amount || 0;
+      const tariff = allTariffs.find(t => t.id === form.deal.tariffId);
+
       const app = {
         id,
         number,
+        // FK refs
+        client_id: null,                                     // заполнится сервером по phone
+        product_id: form.product.id || null,
+        tariff_id: form.deal.tariffId || null,
+        partner_id: null,
+        // Snapshot client
         client_name: form.client.name,
         client_phone: form.client.phone,
         client_passport: form.client.passport,
         client_address: form.client.address,
-        product: form.product.name + (form.product.color ? ' · ' + form.product.color : ''),
+        // Snapshot product
+        product: form.product.name,
         product_color: form.product.color,
+        // Snapshot deal
         type: form.deal.type,
-        amount: sale,
+        base_price: base,
+        markup_pct: markupPct,
+        markup_amount: markupAmount,
+        amount: final,
         down_payment: down,
         term: form.deal.term,
         monthly,
         source: 'manual',
         ts: new Date().toISOString(),
+        // Legacy compat
         client: { name: form.client.name, phone: form.client.phone },
-        calc: { price: sale, dpAmount: down, term: form.deal.term, monthly, type: form.deal.type, typeLabel: form.deal.type, product: form.product.name },
+        calc: { price: final, dpAmount: down, term: form.deal.term, monthly, type: form.deal.type, typeLabel: tariff?.name || form.deal.type, product: form.product.name },
         partner: form.deal.partner || null
       };
 
       try {
         await PaydDB.upsert('applications', app);
-        // 4. Audit log
-        try { await PaydDB.audit?.log?.(id, 'application.created', { number, amount: sale }); } catch (_) {}
+
+        // 4. График платежей (N+1) сразу в payments
+        const sb = window.PaydDB?.cloud?.sb?.();
+        if (sb) {
+          const today = new Date();
+          const isoDate = (d) => d.toISOString().slice(0, 10);
+          const payments = [{
+            app_id: id, num: 0, amount: down,
+            due_date: isoDate(today), status: 'pending', kind: 'down_payment'
+          }];
+          for (let i = 1; i <= form.deal.term; i++) {
+            const due = new Date(today);
+            due.setMonth(due.getMonth() + i);
+            payments.push({
+              app_id: id, num: i, amount: monthly,
+              due_date: isoDate(due), status: 'pending', kind: 'installment'
+            });
+          }
+          try {
+            await sb.from('payments').insert(payments);
+          } catch (e) { console.warn('payments schedule', e.message); }
+        }
+
+        // 5. Audit log
+        try { await PaydDB.audit?.log?.(id, 'application.created', { number, amount: final, base, markup: markupAmount }); } catch (_) {}
+
         clearDraft();
-        PaydApp.toast('Заявка создана', { type: 'success', subtitle: 'Номер #' + number });
+        PaydApp.toast('Заявка создана', { type: 'success', subtitle: 'Номер #' + number + ' · график на ' + (form.deal.term + 1) + ' платежей' });
         setTimeout(() => { location.href = 'zhurnal.html'; }, 900);
       } catch (err) {
         console.error(err);
@@ -995,14 +1070,18 @@
         const products = loadProductsCatalog();
         const p = products[card.dataset.id];
         if (!p) return;
+        form.product.id = p.id || '';
         form.product.name = p.name || '';
         form.product.color = p.color || '';
-        form.product.purchase = +p.purchase || 0;
-        form.product.sale = +p.price || 0;
+        // p.price из каталога — это цена закупки (база). Если есть отдельно purchase_price — берём её
+        const basePrice = +p.purchase_price || +p.purchase || +p.price || 0;
+        form.product.purchase = basePrice;
+        form.product.sale = 0;  // пересчитается в recalc
         document.getElementById('pd-name').value = p.name || '';
         document.getElementById('pd-color').value = p.color || '';
-        document.getElementById('pd-purchase').value = p.purchase || '';
-        document.getElementById('pd-sale').value = p.price || '';
+        document.getElementById('pd-purchase').value = basePrice;
+        // dl-down auto-fills via recalc
+        form.deal.down = 0;  // сброс — пересчитается из minDp%
         autoFillDown();
         recalc();
         saveDraft();

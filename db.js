@@ -47,6 +47,7 @@
     products:        { table: 'products',              ls: 'payd.products.v1',           type: 'map',  pk: 'id' },
     contracts:       { table: 'contracts',             ls: 'payd.contracts.v1',          type: 'list', pk: 'id' },
     promo_campaigns: { table: 'promo_campaigns',       ls: 'payd.promo.v1',              type: 'list', pk: 'id' },
+    payments:        { table: 'payments',              ls: 'payd.payments.v1',           type: 'list', pk: 'id' },
     kanban:          { table: null,                    ls: 'payd.kanban.v1',             type: 'map',  pk: 'leadId' } // local-only
   };
 
@@ -407,7 +408,8 @@
     product_categories:['id','name','parent_id','fields','position','is_active'],
     products:          ['id','name','category_id','field_values','price','purchase_price','status','is_active','stock','sku'],
     contracts:         ['id','number','app_id','type','signed_at','signed_by','status','terminated_at','termination_reason'],
-    promo_campaigns:   ['id','name','code','description','type','value','start_at','end_at','partner_id','is_active']
+    promo_campaigns:   ['id','name','code','description','type','value','start_at','end_at','partner_id','is_active'],
+    payments:          ['id','app_id','num','amount','method','cash_id','cashier_id','partner_id','due_date','status','paid_at','kind']
   };
 
   function normalizeForCloud(coll, item) {
