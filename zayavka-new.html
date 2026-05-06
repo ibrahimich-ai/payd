@@ -223,13 +223,51 @@
 
           <div class="calc-result" id="calc-box">
             <div class="ttl">Расчёт сделки</div>
-            <div class="row"><span>Цена закупки</span><span class="v" id="r-purchase">0 ₽</span></div>
-            <div class="row"><span>Цена продажи</span><span class="v" id="r-sale">0 ₽</span></div>
-            <div class="row"><span>Раскрытая надбавка</span><span class="v" id="r-margin" style="color: var(--success);">0 ₽</span></div>
-            <div class="row"><span>Первоначальный взнос</span><span class="v" id="r-down">0 ₽</span></div>
-            <div class="row"><span>Платёж в месяц</span><span class="v" id="r-monthly">0 ₽</span></div>
-            <div class="row" style="font-size: 11px; color: var(--text-3);"><span>Штрафные проценты</span><span>не применяются (Шариат)</span></div>
-            <div class="row big"><span>Итого к оплате клиентом</span><span class="v" id="r-total">0 ₽</span></div>
+
+            <!-- Базовая цена -->
+            <div class="row" style="font-size: 14px; padding: 6px 0;">
+              <span style="font-weight: 600;">Цена товара</span>
+              <span class="v" id="r-sale">0 ₽</span>
+            </div>
+            <div class="row" id="r-margin-row" style="display:none;font-size:12px;color:var(--text-3);">
+              <span>↳ из них наценка по тарифу</span>
+              <span class="v" id="r-margin" style="color: var(--success);">0 ₽</span>
+            </div>
+            <div class="row" id="r-purchase-row" style="display:none;font-size:12px;color:var(--text-3);">
+              <span>↳ цена закупки</span>
+              <span class="v" id="r-purchase">0 ₽</span>
+            </div>
+
+            <div style="border-top: 1px dashed #93c5fd; margin: 8px 0;"></div>
+
+            <!-- Графика платежей -->
+            <div class="row" style="font-size: 14px;">
+              <span style="font-weight: 600;">Первоначальный взнос</span>
+              <span class="v" id="r-down">0 ₽</span>
+            </div>
+            <div class="row" style="font-size: 11px; color: var(--text-3);">
+              <span>↳ % от цены</span>
+              <span class="v" id="r-down-pct">0%</span>
+            </div>
+
+            <div class="row" style="font-size: 14px; margin-top: 6px;">
+              <span style="font-weight: 600;">Остаток к рассрочке</span>
+              <span class="v" id="r-remaining">0 ₽</span>
+            </div>
+            <div class="row" style="font-size: 14px;">
+              <span style="font-weight: 600;">Ежемесячный платёж</span>
+              <span class="v" id="r-monthly">0 ₽</span>
+            </div>
+            <div class="row" style="font-size: 11px; color: var(--text-3);">
+              <span>↳ количество платежей</span>
+              <span class="v" id="r-count">0 × 0 ₽</span>
+            </div>
+            <div class="row" style="font-size: 11px; color: var(--text-3); margin-top: 4px;">
+              <span>Штрафные проценты при просрочке</span>
+              <span style="color: var(--success); font-weight: 600;">не применяются (Шариат)</span>
+            </div>
+
+            <div class="row big"><span>Всего клиент заплатит</span><span class="v" id="r-total">0 ₽</span></div>
           </div>
         </div>
       </div>
@@ -494,7 +532,7 @@
   bind('dl-note', 'deal.note');
   bind('dl-partner', 'deal.partner');
 
-  document.getElementById('dl-term')?.addEventListener('change', e => { form.deal.term = +e.target.value; recalc(); saveDraft(); });
+  document.getElementById('dl-term')?.addEventListener('change', e => { form.deal.term = +e.target.value; autoFillDown(); recalc(); saveDraft(); });
 
   // Показать/скрыть поля в зависимости от типа сделки
   function updateTypeVisibility() {
@@ -525,19 +563,28 @@
   });
   setTimeout(updateTypeVisibility, 0);
 
-  // Автозаполнение взноса 20% от цены при изменении цены продажи (если поле взноса пустое)
-  document.getElementById('pd-sale')?.addEventListener('input', () => {
-    const sale = +document.getElementById('pd-sale').value || 0;
+  // Автозаполнение первого взноса 20% — вызывается при любом изменении цены
+  function autoFillDown() {
+    const sale = +form.product.sale || 0;
     const downIn = document.getElementById('dl-down');
-    if (downIn && (!form.deal.down || form.deal.down === 0)) {
-      const auto = Math.round(sale * 0.20);
+    const tariff = allTariffs.find(t => t.id === form.deal.tariffId);
+    const minDpPct = (+tariff?.minDp || +tariff?.min_dp || 0);
+    const targetPct = minDpPct > 0 ? minDpPct : 20;  // если в тарифе 0% — берём 20%
+    const auto = Math.round(sale * targetPct / 100);
+    if (downIn && sale > 0 && (!form.deal.down || form.deal.down === 0)) {
       downIn.value = auto;
       form.deal.down = auto;
     }
+  }
+  document.getElementById('pd-sale')?.addEventListener('input', () => {
+    autoFillDown();
+    recalc();
+    saveDraft();
   });
   document.getElementById('dl-tariff')?.addEventListener('change', e => {
     form.deal.tariffId = e.target.value;
     applyTariff();
+    autoFillDown();
     recalc();
     saveDraft();
   });
@@ -609,15 +656,23 @@
     const remaining = Math.max(0, sale - down);
     const monthly = term ? Math.round(remaining / term) : 0;
 
-    // Расчёт сделки
-    const purchaseRow = document.getElementById('r-purchase')?.parentElement;
-    if (purchaseRow) purchaseRow.style.display = isWarehouse ? 'none' : '';
-    document.getElementById('r-purchase').textContent = fmt(purchase);
+    // Расчёт сделки — обновлённая карточка
     document.getElementById('r-sale').textContent = fmt(sale);
+
     const marginPct = sale ? (margin / sale * 100).toFixed(1) : 0;
-    document.getElementById('r-margin').textContent = (margin > 0 ? '+ ' : '') + fmt(margin) + (sale && margin ? ' (' + marginPct + '%)' : '');
+    const marginRow = document.getElementById('r-margin-row');
+    if (marginRow) marginRow.style.display = margin > 0 ? '' : 'none';
+    document.getElementById('r-margin').textContent = '+ ' + fmt(margin) + ' (' + marginPct + '%)';
+
+    const purchaseRow = document.getElementById('r-purchase-row');
+    if (purchaseRow) purchaseRow.style.display = (!isWarehouse && purchase > 0) ? '' : 'none';
+    document.getElementById('r-purchase').textContent = fmt(purchase);
+
     document.getElementById('r-down').textContent = fmt(down);
-    document.getElementById('r-monthly').textContent = fmt(monthly) + ' × ' + term;
+    document.getElementById('r-down-pct').textContent = sale ? (down / sale * 100).toFixed(1) + '%' : '0%';
+    document.getElementById('r-remaining').textContent = fmt(remaining);
+    document.getElementById('r-monthly').textContent = fmt(monthly);
+    document.getElementById('r-count').textContent = term + ' × ' + fmt(monthly);
     document.getElementById('r-total').textContent = fmt(sale);
 
     // Сводка
@@ -948,6 +1003,7 @@
         document.getElementById('pd-color').value = p.color || '';
         document.getElementById('pd-purchase').value = p.purchase || '';
         document.getElementById('pd-sale').value = p.price || '';
+        autoFillDown();
         recalc();
         saveDraft();
         pickModal.classList.remove('open');
