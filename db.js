@@ -41,6 +41,12 @@
     workflows:       { table: 'application_workflows', ls: 'payd.zayavka.wf.v1',         type: 'map',  pk: 'app_id' },
     payouts:         { table: 'partner_payouts',       ls: 'payd.partner.payouts.v1',    type: 'list', pk: 'id' },
     reserv_stages:   { table: 'partner_reservations',  ls: 'payd.partner.reserv.stages.v1', type: 'map', pk: 'app_id' },
+    // Новые коллекции (Migration V2)
+    clients:         { table: 'clients',               ls: 'payd.clients.v1',            type: 'map',  pk: 'phone' },
+    product_categories: { table: 'product_categories', ls: 'payd.products.categories.v1', type: 'list', pk: 'id' },
+    products:        { table: 'products',              ls: 'payd.products.v1',           type: 'map',  pk: 'id' },
+    contracts:       { table: 'contracts',             ls: 'payd.contracts.v1',          type: 'list', pk: 'id' },
+    promo_campaigns: { table: 'promo_campaigns',       ls: 'payd.promo.v1',              type: 'list', pk: 'id' },
     kanban:          { table: null,                    ls: 'payd.kanban.v1',             type: 'map',  pk: 'leadId' } // local-only
   };
 
@@ -287,11 +293,17 @@
     tariffs:       ['id','name','description','types','terms','min_dp','max_amount','murabaha_rates','ijara_rates','is_default','created_at'],
     cashes:        ['id','name','address','kkt','fn','responsible','balance','status','created_at'],
     cash_articles: ['id','name','dir','color','group_name','created_at'],
-    cash_ops:      ['id','num','date','article_id','article_name','dir','cash_id','amount','party','note','created_at'],
-    applications:  ['id','number','client_name','client_phone','client_passport','client_address','partner_id','product','product_color','type','amount','down_payment','term','monthly','manager_id','source','ts','created_at','updated_at'],
+    cash_ops:      ['id','num','date','article_id','article_name','dir','cash_id','amount','party','note','app_id','created_at'],
+    applications:  ['id','number','client_name','client_phone','client_passport','client_address','partner_id','client_id','product_id','product','product_color','type','amount','down_payment','term','monthly','manager_id','source','ts','created_at','updated_at'],
     workflows:     ['app_id','step','sb_passed','sb_score','rejected','completed','type','updated_at'],
     payouts:       ['id','partner_id','amount','description','inkassator_id','recipient','sign','note','delivered_at','confirmed_at','status','dispute_reason','created_at'],
-    reserv_stages: ['id','app_id','partner_id','product','purchase_amt','sale_amt','stage','ts','updated_at']
+    reserv_stages: ['id','app_id','partner_id','product','purchase_amt','sale_amt','stage','ts','updated_at'],
+    // V2 collections
+    clients:           ['id','full_name','phone','passport','address','dob','email','note','is_blacklisted','created_at','updated_at'],
+    product_categories:['id','name','parent_id','fields','position','is_active','created_at','updated_at'],
+    products:          ['id','name','category_id','field_values','price','purchase_price','status','is_active','stock','sku','created_at','updated_at'],
+    contracts:         ['id','number','app_id','type','signed_at','signed_by','status','terminated_at','termination_reason','created_at','updated_at'],
+    promo_campaigns:   ['id','name','code','description','type','value','start_at','end_at','partner_id','is_active','created_at','updated_at']
   };
 
   function normalizeForCloud(coll, item) {
@@ -344,6 +356,32 @@
       out.partner_id   = item.partnerId || item.partner_id;
       out.purchase_amt = item.purchaseAmt;
       out.sale_amt     = item.saleAmt;
+    }
+    if (coll === 'clients') {
+      out.full_name = item.full_name || item.name;
+      out.is_blacklisted = item.is_blacklisted ?? item.blacklisted ?? false;
+      // Empty phone → null (unique constraint allows multiple NULLs)
+      if (!out.phone || !String(out.phone).trim()) out.phone = null;
+      // Skip clients without phone — нечем матчить при upsert
+      if (!out.phone) return null;
+    }
+    if (coll === 'product_categories') {
+      out.parent_id = item.parent_id ?? item.parent ?? null;
+      // fields jsonb — normalize string fields to {label, example}
+      if (Array.isArray(item.fields)) {
+        out.fields = item.fields.map(f =>
+          typeof f === 'string' ? { label: f, example: '' } : { label: f.label, example: f.example || '' }
+        );
+      }
+    }
+    if (coll === 'products') {
+      out.category_id   = item.category_id ?? item.category;
+      out.field_values  = item.field_values ?? item.fieldValues ?? {};
+      out.purchase_price = item.purchase_price ?? item.purchase ?? null;
+      out.is_active     = item.is_active ?? (item.status !== 'archived');
+    }
+    if (coll === 'contracts') {
+      out.app_id = item.app_id || item.appId;
     }
 
     // Фильтруем только разрешённые колонки + убираем undefined

@@ -183,7 +183,7 @@
 </div>
 
 <!-- ============ FIELDS EDITOR MODAL ============ -->
-<div class="modal-bg" id="fields-modal">
+<div class="modal-bg" id="fields-modal" style="z-index: 1100;">
   <div class="modal" style="max-width: 480px;">
     <h3>Поля категории</h3>
     <div style="font-size: 12px; color: var(--text-3); margin-bottom: 12px; line-height: 1.5;">
@@ -210,15 +210,6 @@
     <div class="cat-manage-row" style="border-top: 1px solid var(--border); border-bottom: none; padding-top: 14px;">
       <input class="input" id="cat-new-name" placeholder="Название новой категории" />
       <button class="btn primary" id="cat-add" data-no-handler="true">+ Добавить</button>
-    </div>
-    <div style="margin-top: 12px; padding: 12px; background: var(--surface-2); border-radius: 8px; font-size: 12px;">
-      <div style="font-weight: 600; margin-bottom: 6px;">Готовые шаблоны:</div>
-      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-        <button class="btn sm" id="seed-phones" data-no-handler="true">📱 iPhone (13 моделей)</button>
-        <button class="btn sm" id="seed-samsung" data-no-handler="true">📱 Samsung Galaxy</button>
-        <button class="btn sm" id="seed-laptops" data-no-handler="true">💻 Ноутбуки (Apple/Dell/Lenovo)</button>
-      </div>
-      <div style="margin-top: 6px; color: var(--text-3); font-size: 11px;">Добавит группы и подгруппы под нужный бренд</div>
     </div>
     <div class="modal-actions">
       <button class="btn primary" id="cat-close" data-no-handler="true">Готово</button>
@@ -262,19 +253,65 @@
   function saveProducts(map) {
     localStorage.setItem(PRODUCTS_KEY, JSON.stringify(map));
   }
-  // Categories: array of { id, name, parent, fields:[label,...] }
+  // Field can be string (just label) or { label, example }
+  // Default examples per common label (English values, used for new fields & migration)
+  const DEFAULT_EXAMPLES = {
+    'Модель': 'iPhone 15 Pro Max',
+    'Память': '256GB',
+    'Цвет': 'Black Titanium',
+    'RAM': '16GB',
+    'Диагональ': '65"',
+    'Размер': '46mm',
+    'Тип': 'Refrigerator',
+    'Бренд': 'Apple',
+    'Артикул': '000001234',
+    'Производитель': 'Samsung',
+    'Год': '2025',
+    'Серия': 'Pro',
+    'Поколение': '15',
+    'Материал': 'Aluminum',
+    'Назначение': 'Gaming',
+    'Категория': 'Smartphone',
+    'Описание': 'Description'
+  };
+
+  // Categories: array of { id, name, parent, fields:[label OR {label, example}] }
   function loadCats() {
     try {
       const raw = JSON.parse(localStorage.getItem(CATEGORIES_KEY) || 'null');
       if (!raw) {
-        // First-time defaults with field schemas
+        // First-time defaults with field schemas + examples (English values)
         return [
-          { id: 'cat_phones',  name: 'Смартфоны',      parent: null, fields: ['Модель', 'Память', 'Цвет'] },
-          { id: 'cat_laptops', name: 'Ноутбуки',        parent: null, fields: ['Модель', 'Память', 'RAM', 'Цвет'] },
-          { id: 'cat_tv',      name: 'Телевизоры',      parent: null, fields: ['Модель', 'Диагональ', 'Цвет'] },
-          { id: 'cat_audio',   name: 'Аудио',           parent: null, fields: ['Модель', 'Цвет'] },
-          { id: 'cat_watch',   name: 'Часы',            parent: null, fields: ['Модель', 'Размер', 'Цвет'] },
-          { id: 'cat_appl',    name: 'Бытовая техника', parent: null, fields: ['Тип', 'Модель', 'Цвет'] }
+          { id: 'cat_phones',  name: 'Смартфоны',      parent: null, fields: [
+            { label: 'Модель', example: 'iPhone 15 Pro Max' },
+            { label: 'Память', example: '256GB' },
+            { label: 'Цвет',   example: 'Black Titanium' }
+          ]},
+          { id: 'cat_laptops', name: 'Ноутбуки',        parent: null, fields: [
+            { label: 'Модель', example: 'MacBook Air M3 13"' },
+            { label: 'Память', example: '512GB' },
+            { label: 'RAM',    example: '16GB' },
+            { label: 'Цвет',   example: 'Space Gray' }
+          ]},
+          { id: 'cat_tv',      name: 'Телевизоры',      parent: null, fields: [
+            { label: 'Модель',    example: 'Samsung QLED Q80D' },
+            { label: 'Диагональ', example: '65"' },
+            { label: 'Цвет',      example: 'Black' }
+          ]},
+          { id: 'cat_audio',   name: 'Аудио',           parent: null, fields: [
+            { label: 'Модель', example: 'AirPods 4 ANC' },
+            { label: 'Цвет',   example: 'White' }
+          ]},
+          { id: 'cat_watch',   name: 'Часы',            parent: null, fields: [
+            { label: 'Модель',  example: 'Apple Watch Series 10' },
+            { label: 'Размер',  example: '46mm' },
+            { label: 'Цвет',    example: 'Silver' }
+          ]},
+          { id: 'cat_appl',    name: 'Бытовая техника', parent: null, fields: [
+            { label: 'Тип',    example: 'Refrigerator' },
+            { label: 'Модель', example: 'Bosch KGN39VL' },
+            { label: 'Цвет',   example: 'Gray' }
+          ]}
         ];
       }
       // Migrate from old flat string array
@@ -283,6 +320,11 @@
       }
       return raw;
     } catch (_) { return []; }
+  }
+  // Normalize field to { label, example } (handles legacy string fields)
+  function normField(f) {
+    if (typeof f === 'string') return { label: f, example: DEFAULT_EXAMPLES[f] || '' };
+    return { label: f.label, example: f.example || DEFAULT_EXAMPLES[f.label] || '' };
   }
   // Get fields for a category — walks up to parent if empty
   function getCatFields(catId) {
@@ -470,8 +512,8 @@
   function renderProductFields(catId, values = {}) {
     const container = document.getElementById('m-fields-container');
     const preview = document.getElementById('m-name-preview');
-    const fields = getCatFields(catId);
-    if (!fields) {
+    const fieldsRaw = getCatFields(catId);
+    if (!fieldsRaw) {
       container.innerHTML = `
         <div class="field" style="margin-bottom: 12px;">
           <label class="field-label">Название *</label>
@@ -480,12 +522,16 @@
       `;
       preview.style.display = 'none';
     } else {
+      const fields = fieldsRaw.map(normField);
       container.innerHTML = `
         <div class="modal-row" style="grid-template-columns: repeat(${Math.min(2, fields.length)}, 1fr);">
           ${fields.map(f => `
             <div class="field">
-              <label class="field-label">${escapeHtml(f)}</label>
-              <input class="input" data-pf="${escapeHtml(f)}" value="${escapeHtml(values[f] || '')}" placeholder="Например..." />
+              <label class="field-label">${escapeHtml(f.label)}</label>
+              <input class="input" data-pf="${escapeHtml(f.label)}"
+                     value="${escapeHtml(values[f.label] || '')}"
+                     placeholder="${escapeHtml(f.example || 'Например...')}" />
+              ${f.example ? `<div class="field-help" style="font-size:11px;color:var(--text-3);margin-top:4px;">Пример: ${escapeHtml(f.example)}</div>` : ''}
             </div>
           `).join('')}
         </div>
@@ -504,22 +550,23 @@
     out.textContent = parts.join(' ') || '—';
   }
   function buildProductName(catId) {
-    const fields = getCatFields(catId);
-    if (!fields) {
+    const fieldsRaw = getCatFields(catId);
+    if (!fieldsRaw) {
       return document.querySelector('#m-fields-container [data-pf="__name__"]')?.value.trim() || '';
     }
-    const parts = fields.map(f =>
-      document.querySelector(`#m-fields-container [data-pf="${CSS.escape(f)}"]`)?.value.trim()
+    const parts = fieldsRaw.map(f => normField(f).label).map(label =>
+      document.querySelector(`#m-fields-container [data-pf="${CSS.escape(label)}"]`)?.value.trim()
     ).filter(Boolean);
     return parts.join(' ');
   }
   function readFieldValues(catId) {
-    const fields = getCatFields(catId);
-    if (!fields) return {};
+    const fieldsRaw = getCatFields(catId);
+    if (!fieldsRaw) return {};
     const obj = {};
-    fields.forEach(f => {
-      const v = document.querySelector(`#m-fields-container [data-pf="${CSS.escape(f)}"]`)?.value.trim();
-      if (v) obj[f] = v;
+    fieldsRaw.forEach(f => {
+      const label = normField(f).label;
+      const v = document.querySelector(`#m-fields-container [data-pf="${CSS.escape(label)}"]`)?.value.trim();
+      if (v) obj[label] = v;
     });
     return obj;
   }
@@ -715,14 +762,15 @@
     const c = cats.find(x => x.id === fmCurrentCatId);
     if (!c) return;
     const list = document.getElementById('fm-list');
-    const fields = c.fields || [];
+    const fields = (c.fields || []).map(normField);
     const inherited = !fields.length ? getCatFields(c.id) : null;
 
     if (fields.length) {
       list.innerHTML = fields.map((f, i) => `
-        <div class="cat-manage-row">
-          <span style="font-size: 12px; color: var(--text-3); width: 18px;">${i + 1}.</span>
-          <input class="input" data-fm-edit="${i}" value="${escapeHtml(f)}" />
+        <div style="display: flex; gap: 6px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border);">
+          <span style="font-size: 12px; color: var(--text-3); width: 18px; flex-shrink: 0;">${i + 1}.</span>
+          <input class="input" data-fm-edit-label="${i}" value="${escapeHtml(f.label)}" placeholder="Название поля" style="flex: 1;" />
+          <input class="input" data-fm-edit-example="${i}" value="${escapeHtml(f.example || '')}" placeholder="Пример значения" style="flex: 1;" />
           <button class="btn sm" data-fm-up="${i}" data-no-handler="true" ${i === 0 ? 'disabled' : ''}>↑</button>
           <button class="btn sm" data-fm-down="${i}" data-no-handler="true" ${i === fields.length - 1 ? 'disabled' : ''}>↓</button>
           <button class="btn danger sm" data-fm-del="${i}" data-no-handler="true">×</button>
@@ -731,20 +779,32 @@
     } else if (inherited) {
       list.innerHTML = `
         <div style="padding: 14px; background: var(--surface-2); border-radius: 8px; font-size: 12px; color: var(--text-2);">
-          Сейчас наследует от родительской категории: <b>${inherited.join(' · ')}</b>
+          Сейчас наследует от родительской категории: <b>${inherited.map(f => normField(f).label).join(' · ')}</b>
         </div>
       `;
     } else {
       list.innerHTML = '<div style="padding:14px;text-align:center;color:var(--text-3);font-size:13px;">Полей пока нет — добавь ниже</div>';
     }
 
-    list.querySelectorAll('[data-fm-edit]').forEach(inp => {
+    function updateField(i, prop, val) {
+      const cats = loadCats();
+      const c = cats.find(x => x.id === fmCurrentCatId);
+      if (!c.fields) return;
+      let f = c.fields[i];
+      if (typeof f === 'string') f = { label: f, example: '' };
+      f[prop] = val;
+      c.fields[i] = f;
+      saveCats(cats);
+    }
+    list.querySelectorAll('[data-fm-edit-label]').forEach(inp => {
       inp.addEventListener('change', () => {
-        const cats = loadCats();
-        const c = cats.find(x => x.id === fmCurrentCatId);
-        const i = +inp.dataset.fmEdit;
         const v = inp.value.trim();
-        if (v && c.fields) { c.fields[i] = v; saveCats(cats); }
+        if (v) updateField(+inp.dataset.fmEditLabel, 'label', v);
+      });
+    });
+    list.querySelectorAll('[data-fm-edit-example]').forEach(inp => {
+      inp.addEventListener('change', () => {
+        updateField(+inp.dataset.fmEditExample, 'example', inp.value.trim());
       });
     });
     list.querySelectorAll('[data-fm-del]').forEach(btn => {
@@ -823,80 +883,6 @@
     if (e.key === 'Enter') document.getElementById('cat-add').click();
   });
 
-  // ============ Seed templates ============
-  function seedTemplate(rootName, brandName, models) {
-    const cats = loadCats();
-    // Find or create root
-    let root = cats.find(c => c.name === rootName && !c.parent);
-    if (!root) {
-      root = { id: newCatId(), name: rootName, parent: null };
-      cats.push(root);
-    }
-    // Find or create brand
-    let brand = cats.find(c => c.name === brandName && c.parent === root.id);
-    if (!brand) {
-      brand = { id: newCatId(), name: brandName, parent: root.id };
-      cats.push(brand);
-    }
-    // Add models (skip duplicates)
-    let added = 0;
-    models.forEach(m => {
-      if (!cats.some(c => c.name === m && c.parent === brand.id)) {
-        cats.push({ id: newCatId(), name: m, parent: brand.id });
-        added++;
-      }
-    });
-    saveCats(cats);
-    expandedCats.add(root.id);
-    expandedCats.add(brand.id);
-    return { added, brand: brand.name, root: root.name };
-  }
-
-  document.getElementById('seed-phones').addEventListener('click', () => {
-    const models = [
-      'iPhone 12','iPhone 13','iPhone 14','iPhone 15',
-      'iPhone 16E','iPhone 16','iPhone 16 Pro','iPhone 16 Pro Max',
-      'iPhone 17 Air','iPhone 17','iPhone 17 Pro','iPhone 17 Pro Max','iPhone 17E'
-    ];
-    const { added, brand } = seedTemplate('Смартфоны', 'iPhone', models);
-    PaydApp.toast(added ? `Добавлено ${added} моделей в «${brand}»` : 'Все модели уже есть', added ? 'success' : 'info');
-    renderCatManage();
-    refresh();
-  });
-
-  document.getElementById('seed-samsung').addEventListener('click', () => {
-    const models = [
-      'Galaxy S25','Galaxy S25 Ultra','Galaxy S24','Galaxy S24 Ultra',
-      'Galaxy A55','Galaxy A35','Galaxy A25',
-      'Galaxy Z Fold 6','Galaxy Z Flip 6'
-    ];
-    const { added, brand } = seedTemplate('Смартфоны', 'Samsung', models);
-    PaydApp.toast(added ? `Добавлено ${added} моделей в «${brand}»` : 'Все модели уже есть', added ? 'success' : 'info');
-    renderCatManage();
-    refresh();
-  });
-
-  document.getElementById('seed-laptops').addEventListener('click', () => {
-    const cats = loadCats();
-    let root = cats.find(c => c.name === 'Ноутбуки' && !c.parent);
-    if (!root) {
-      root = { id: newCatId(), name: 'Ноутбуки', parent: null };
-      cats.push(root);
-    }
-    const brands = ['Apple', 'Dell', 'Lenovo', 'HP', 'ASUS'];
-    let added = 0;
-    brands.forEach(name => {
-      if (!cats.some(c => c.name === name && c.parent === root.id)) {
-        cats.push({ id: newCatId(), name, parent: root.id });
-        added++;
-      }
-    });
-    saveCats(cats);
-    expandedCats.add(root.id);
-    PaydApp.toast(added ? `Добавлено ${added} брендов в «Ноутбуки»` : 'Все бренды уже есть', added ? 'success' : 'info');
-    renderCatManage();
-    refresh();
-  });
 
   // ============ Search ============
   document.getElementById('pp-search').addEventListener('input', refresh);
