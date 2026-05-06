@@ -335,6 +335,8 @@
       out.app_id = item.appId || item.app_id;
       out.sb_passed = item.sbPassed;
       out.sb_score = item.sbScore;
+      // app_id обязательно (PK) — пропускаем если пустой
+      if (!out.app_id) return null;
     }
     if (coll === 'payouts') {
       out.delivered_at = item.deliveredAt;
@@ -364,6 +366,10 @@
       if (!out.phone || !String(out.phone).trim()) out.phone = null;
       // Skip clients without phone — нечем матчить при upsert
       if (!out.phone) return null;
+      // Empty date strings → null (postgres date can't parse "")
+      ['dob','created_at','updated_at'].forEach(k => {
+        if (out[k] === '' || out[k] == null) delete out[k];
+      });
       // id у clients в БД uuid auto-generated; не передаём свой нестандартный
       if (out.id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(out.id))) {
         delete out.id;
@@ -380,6 +386,8 @@
     }
     if (coll === 'products') {
       out.category_id   = item.category_id ?? item.category;
+      // Пустая строка → null (FK не матчит '')
+      if (!out.category_id || out.category_id === '') out.category_id = null;
       out.field_values  = item.field_values ?? item.fieldValues ?? {};
       out.purchase_price = item.purchase_price ?? item.purchase ?? null;
       out.is_active     = item.is_active ?? (item.status !== 'archived');
