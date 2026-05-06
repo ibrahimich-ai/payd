@@ -33,9 +33,9 @@
   .calc-result .row.big .v { color: var(--primary-2); font-size: 22px; font-weight: 800; }
 
   .summary-card { padding: 18px; }
-  .summary-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
-  .summary-row .l { color: var(--text-2); }
-  .summary-row .v { font-weight: 600; }
+  .summary-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; gap: 12px; }
+  .summary-row .l { color: var(--text-2); flex-shrink: 0; }
+  .summary-row .v { font-weight: 600; text-align: right; word-break: break-word; min-width: 0; line-height: 1.4; }
 
   .combo { position: relative; }
   .combo-list {
@@ -101,28 +101,49 @@
     <!-- ============ STEP 1: CLIENT ============ -->
     <div class="step-pane active" data-pane="1">
       <div class="card">
-        <div class="card-hd"><h3>Клиент</h3></div>
+        <div class="card-hd">
+          <h3>Клиент</h3>
+          <button class="btn sm" id="btn-new-client" data-no-handler="true">+ Новый клиент</button>
+        </div>
         <div class="card-bd">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-            <div class="field">
-              <label class="field-label">ФИО клиента</label>
-              <div class="combo">
-                <input class="input" id="cl-name" autocomplete="off" placeholder="Начните вводить — найдём в базе" />
-                <div class="combo-list" id="cl-name-list"></div>
+          <div class="field">
+            <label class="field-label">Поиск по базе клиентов</label>
+            <div class="combo">
+              <input class="input" id="cl-name" autocomplete="off" placeholder="Начните вводить ФИО или телефон..." style="font-size: 15px; padding: 14px 16px;" />
+              <div class="combo-list" id="cl-name-list"></div>
+            </div>
+            <div class="field-help">Выберите клиента из базы или нажмите «+ Новый клиент» чтобы создать</div>
+          </div>
+
+          <!-- Скрытые поля — заполняются автоматически из выбранного клиента -->
+          <input type="hidden" id="cl-phone" />
+          <input type="hidden" id="cl-passport" />
+          <input type="hidden" id="cl-address" />
+
+          <!-- Сводка выбранного клиента -->
+          <div id="client-summary" style="display:none; margin-top: 18px; padding: 18px; background: linear-gradient(135deg, #eff6ff, #dbeafe); border: 1px solid #bfdbfe; border-radius: 12px;">
+            <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 14px;">
+              <div class="avatar c1 lg" id="cs-avatar">?</div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 16px; font-weight: 700;" id="cs-name">—</div>
+                <div style="font-size: 12px; color: var(--text-2); margin-top: 2px;" id="cs-meta">—</div>
               </div>
-              <div class="field-help">Если клиент уже есть — выберите из списка, поля заполнятся автоматически</div>
+              <button class="btn sm" id="cs-edit" data-no-handler="true">Редактировать</button>
+              <button class="btn sm" id="cs-clear" data-no-handler="true" title="Сбросить" style="padding: 6px 10px;">×</button>
             </div>
-            <div class="field">
-              <label class="field-label">Телефон</label>
-              <input class="input" id="cl-phone" placeholder="+7 ___ ___-__-__" />
-            </div>
-            <div class="field">
-              <label class="field-label">Паспорт (серия номер)</label>
-              <input class="input" id="cl-passport" placeholder="0000 000000" />
-            </div>
-            <div class="field">
-              <label class="field-label">Адрес регистрации</label>
-              <input class="input" id="cl-address" placeholder="г. Грозный, ул. ..." />
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; padding-top: 14px; border-top: 1px solid rgba(37,99,235,.15);">
+              <div>
+                <div style="font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em;">Телефон</div>
+                <div style="font-size: 13px; font-weight: 600; margin-top: 2px;" id="cs-phone">—</div>
+              </div>
+              <div>
+                <div style="font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em;">Паспорт</div>
+                <div style="font-size: 13px; font-weight: 600; margin-top: 2px;" id="cs-passport">—</div>
+              </div>
+              <div style="grid-column: 1 / -1;">
+                <div style="font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em;">Адрес</div>
+                <div style="font-size: 13px; font-weight: 600; margin-top: 2px;" id="cs-address">—</div>
+              </div>
             </div>
           </div>
         </div>
@@ -157,14 +178,15 @@
                 <option value="Услуга">Услуга (Иджара)</option>
               </select>
             </div>
-            <div class="field">
+            <div class="field" id="purchase-field">
               <label class="field-label">Цена закупки (₽)</label>
               <input class="input" id="pd-purchase" type="number" placeholder="0" />
               <div class="field-help">Сколько вы платите поставщику</div>
             </div>
-            <div class="field">
-              <label class="field-label">Цена продажи клиенту (₽)</label>
+            <div class="field" style="grid-column: 1 / -1;">
+              <label class="field-label">Цена продажи клиенту (₽) *</label>
               <input class="input" id="pd-sale" type="number" placeholder="0" />
+              <div class="field-help" id="markup-hint" style="font-size:11px;color:var(--text-3);margin-top:4px;"></div>
             </div>
             <input type="hidden" id="pd-color" />
           </div>
@@ -279,6 +301,51 @@
   </div>
 </div>
 
+</div>
+
+<!-- ============ NEW CLIENT MODAL ============ -->
+<div class="modal-bg" id="client-modal">
+  <div class="modal" style="max-width: 600px;">
+    <h3 id="cm-title">Новый клиент</h3>
+    <div style="font-size: 12px; color: var(--text-3); margin-bottom: 14px;">Заполните основные данные. Поля со звёздочкой обязательны.</div>
+
+    <div class="modal-row">
+      <div class="field">
+        <label class="field-label">Фамилия Имя Отчество *</label>
+        <input class="input" id="cm-name" placeholder="Иванов Иван Иванович" />
+      </div>
+      <div class="field">
+        <label class="field-label">Телефон *</label>
+        <input class="input" id="cm-phone" placeholder="+7 ___ ___-__-__" />
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="field">
+        <label class="field-label">Дата рождения</label>
+        <input class="input" id="cm-dob" type="date" />
+      </div>
+      <div class="field">
+        <label class="field-label">Email</label>
+        <input class="input" id="cm-email" placeholder="email@example.com" />
+      </div>
+    </div>
+    <div class="field" style="margin-bottom: 12px;">
+      <label class="field-label">Паспорт (серия и номер) *</label>
+      <input class="input" id="cm-passport" placeholder="0000 000000" />
+    </div>
+    <div class="field" style="margin-bottom: 12px;">
+      <label class="field-label">Адрес регистрации *</label>
+      <input class="input" id="cm-address" placeholder="г. Грозный, ул. Путина 18, кв 12" />
+    </div>
+    <div class="field" style="margin-bottom: 12px;">
+      <label class="field-label">Заметка (необязательно)</label>
+      <textarea class="textarea" id="cm-note" placeholder="Любая дополнительная информация — где работает, рекомендации и т.д."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="cm-cancel" data-no-handler="true">Отмена</button>
+      <button class="btn primary" id="cm-save" data-no-handler="true">✓ Создать клиента</button>
+    </div>
+  </div>
 </div>
 
 <!-- ============ PRODUCT PICKER MODAL ============ -->
@@ -416,27 +483,45 @@
 
   document.getElementById('dl-term')?.addEventListener('change', e => { form.deal.term = +e.target.value; recalc(); saveDraft(); });
 
-  // Показать/скрыть поле «Партнёр» в зависимости от типа сделки
-  function updatePartnerVisibility() {
+  // Показать/скрыть поля в зависимости от типа сделки
+  function updateTypeVisibility() {
     const type = form.deal.type;
-    const field = document.getElementById('partner-field');
-    if (!field) return;
+    const partnerField = document.getElementById('partner-field');
+    const purchaseField = document.getElementById('purchase-field');
+
     // Партнёр нужен только когда товар у партнёра / под заказ / услуга
     if (type === 'Товар со склада') {
-      field.style.display = 'none';
+      if (partnerField) partnerField.style.display = 'none';
       form.deal.partner = '';
       const inp = document.getElementById('dl-partner');
       if (inp) inp.value = '';
+      // Цена закупки скрыта — со склада уже наша
+      if (purchaseField) purchaseField.style.display = 'none';
+      form.product.purchase = 0;
+      const purIn = document.getElementById('pd-purchase');
+      if (purIn) purIn.value = '';
     } else {
-      field.style.display = '';
+      if (partnerField) partnerField.style.display = '';
+      if (purchaseField) purchaseField.style.display = '';
     }
   }
   document.getElementById('deal-type')?.addEventListener('change', () => {
-    updatePartnerVisibility();
+    updateTypeVisibility();
     recalc();
     saveDraft();
   });
-  setTimeout(updatePartnerVisibility, 0);
+  setTimeout(updateTypeVisibility, 0);
+
+  // Автозаполнение взноса 20% от цены при изменении цены продажи (если поле взноса пустое)
+  document.getElementById('pd-sale')?.addEventListener('input', () => {
+    const sale = +document.getElementById('pd-sale').value || 0;
+    const downIn = document.getElementById('dl-down');
+    if (downIn && (!form.deal.down || form.deal.down === 0)) {
+      const auto = Math.round(sale * 0.20);
+      downIn.value = auto;
+      form.deal.down = auto;
+    }
+  });
   document.getElementById('dl-tariff')?.addEventListener('change', e => {
     form.deal.tariffId = e.target.value;
     applyTariff();
@@ -476,30 +561,63 @@
 
   function recalc() {
     const sale = +form.product.sale || 0;
-    const purchase = +form.product.purchase || 0;
-    const margin = Math.max(0, sale - purchase);
+    let purchase = +form.product.purchase || 0;
+    const tariff = allTariffs.find(t => t.id === form.deal.tariffId);
+    const term = +form.deal.term || 0;
+    const isWarehouse = form.deal.type === 'Товар со склада';
+
+    // Auto-markup для «Товар со склада» + Мурабаха-тариф со ставкой на этот срок
+    const murabahaRates = tariff?.murabahaRates || tariff?.murabaha_rates || {};
+    const annualRate = +murabahaRates[term] || 0;
+    const totalMarkupPct = isWarehouse && annualRate > 0
+      ? annualRate * term / 12
+      : null;
+
+    let margin = 0;
+    const markupHint = document.getElementById('markup-hint');
+    if (isWarehouse) {
+      // Цена закупки = sale минус наценка из тарифа
+      if (totalMarkupPct !== null && totalMarkupPct > 0) {
+        margin = sale * totalMarkupPct / (100 + totalMarkupPct);
+        purchase = sale - margin;
+        if (markupHint) markupHint.textContent = `По тарифу ${annualRate}% годовых × ${term} мес = ${totalMarkupPct.toFixed(1)}% наценка`;
+      } else {
+        // Без наценки (например тариф 0%)
+        purchase = sale;
+        margin = 0;
+        if (markupHint) markupHint.textContent = tariff ? 'По тарифу — без наценки (0%)' : '';
+      }
+    } else {
+      margin = Math.max(0, sale - purchase);
+      if (markupHint) markupHint.textContent = '';
+    }
+
     const down = Math.min(+form.deal.down || 0, sale);
     const remaining = Math.max(0, sale - down);
-    const monthly = form.deal.term ? Math.round(remaining / form.deal.term) : 0;
-    const tariff = allTariffs.find(t => t.id === form.deal.tariffId);
+    const monthly = term ? Math.round(remaining / term) : 0;
 
+    // Расчёт сделки
+    const purchaseRow = document.getElementById('r-purchase')?.parentElement;
+    if (purchaseRow) purchaseRow.style.display = isWarehouse ? 'none' : '';
     document.getElementById('r-purchase').textContent = fmt(purchase);
     document.getElementById('r-sale').textContent = fmt(sale);
-    document.getElementById('r-margin').textContent = '+ ' + fmt(margin) + (sale ? ' (' + (margin / sale * 100).toFixed(1) + '%)' : '');
+    const marginPct = sale ? (margin / sale * 100).toFixed(1) : 0;
+    document.getElementById('r-margin').textContent = (margin > 0 ? '+ ' : '') + fmt(margin) + (sale && margin ? ' (' + marginPct + '%)' : '');
     document.getElementById('r-down').textContent = fmt(down);
-    document.getElementById('r-monthly').textContent = fmt(monthly) + ' × ' + form.deal.term;
+    document.getElementById('r-monthly').textContent = fmt(monthly) + ' × ' + term;
     document.getElementById('r-total').textContent = fmt(sale);
 
+    // Сводка
     document.getElementById('sm-client').textContent = form.client.name || '—';
     document.getElementById('sm-tariff').textContent = tariff?.name || '—';
     document.getElementById('sm-type').textContent = form.deal.type;
-    document.getElementById('sm-product').textContent = (form.product.name + (form.product.color ? ' · ' + form.product.color : '')) || '—';
+    document.getElementById('sm-product').textContent = form.product.name || '—';
     document.getElementById('sm-partner').textContent = form.deal.partner || 'Прямая';
-    document.getElementById('sm-term').textContent = form.deal.term + ' мес';
+    document.getElementById('sm-term').textContent = term + ' мес';
     document.getElementById('sm-down').textContent = fmt(down);
     document.getElementById('sm-monthly').textContent = fmt(monthly);
     document.getElementById('sm-total').textContent = fmt(sale);
-    document.getElementById('sm-margin').textContent = '+ ' + fmt(margin);
+    document.getElementById('sm-margin').textContent = (margin > 0 ? '+ ' : '') + fmt(margin);
   }
 
   // ============ Load data + setup comboboxes ============
@@ -582,19 +700,14 @@
       getItems: () => clients,
       render: (c) => `<div class="nm">${escapeHtml(c.name)}</div><div class="meta">${escapeHtml(c.phone || 'без телефона')}</div>`,
       allowCreate: true,
-      createLabel: 'Создать клиента: ',
+      createLabel: '+ Создать клиента: ',
       onSelect: (c) => {
-        form.client.name = c._label;
-        if (!c._new) {
-          form.client.phone = c.phone || '';
-          form.client.passport = c.passport || '';
-          form.client.address = c.address || '';
-          document.getElementById('cl-phone').value = c.phone || '';
-          document.getElementById('cl-passport').value = c.passport || '';
-          document.getElementById('cl-address').value = c.address || '';
+        if (c._new) {
+          // Открыть модал с предзаполненным ФИО
+          openClientModal(c._label);
+          return;
         }
-        recalc();
-        saveDraft();
+        applyClient(c);
       }
     });
 
@@ -804,6 +917,112 @@
   document.getElementById('pp-close').addEventListener('click', () => pickModal.classList.remove('open'));
   pickModal.addEventListener('click', e => { if (e.target === pickModal) pickModal.classList.remove('open'); });
   document.getElementById('pp-search').addEventListener('input', e => renderPicker(e.target.value));
+
+  // ============ Client modal ============
+  const clientModal = document.getElementById('client-modal');
+
+  function openClientModal(prefilledName = '') {
+    document.getElementById('cm-title').textContent = prefilledName ? 'Новый клиент: ' + prefilledName : 'Новый клиент';
+    ['cm-name','cm-phone','cm-passport','cm-address','cm-email','cm-dob','cm-note'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    if (prefilledName) document.getElementById('cm-name').value = prefilledName;
+    // Если в форме уже что-то введено — переносим
+    if (form.client.phone) document.getElementById('cm-phone').value = form.client.phone;
+    if (form.client.passport) document.getElementById('cm-passport').value = form.client.passport;
+    if (form.client.address) document.getElementById('cm-address').value = form.client.address;
+    clientModal.classList.add('open');
+    setTimeout(() => {
+      const focusEl = prefilledName ? document.getElementById('cm-phone') : document.getElementById('cm-name');
+      focusEl?.focus();
+    }, 50);
+  }
+
+  document.getElementById('btn-new-client').addEventListener('click', () => openClientModal(''));
+  document.getElementById('cm-cancel').addEventListener('click', () => clientModal.classList.remove('open'));
+  clientModal.addEventListener('click', e => { if (e.target === clientModal) clientModal.classList.remove('open'); });
+
+  document.getElementById('cm-save').addEventListener('click', async () => {
+    const name = document.getElementById('cm-name').value.trim();
+    const phone = document.getElementById('cm-phone').value.trim();
+    const passport = document.getElementById('cm-passport').value.trim();
+    const address = document.getElementById('cm-address').value.trim();
+    if (!name) { PaydApp.toast('Введите ФИО', 'error'); return; }
+    if (!phone) { PaydApp.toast('Введите телефон', 'error'); return; }
+    if (!passport) { PaydApp.toast('Введите паспорт', 'error'); return; }
+    if (!address) { PaydApp.toast('Введите адрес', 'error'); return; }
+
+    const newClient = {
+      name, phone, passport, address,
+      dob: document.getElementById('cm-dob').value || '',
+      email: document.getElementById('cm-email').value.trim() || '',
+      note: document.getElementById('cm-note').value.trim() || '',
+      created_at: new Date().toISOString()
+    };
+
+    // Save to localStorage clients map (key by phone)
+    let map = {};
+    try { map = JSON.parse(localStorage.getItem('payd.clients.v1') || '{}'); } catch (_) {}
+    map[phone] = newClient;
+    localStorage.setItem('payd.clients.v1', JSON.stringify(map));
+
+    PaydApp.toast('Клиент создан', { type: 'success', subtitle: name });
+    clientModal.classList.remove('open');
+
+    // Apply in form
+    applyClient({ _label: name, ...newClient });
+  });
+
+  // Apply selected client to the form + show summary
+  function applyClient(c) {
+    form.client.name = c._label || c.name || '';
+    form.client.phone = c.phone || '';
+    form.client.passport = c.passport || '';
+    form.client.address = c.address || '';
+    document.getElementById('cl-name').value = form.client.name;
+    document.getElementById('cl-phone').value = form.client.phone;
+    document.getElementById('cl-passport').value = form.client.passport;
+    document.getElementById('cl-address').value = form.client.address;
+    renderClientSummary(c);
+    recalc();
+    saveDraft();
+  }
+
+  function renderClientSummary(c) {
+    const summary = document.getElementById('client-summary');
+    if (!c || !c.name) { summary.style.display = 'none'; return; }
+    summary.style.display = '';
+    const initials = (c.name.trim().split(/\s+/).map(p => p[0] || '').slice(0, 2).join('') || '?').toUpperCase();
+    document.getElementById('cs-avatar').textContent = initials;
+    document.getElementById('cs-name').textContent = c.name;
+    const metaParts = [];
+    if (c.dob) {
+      const age = Math.floor((Date.now() - new Date(c.dob).getTime()) / (365.25 * 24 * 3600 * 1000));
+      if (!isNaN(age)) metaParts.push(age + ' лет');
+    }
+    if (c.email) metaParts.push(c.email);
+    document.getElementById('cs-meta').textContent = metaParts.join(' · ') || 'Клиент Payd';
+    document.getElementById('cs-phone').textContent = c.phone || '—';
+    document.getElementById('cs-passport').textContent = c.passport || '—';
+    document.getElementById('cs-address').textContent = c.address || '—';
+  }
+
+  document.getElementById('cs-clear').addEventListener('click', () => {
+    form.client = { name: '', phone: '', passport: '', address: '' };
+    document.getElementById('cl-name').value = '';
+    document.getElementById('cl-phone').value = '';
+    document.getElementById('cl-passport').value = '';
+    document.getElementById('cl-address').value = '';
+    renderClientSummary(null);
+    recalc();
+    saveDraft();
+  });
+
+  document.getElementById('cs-edit').addEventListener('click', () => openClientModal(form.client.name));
+
+  // Show summary if draft has client data
+  if (form.client.name) renderClientSummary(form.client);
 </script>
 </body>
 </html>
