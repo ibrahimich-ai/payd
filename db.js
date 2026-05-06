@@ -364,6 +364,10 @@
       if (!out.phone || !String(out.phone).trim()) out.phone = null;
       // Skip clients without phone — нечем матчить при upsert
       if (!out.phone) return null;
+      // id у clients в БД uuid auto-generated; не передаём свой нестандартный
+      if (out.id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(out.id))) {
+        delete out.id;
+      }
     }
     if (coll === 'product_categories') {
       out.parent_id = item.parent_id ?? item.parent ?? null;
