@@ -78,7 +78,7 @@
     <div class="desc">Заполните 4 шага и заявка будет создана</div>
   </div>
   <div class="page-head-actions">
-    <a href="zhurnal.html" class="btn">Отмена</a>
+    <button class="btn" id="btn-cancel-form" data-no-handler="true">Отмена</button>
   </div>
 </div>
 
@@ -1206,6 +1206,31 @@
 
   // Show summary if draft has client data
   if (form.client.name) renderClientSummary(form.client);
+
+  // Cancel button — очищает черновик и возвращает в журнал
+  document.getElementById('btn-cancel-form')?.addEventListener('click', () => {
+    const hasData = form.client.name || form.product.name || form.product.purchase || form.deal.down;
+    if (!hasData) {
+      clearDraft();
+      location.href = 'zhurnal.html';
+      return;
+    }
+    PaydApp.confirmDialog({
+      title: 'Отменить заявку?',
+      message: 'Все введённые данные будут удалены. Это действие нельзя отменить.',
+      okText: 'Да, отменить',
+      onOk: () => {
+        clearDraft();
+        // Сбрасываем форму в памяти
+        Object.assign(form, {
+          client: { name: '', phone: '', passport: '', address: '' },
+          product: { id: '', name: '', color: '', purchase: 0, sale: 0 },
+          deal: { tariffId: '', type: 'Товар со склада', term: 6, down: 0, partner: '', note: '' }
+        });
+        location.href = 'zhurnal.html';
+      }
+    });
+  });
 </script>
 </body>
 </html>
