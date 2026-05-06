@@ -158,7 +158,7 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
       <span class="dot"></span>
     </button>
-    <div class="avatar c1 sm">ДЛ</div>
+    <div class="avatar c1 sm" id="lk-avatar">—</div>
   </div>
 </div>
 
@@ -168,34 +168,25 @@
   <div class="hero-card">
     <div style="position: relative; z-index: 1;">
       <div class="hero-greet">Здравствуйте,</div>
-      <div class="hero-name">Луиза Саид-Усмановна 👋</div>
+      <div class="hero-name" id="lk-name">—</div>
 
       <div class="hero-debt-label">Общая задолженность</div>
-      <div class="hero-debt">8 700 ₽</div>
-      <div class="hero-due">
+      <div class="hero-debt" id="lk-debt">—</div>
+      <div class="hero-due" id="lk-next-due" style="display:none;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        Ближайший платёж <b>3 500 ₽</b> до 19 мая
+        <span id="lk-next-due-text">—</span>
       </div>
 
-      <div class="hero-actions">
-        <button class="hero-btn">
+      <div class="hero-actions" id="lk-hero-actions" style="display:none;">
+        <button class="hero-btn" id="lk-pay-btn">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          Оплатить 3 500 ₽
+          <span id="lk-pay-btn-label">Оплатить</span>
         </button>
         <button class="hero-btn secondary">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           График
         </button>
       </div>
-    </div>
-  </div>
-
-  <!-- ALERT -->
-  <div class="news-card">
-    <div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
-    <div>
-      <div class="t">Платите досрочно — экономьте</div>
-      <div class="s">Если погасите рассрочку до 19 мая, сэкономите 420 ₽ переплаты. Можно оплатить любую сумму онлайн.</div>
     </div>
   </div>
 
@@ -219,125 +210,27 @@
     </div>
   </div>
 
-  <!-- ACTIVE DEAL -->
+  <!-- ACTIVE DEALS -->
   <div class="lk-section-title">
     <span>Активная рассрочка</span>
-    <a href="#">Все сделки →</a>
   </div>
-
-  <div class="deal-card">
-    <div class="deal-card-head">
-      <div class="deal-img">🎧</div>
-      <div style="flex: 1; min-width: 0;">
-        <div class="deal-name">Airpods 4 ANC · Белый USB-C · Белый</div>
-        <div class="deal-num">Заявка №0000000142 · 19.04.2026</div>
-      </div>
-      <span class="badge success dot">Активная</span>
-    </div>
-    <div class="deal-progress">
-      <div class="deal-progress-info">
-        <span class="l">Прогресс рассрочки</span>
-        <span class="v">1 из 3 платежей</span>
-      </div>
-      <div class="progress-bar"><div class="fill" style="width: 33%"></div></div>
-    </div>
-    <div class="deal-meta">
-      <div><span class="l">Платёж в месяц</span><br/><span class="v">3 500 ₽</span></div>
-      <div><span class="l">Остаток долга</span><br/><span class="v">8 700 ₽</span></div>
-      <div><span class="l">Закрытие</span><br/><span class="v">19.07.2026</span></div>
+  <div id="lk-deals">
+    <div class="deal-card" style="text-align:center; color: var(--text-3); cursor: default;">
+      Нет активных рассрочек
     </div>
   </div>
 
   <!-- SCHEDULE -->
-  <div class="lk-section-title">
+  <div class="lk-section-title" id="lk-schedule-title" style="display:none;">
     <span>График платежей</span>
-    <a href="#">Скачать PDF</a>
   </div>
-
-  <div class="schedule-list">
-    <div class="sch-row">
-      <div class="sch-circle paid"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
-      <div class="sch-info">
-        <div class="a">Первоначальный взнос</div>
-        <div class="b">Оплачено · 19.04.2026</div>
-      </div>
-      <div class="sch-amount paid">2 300 ₽</div>
-    </div>
-    <div class="sch-row">
-      <div class="sch-circle paid"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
-      <div class="sch-info">
-        <div class="a">Платёж 1</div>
-        <div class="b">Оплачено · 19.04.2026 · наличные</div>
-      </div>
-      <div class="sch-amount paid">3 500 ₽</div>
-    </div>
-    <div class="sch-row">
-      <div class="sch-circle next">2</div>
-      <div class="sch-info">
-        <div class="a">Платёж 2 · 19 мая 2026</div>
-        <div class="b" style="color: var(--primary); font-weight: 600;">Через 18 дней</div>
-      </div>
-      <div class="sch-amount">3 500 ₽</div>
-    </div>
-    <div class="sch-row">
-      <div class="sch-circle">3</div>
-      <div class="sch-info">
-        <div class="a">Платёж 3 · 19 июня 2026</div>
-        <div class="b">Финальный платёж</div>
-      </div>
-      <div class="sch-amount muted">3 500 ₽</div>
-    </div>
-  </div>
+  <div class="schedule-list" id="lk-schedule" style="display:none;"></div>
 
   <!-- HISTORY -->
-  <div class="lk-section-title">
+  <div class="lk-section-title" id="lk-history-title" style="display:none;">
     <span>История платежей</span>
-    <a href="#">Все платежи →</a>
   </div>
-
-  <div class="schedule-list">
-    <div class="sch-row">
-      <div class="sch-circle paid" style="background: var(--success-soft); border-color: var(--success); color: var(--success);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
-      <div class="sch-info">
-        <div class="a">Платёж 1 по заявке #142</div>
-        <div class="b">19.04.2026 · оплата наличные · кассир Бекуев М.</div>
-      </div>
-      <div class="sch-amount paid">+ 3 500 ₽</div>
-    </div>
-    <div class="sch-row">
-      <div class="sch-circle paid" style="background: var(--success-soft); border-color: var(--success); color: var(--success);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
-      <div class="sch-info">
-        <div class="a">Первоначальный взнос #142</div>
-        <div class="b">19.04.2026 · оплата картой · кассир Бекуев М.</div>
-      </div>
-      <div class="sch-amount paid">+ 2 300 ₽</div>
-    </div>
-    <div class="sch-row">
-      <div class="sch-circle paid" style="background: var(--success-soft); border-color: var(--success); color: var(--success);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
-      <div class="sch-info">
-        <div class="a">Закрыта заявка #089</div>
-        <div class="b">12.11.2025 · iPhone 15 Pro · полностью</div>
-      </div>
-      <div class="sch-amount paid">128 000 ₽</div>
-    </div>
-  </div>
-
-  <!-- BONUS -->
-  <div class="lk-section-title"><span>Бонусная программа</span></div>
-  <div style="background: linear-gradient(135deg, #f5f3ff, #ede9fe); border-radius: 16px; padding: 18px; border: 1px solid #ddd6fe;">
-    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-      <div style="width: 44px; height: 44px; background: var(--purple); color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center;">⭐</div>
-      <div>
-        <div style="font-size: 14px; font-weight: 700; color: var(--purple);">Постоянный клиент</div>
-        <div style="font-size: 12px; color: var(--purple);">3 закрытые сделки · следующий уровень — VIP</div>
-      </div>
-    </div>
-    <div class="progress-bar"><div class="fill" style="width: 60%; background: var(--purple);"></div></div>
-    <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--purple); margin-top: 4px; font-weight: 600;">
-      <span>3 / 5 сделок</span>
-      <span>VIP — скидка 15% на первый взнос</span>
-    </div>
-  </div>
+  <div class="schedule-list" id="lk-history" style="display:none;"></div>
 
 </div>
 
@@ -369,10 +262,115 @@
 <script src="db.js"></script>
 <script src="app.js"></script>
 <script>
-  // Hero "Оплатить" button → toast simulating payment
-  document.querySelector('.hero-btn').addEventListener('click', () => {
-    PaydApp.toast('Оплата 3 500 ₽ принята', { type: 'success', subtitle: 'Чек отправлен на email' });
-  });
+  // Личный кабинет клиента — реальные данные текущего пользователя.
+  // Если данных нет — показываем пустое состояние, никаких заглушек.
+
+  const fmt = (n) => (n == null || isNaN(n)) ? '—' : Number(n).toLocaleString('ru-RU') + ' ₽';
+  const initials = (name) => {
+    if (!name) return '—';
+    const parts = String(name).trim().split(/\s+/);
+    return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || '—';
+  };
+
+  async function bootLk() {
+    if (!window.PaydDB) return;
+    const ok = await PaydDB.cloud.connect().catch(() => false);
+    if (!ok) {
+      // Не залогинен — на страницу входа
+      location.href = 'index.html';
+      return;
+    }
+
+    const user = PaydDB.cloud.user();
+    const profile = await PaydDB.profiles.me().catch(() => null);
+
+    const fullName = profile?.full_name
+      || user?.user_metadata?.full_name
+      || user?.email
+      || '—';
+    document.getElementById('lk-name').textContent = fullName;
+    document.getElementById('lk-avatar').textContent = initials(fullName);
+
+    // Заявки клиента: матчим по client_id из profile, иначе по телефону, иначе пусто.
+    let apps = [];
+    try {
+      if (profile?.client_id) {
+        apps = await PaydDB.list('applications', { where: { client_id: profile.client_id } });
+      } else if (profile?.phone) {
+        apps = await PaydDB.list('applications', { where: { client_phone: profile.phone } });
+      }
+    } catch (e) {
+      console.warn('[lk-client] load apps', e.message);
+    }
+
+    const active = (apps || []).filter(a => !a.completed && !a.rejected);
+    if (!active.length) {
+      // Без активных рассрочек — скрываем долг/график/историю
+      document.getElementById('lk-debt').textContent = '—';
+      document.getElementById('lk-next-due').style.display = 'none';
+      document.getElementById('lk-hero-actions').style.display = 'none';
+      return;
+    }
+
+    // Суммарный долг по активным заявкам — приближение из суммы заявки.
+    // TODO: считать реальный остаток через payments (когда схема будет стабильной).
+    const totalDebt = active.reduce((s, a) => s + Number(a.amount || a.calc?.price || 0), 0);
+    document.getElementById('lk-debt').textContent = fmt(totalDebt);
+
+    // Активные сделки — рендер списка
+    const dealsBox = document.getElementById('lk-deals');
+    dealsBox.innerHTML = '';
+    active.forEach(a => {
+      const card = document.createElement('div');
+      card.className = 'deal-card';
+      const num = a.number || a.id || '—';
+      const product = a.product || a.calc?.product || '—';
+      const monthly = a.monthly || a.calc?.monthly;
+      card.innerHTML = `
+        <div class="deal-card-head">
+          <div class="deal-img">📦</div>
+          <div style="flex:1; min-width:0;">
+            <div class="deal-name">${product}</div>
+            <div class="deal-num">Заявка №${num}</div>
+          </div>
+          <span class="badge success dot">Активная</span>
+        </div>
+        <div class="deal-meta">
+          <div><span class="l">Платёж в месяц</span><br/><span class="v">${fmt(monthly)}</span></div>
+          <div><span class="l">Сумма</span><br/><span class="v">${fmt(a.amount || a.calc?.price)}</span></div>
+          <div><span class="l">Срок</span><br/><span class="v">${a.term || a.calc?.term || '—'} мес.</span></div>
+        </div>
+      `;
+      dealsBox.appendChild(card);
+    });
+
+    // График и история платежей пока пустые (нет надёжной связки клиент → payments).
+    // Покажем секции с пустым состоянием.
+    document.getElementById('lk-schedule-title').style.display = '';
+    const schBox = document.getElementById('lk-schedule');
+    schBox.style.display = '';
+    schBox.innerHTML = '<div class="sch-row" style="justify-content:center; color: var(--text-3);">Нет данных</div>';
+
+    document.getElementById('lk-history-title').style.display = '';
+    const hisBox = document.getElementById('lk-history');
+    hisBox.style.display = '';
+    hisBox.innerHTML = '<div class="sch-row" style="justify-content:center; color: var(--text-3);">Нет данных</div>';
+
+    // Кнопка "Оплатить" — пока заглушка, без имитации оплаты
+    document.getElementById('lk-hero-actions').style.display = '';
+    const payBtn = document.getElementById('lk-pay-btn');
+    if (payBtn) {
+      payBtn.addEventListener('click', () => {
+        if (window.PaydApp?.toast) {
+          PaydApp.toast('Платежи в разработке', { type: 'info' });
+        } else {
+          alert('Платежи в разработке');
+        }
+      });
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', bootLk);
 </script>
 </body>
 </html>

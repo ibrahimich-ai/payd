@@ -460,10 +460,12 @@
       out.group_name = item.group_name || item.group;
     }
     if (coll === 'reserv_stages') {
-      out.app_id       = item.appId || item.app_id;
-      out.partner_id   = item.partnerId || item.partner_id;
-      out.purchase_amt = item.purchaseAmt;
-      out.sale_amt     = item.saleAmt;
+      // Нормализация: всегда snake_case (избавляемся от смеси appId/app_id)
+      out.app_id       = item.app_id || item.appId;
+      out.partner_id   = item.partner_id || item.partnerId;
+      out.purchase_amt = item.purchase_amt ?? item.purchaseAmt;
+      out.sale_amt     = item.sale_amt ?? item.saleAmt;
+      delete out.appId; delete out.partnerId; delete out.purchaseAmt; delete out.saleAmt;
     }
     if (coll === 'clients') {
       out.full_name = item.full_name || item.name;
@@ -695,6 +697,24 @@
   }
 
   // ============================================================
+  //  PROFILES — текущий пользователь и его расширенный профиль
+  //  TODO: добавить таблицу profiles в COLLECTIONS, когда схема стабилизируется.
+  //  Пока — прямой запрос к profiles по auth.user.id.
+  // ============================================================
+  async function profileMe() {
+    const sb = getSb();
+    const user = _user;
+    if (!sb || !user) return null;
+    try {
+      const { data } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
+      return data || null;
+    } catch (e) {
+      console.warn('[PaydDB] profileMe', e.message);
+      return null;
+    }
+  }
+
+  // ============================================================
   //  AUDIT LOG — запись действий в application_history
   // ============================================================
   async function auditLog(appId, action, meta = {}) {
@@ -719,6 +739,7 @@
     list, get, upsert, remove, count, bulkReplace,
     subscribe, exportAll, importAll, COLLECTIONS,
     audit: { log: auditLog },
+    profiles: { me: profileMe },
     files: { upload: uploadFile, list: listFiles, getUrl: getFileUrl, delete: deleteFile },
     cloud: {
       connect: cloudConnect,
