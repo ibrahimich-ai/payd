@@ -273,22 +273,35 @@
 
   <!-- ============ SUMMARY ============ -->
   <div style="display: flex; flex-direction: column; gap: 16px;">
-    <div class="card summary-card">
+    <!-- Подсказка для шага 1 -->
+    <div class="card" id="step1-hint" style="padding: 18px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+        <div style="width: 32px; height: 32px; background: var(--primary-soft); color: var(--primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800;">1</div>
+        <div style="font-size: 13px; font-weight: 700;">Шаг 1 из 4 · Клиент</div>
+      </div>
+      <div style="font-size: 12px; color: var(--text-2); line-height: 1.6;">
+        Найдите клиента в базе или создайте нового. После выбора клиента вы перейдёте к выбору товара и параметров рассрочки.
+      </div>
+    </div>
+
+    <!-- Сводка заявки — показывается с шага 2 -->
+    <div class="card summary-card" id="full-summary" style="display: none;">
       <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 14px;">Сводка заявки</h3>
       <div class="summary-row"><span class="l">Клиент</span><span class="v" id="sm-client">—</span></div>
       <div class="summary-row"><span class="l">Тариф</span><span class="v" id="sm-tariff">—</span></div>
       <div class="summary-row"><span class="l">Тип сделки</span><span class="v" id="sm-type">—</span></div>
       <div class="summary-row"><span class="l">Товар</span><span class="v" id="sm-product">—</span></div>
-      <div class="summary-row"><span class="l">Партнёр</span><span class="v" id="sm-partner">—</span></div>
+      <div class="summary-row" id="sm-partner-row"><span class="l">Партнёр</span><span class="v" id="sm-partner">—</span></div>
       <div class="summary-row"><span class="l">Срок</span><span class="v" id="sm-term">—</span></div>
       <div class="summary-row"><span class="l">Первый взнос</span><span class="v" id="sm-down">0 ₽</span></div>
       <div class="summary-row"><span class="l">Платёж в месяц</span><span class="v" id="sm-monthly">0 ₽</span></div>
       <div style="border-top: 1px solid var(--border); margin: 10px 0;"></div>
       <div class="summary-row" style="font-size: 15px;"><span class="l" style="color: var(--text); font-weight: 600;">Сумма заявки</span><span class="v" style="color: var(--primary); font-size: 18px;" id="sm-total">0 ₽</span></div>
-      <div class="summary-row" style="font-size: 12px;"><span class="l">Маржа</span><span class="v" style="color: var(--success);" id="sm-margin">0 ₽</span></div>
+      <div class="summary-row" style="font-size: 12px;" id="sm-margin-row"><span class="l">Маржа</span><span class="v" style="color: var(--success);" id="sm-margin">0 ₽</span></div>
     </div>
 
-    <div class="card" style="padding: 18px;">
+    <!-- Что произойдёт — на шаге 4 -->
+    <div class="card" id="will-happen" style="padding: 18px; display: none;">
       <div style="font-size: 13px; font-weight: 700; margin-bottom: 10px;">Что произойдёт после создания</div>
       <div style="display: flex; flex-direction: column; gap: 10px;">
         <div style="display: flex; gap: 8px; font-size: 12px; color: var(--text-2);"><span style="color: var(--success);">✓</span> Заявка создана и присвоен номер</div>
@@ -612,12 +625,18 @@
     document.getElementById('sm-tariff').textContent = tariff?.name || '—';
     document.getElementById('sm-type').textContent = form.deal.type;
     document.getElementById('sm-product').textContent = form.product.name || '—';
-    document.getElementById('sm-partner').textContent = form.deal.partner || 'Прямая';
+    document.getElementById('sm-partner').textContent = form.deal.partner || '—';
     document.getElementById('sm-term').textContent = term + ' мес';
     document.getElementById('sm-down').textContent = fmt(down);
     document.getElementById('sm-monthly').textContent = fmt(monthly);
     document.getElementById('sm-total').textContent = fmt(sale);
     document.getElementById('sm-margin').textContent = (margin > 0 ? '+ ' : '') + fmt(margin);
+
+    // Партнёр и маржа — скрываем если не нужны
+    const partnerRow = document.getElementById('sm-partner-row');
+    if (partnerRow) partnerRow.style.display = (isWarehouse || !form.deal.partner) ? 'none' : '';
+    const marginRow = document.getElementById('sm-margin-row');
+    if (marginRow) marginRow.style.display = margin > 0 ? '' : 'none';
   }
 
   // ============ Load data + setup comboboxes ============
@@ -773,6 +792,14 @@
     document.querySelectorAll('.step-pane').forEach(p => p.classList.toggle('active', +p.dataset.pane === current));
     document.getElementById('step-back').style.visibility = current > 1 ? 'visible' : 'hidden';
     document.getElementById('step-next').textContent = current === 4 ? '✓ Создать заявку' : 'Далее →';
+
+    // Контекстная сводка справа
+    const step1Hint = document.getElementById('step1-hint');
+    const fullSum   = document.getElementById('full-summary');
+    const willHap   = document.getElementById('will-happen');
+    if (step1Hint) step1Hint.style.display = current === 1 ? '' : 'none';
+    if (fullSum)   fullSum.style.display   = current >= 2 ? '' : 'none';
+    if (willHap)   willHap.style.display   = current === 4 ? '' : 'none';
   }
 
   function validate(step) {
@@ -817,11 +844,30 @@
       const remaining = Math.max(0, sale - down);
       const monthly = form.deal.term ? Math.round(remaining / form.deal.term) : 0;
 
-      // If new partner — create
+      // 1. Сначала клиента — если ещё не в базе
+      try {
+        if (form.client.name && form.client.phone) {
+          let map = {};
+          try { map = JSON.parse(localStorage.getItem('payd.clients.v1') || '{}'); } catch (_) {}
+          if (!map[form.client.phone]) {
+            map[form.client.phone] = {
+              name: form.client.name,
+              phone: form.client.phone,
+              passport: form.client.passport || '',
+              address: form.client.address || '',
+              created_at: new Date().toISOString()
+            };
+            localStorage.setItem('payd.clients.v1', JSON.stringify(map));
+          }
+        }
+      } catch (_) {}
+
+      // 2. Партнёр (если новый)
       if (form.deal.partner && !allPartners.some(p => p.name === form.deal.partner)) {
         try { await PaydDB.upsert('partners', { name: form.deal.partner, status: 'active', commission: 4 }); } catch (_) {}
       }
 
+      // 3. Заявка
       const app = {
         id,
         number,
@@ -845,6 +891,8 @@
 
       try {
         await PaydDB.upsert('applications', app);
+        // 4. Audit log
+        try { await PaydDB.audit?.log?.(id, 'application.created', { number, amount: sale }); } catch (_) {}
         clearDraft();
         PaydApp.toast('Заявка создана', { type: 'success', subtitle: 'Номер #' + number });
         setTimeout(() => { location.href = 'zhurnal.html'; }, 900);
