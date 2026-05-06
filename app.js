@@ -191,24 +191,12 @@ function buildTopbar(opts = {}) {
   `;
 }
 
-async function mountShell({ active, title, breadcrumbs, actions }) {
+function mountShell({ active, title, breadcrumbs, actions }) {
   const root = document.getElementById('app-root');
   if (!root) return;
 
-  // ===== AUTH GUARD =====
-  // Если на странице есть PaydDB и нет активной сессии — редирект на логин
-  if (window.PaydDB && !window.location.pathname.includes('index.html') && !window.location.pathname.includes('calculator.html')) {
-    const connected = await window.PaydDB.cloud.connect().catch(() => false);
-    if (!connected && !window.PaydDB.cloud.user()) {
-      // Локальный fallback: если есть данные в localStorage — пускаем, иначе на логин
-      // (даём 1 секунду на восстановление сессии)
-      await new Promise(r => setTimeout(r, 800));
-      if (!window.PaydDB.cloud.user()) {
-        const hasSession = !!localStorage.getItem('sb-' + 'ehxfjvcyqvpjtahkmncf' + '-auth-token');
-        if (!hasSession) { window.location.href = 'index.html'; return; }
-      }
-    }
-  }
+  // Auth guard — выполняется в фоне, не блокирует рендер
+  authGuardBackground();
 
   const main = root.innerHTML;
   root.innerHTML = `
@@ -236,6 +224,29 @@ async function mountShell({ active, title, breadcrumbs, actions }) {
   initMobileSidebar();
   initTopbarCalc();
   initTopbarBack({ active });
+}
+
+async function authGuardBackground() {
+  // Не запускаем guard на публичных страницах
+  const path = window.location.pathname;
+  if (path.includes('index.html') || path.includes('calculator.html') || path === '/' ) return;
+  if (!window.PaydDB) return;
+
+  // Дать время на восстановление сессии из localStorage
+  await new Promise(r => setTimeout(r, 100));
+  let user = window.PaydDB.cloud.user();
+  if (!user) {
+    await window.PaydDB.cloud.connect().catch(() => null);
+    user = window.PaydDB.cloud.user();
+  }
+  // Ещё подождём — Supabase auth.getSession() — async
+  if (!user) {
+    await new Promise(r => setTimeout(r, 1500));
+    user = window.PaydDB.cloud.user();
+  }
+  if (!user) {
+    window.location.href = 'index.html';
+  }
 }
 
 function initTopbarBack({ active }) {
