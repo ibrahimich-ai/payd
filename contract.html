@@ -127,12 +127,16 @@
     const term = app.term || app.calc?.term || 0;
     const monthly = app.monthly || app.calc?.monthly || 0;
 
-    // Print-ready paper
-    document.getElementById('paper').innerHTML = `
+    // Гибридный рендер: JS-interpolation для динамики из заявки/договора,
+    // {{маркеры}} → PaydDB.templates.render() для company-полей из settings.
+    // Если settings ещё не сохраняет реквизиты в payd.settings.company.v1
+    // — company-маркеры подставятся как "—" (зафиксировано в DEMO_DEFAULTS,
+    // зависимость settings → templates rendering).
+    const tmpl = `
       <h1>${TYPE_TITLES[contract.type] || 'ДОГОВОР'}</h1>
       <div class="center">№ ${escapeHtml(contract.number)} от ${fmtDate(contract.signed_at || contract.created_at)}</div>
 
-      <p><strong>ООО «Payd»</strong>, далее «Продавец», в лице директора Джабраилова И. Магомедовича, действующего на основании Устава, с одной стороны, и</p>
+      <p><strong>{{company.name}}</strong>, далее «Продавец», в лице директора {{company.director_name}}, действующего на основании Устава, с одной стороны, и</p>
       <p><strong>${escapeHtml(app.client_name || app.client?.name || '_______________')}</strong>, далее «Покупатель», паспорт ${escapeHtml(app.client_passport || '_______')}, с другой стороны, заключили настоящий договор о нижеследующем:</p>
 
       <h2>1. Предмет договора</h2>
@@ -159,10 +163,10 @@
       <div class="sign">
         <div class="sign-block">
           <strong>Продавец:</strong><br>
-          ООО «Payd»<br>
-          ИНН ____________<br>
+          {{company.name}}<br>
+          ИНН {{company.inn}}<br>
           <div class="sign-line"></div>
-          Директор / М.П.
+          Директор {{company.director_name}} / М.П.
         </div>
         <div class="sign-block">
           <strong>Покупатель:</strong><br>
@@ -173,6 +177,9 @@
         </div>
       </div>
     `;
+    const ctx = { company: (window.PaydDB?.templates?.loadCompany?.() || {}) };
+    document.getElementById('paper').innerHTML =
+      window.PaydDB?.templates?.render?.(tmpl, ctx) || tmpl;
 
     // Right column
     document.getElementById('status-block').innerHTML = `

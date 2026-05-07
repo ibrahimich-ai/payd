@@ -346,12 +346,11 @@
   const today = () => new Date();
   const isoDate = (d) => d.toISOString().slice(0, 10);
 
-  // ===== Default seeds =====
-  const SEED_CASHES = [
-    { id: 'c_main',    name: 'Касса · Грозный (центр)', address: 'Грозный, пр. Путина, 18', kkt: 'Атол 30Ф',     fn: '00109876541234', responsible: 'Бекуев Муслим Д.', balance: 312800, status: 'active', icon: 'shop' },
-    { id: 'c_argun',   name: 'Касса · Аргун',           address: 'Аргун, ул. Кадырова, 7',   kkt: 'Эвотор 7.2',   fn: '00112233445566', responsible: 'Хасанов Ислам',     balance: 184500, status: 'active', icon: 'shop' },
-    { id: 'c_gudermes',name: 'Касса · Гудермес',        address: 'Гудермес, ул. Терская, 33',kkt: 'Меркурий 185Ф',fn: '00198765432109', responsible: 'Алиев Саид',        balance: 96400,  status: 'active', icon: 'shop' }
-  ];
+  // ===== Defaults =====
+  // Кассы создаются через UI, никаких demo-seed'ов.
+  // Раньше тут лежали 3 фейковых кассы с ФИО кассиров (Бекуев / Хасанов /
+  // Алиев) — удалены как утечка ПДн (DEMO_DEFAULTS Wave 1.4).
+  const SEED_CASHES = [];
 
   const SEED_ARTICLES = [
     // Income
@@ -375,50 +374,10 @@
     { id: 'a_other_out',   name: 'Прочий расход',               dir: 'out', color: '#737373', group: 'Прочее' }
   ];
 
-  // ===== Generate demo operations =====
-  function seedOps() {
-    const now = new Date();
-    const ops = [];
-    let counter = 1000;
-    function add(daysAgo, articleId, cashId, amount, party, note) {
-      const d = new Date(now); d.setDate(d.getDate() - daysAgo);
-      const art = SEED_ARTICLES.find(a => a.id === articleId);
-      ops.push({
-        id: 'op_' + (Date.now() + counter),
-        num: 'PD-' + String(counter++),
-        date: d.toISOString(),
-        articleId, articleName: art.name, dir: art.dir,
-        cashId, amount, party, note
-      });
-    }
-    // This month
-    add(1,  'a_pmt_client', 'c_main',     12400, 'Магомедов А. С.', 'Платёж #143 · 5/12');
-    add(1,  'a_pmt_client', 'c_main',     10500, 'Хасиев А. Х.',     'Платёж #144 · 4/4 финал');
-    add(2,  'a_pmt_client', 'c_argun',    9700,  'Абдулаева З. М.',  'Платёж #139 · 4/6');
-    add(2,  'a_dp_client',  'c_main',     21000, 'Усманов М. И.',    'Первоначальный взнос #147');
-    add(3,  'a_partner_out','c_main',     42000, 'ТехноМир — Грозный','Комиссии за апрель');
-    add(4,  'a_pmt_client', 'c_gudermes', 6200,  'Иналов И. У.',     'Платёж #135 · 7/12');
-    add(5,  'a_inkass',     'c_main',     150000,'Сбербанк',         'Инкассация в банк');
-    add(7,  'a_pmt_client', 'c_argun',    8700,  'Вагапов А. Р.',    'Платёж #138 · 6/6 финал');
-    add(8,  'a_rent',       'c_main',     85000, 'ИП Алханов',       'Аренда офиса за апрель');
-    add(10, 'a_salary',     'c_main',     245000,'Сотрудники',       'Аванс по зарплате');
-    add(12, 'a_partner_out','c_argun',    28500, 'ДигиМаркет',        'Комиссии партнёра');
-    add(14, 'a_marketing',  'c_main',     45000, 'Yandex Реклама',   'РК апрель');
-    add(15, 'a_dp_client',  'c_main',     14500, 'Тазуев Р. С.',     'Первоначальный взнос #142');
-    add(18, 'a_utility',    'c_main',     12400, 'УК «Дом»',         'Коммунальные за март');
-    add(20, 'a_software',   'c_main',     9900,  'Битрикс24',        'Подписка');
-    add(22, 'a_pmt_client', 'c_argun',    11400, 'Магомадов Р. С.',  'Платёж #131 · 5/9');
-    add(25, 'a_taxes',      'c_main',     180000,'ФНС',              'УСН за 1 квартал');
-    add(28, 'a_refill',     'c_argun',    100000,'Сбербанк',         'Подкрепление кассы');
-    add(30, 'a_office',     'c_argun',    8400,  'Метро',            'Канцтовары');
-    // Last month
-    add(40, 'a_partner_out','c_main',     58000, 'ТехноМир — Грозный','Комиссии март');
-    add(45, 'a_rent',       'c_main',     85000, 'ИП Алханов',       'Аренда март');
-    add(48, 'a_salary',     'c_main',     230000,'Сотрудники',       'Зарплата март');
-    add(50, 'a_pmt_client', 'c_main',     14200, 'Гайтаев И. М.',    'Платёж #145 · 2/6');
-    add(55, 'a_inkass',     'c_argun',    120000,'Сбербанк',         'Инкассация март');
-    return ops.sort((a, b) => new Date(b.date) - new Date(a.date));
-  }
+  // (Раньше тут была seedOps() — функция, генерирующая 24 фейк-операции
+  //  с реальными ФИО клиентов и партнёров. Удалена как утечка ПДн.
+  //  Журнал операций при первом запуске пустой; операции добавляются
+  //  через "Новая операция" в UI.)
 
   function loadOrSeed(key, defaults) {
     try {
@@ -439,12 +398,10 @@
       const raw = localStorage.getItem(KEY_OPS);
       if (raw) {
         const arr = JSON.parse(raw);
-        if (Array.isArray(arr) && arr.length) return arr;
+        if (Array.isArray(arr)) return arr;
       }
     } catch (_) {}
-    const seeded = seedOps();
-    localStorage.setItem(KEY_OPS, JSON.stringify(seeded));
-    return seeded;
+    return [];
   })();
 
   function saveAll() {
@@ -1022,24 +979,10 @@
         if (a.client?.name) set.set(a.client.name, { name: a.client.name, phone: a.client.phone || '', meta: 'Заявка №' + a.number });
       });
     } catch (_) {}
-    // Hardcoded demo clients (mirrors common journal entries)
-    const seed = [
-      { name: 'Тазуев Р. С.',        phone: '+7 928 891-23-45', meta: 'Заявка #147 · iPhone 16 Pro' },
-      { name: 'Эльмурзаева П. А.',   phone: '+7 963 712-44-89', meta: 'Заявка #146 · MacBook Air' },
-      { name: 'Гайтаев И. М.',       phone: '+7 938 022-87-13', meta: 'Заявка #145 · iPhone 15 Plus' },
-      { name: 'Хасиев А. Х.',        phone: '+7 928 449-12-08', meta: 'Заявка #144 · Apple Watch' },
-      { name: 'Магомедов А. С.',     phone: '+7 989 156-22-44', meta: 'Заявка #143 · Airpods 4 ANC · Белый' },
-      { name: 'Даурбекова Л. С.',    phone: '+7 989 918-51-58', meta: 'Заявка #142 · Airpods 4 CASE' },
-      { name: 'Усманов М. И.',       phone: '+7 928 778-04-12', meta: 'Заявка #141 · Samsung QLED' },
-      { name: 'Исраилов Я. А.',      phone: '+7 963 311-45-78', meta: 'Заявка #140 · Samsung Galaxy S25' },
-      { name: 'Абдулаева З. М.',     phone: '+7 928 005-67-21', meta: 'Заявка #139 · Lenovo IdeaPad' },
-      { name: 'Вагапов А. Р.',       phone: '+7 989 220-11-09', meta: 'Заявка #138 · PS5 Slim' },
-      { name: 'Магомадов Р. С.',     phone: '+7 989 156-22-44', meta: 'Заявка #131 · 5/9 платёж' },
-      { name: 'Иналов И. У.',        phone: '+7 928 005-67-22', meta: 'Заявка #135 · 7/12 платёж' },
-      { name: 'Тазуев М. Я.',        phone: '+7 928 778-04-13', meta: 'Заявка #129 · 4 500 ₽' },
-      { name: 'Курбанов М. М.',      phone: '+7 989 124-55-67', meta: 'Заявка #134' }
-    ];
-    seed.forEach(c => { if (!set.has(c.name)) set.set(c.name, c); });
+    // Раньше тут был массив seed[] из 14 фейк-клиентов с реальными ФИО
+    // и телефонами (Даурбекова, Гайтаев, Магомедов и т.д.) — удалён как
+    // утечка ПДн (DEMO_DEFAULTS Wave 1.4). Picker берёт клиентов только
+    // из реальных заявок (calc applications выше).
     return [...set.values()].sort((a, b) => a.name.localeCompare(b.name));
   }
 
