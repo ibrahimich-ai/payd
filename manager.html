@@ -119,15 +119,32 @@
     render();
   }
 
+  // Колонки определяются по типу заявки через PaydDB.workflows.flowFor —
+  // никаких магических чисел step >= 3/4. contractStep/downpayStep
+  // приходят из WORKFLOW_FLOWS в db.js (одна правда на проект).
+  const _defaultFlow = { contractStep: 3, downpayStep: 4, deliverStep: 5 };
+  function flowOf(a, wf) {
+    if (window.PaydDB?.workflows?.flowFor) {
+      return PaydDB.workflows.flowFor(a?.type || wf?.type);
+    }
+    return _defaultFlow;
+  }
+
   function classifyApp(a) {
     if (a.rejected || a.closed) return 'closed';
     const wf = workflows[a.id];
-    if (!wf) return 'new';
-    if (wf.sb_passed && wf.step >= 4) return 'active';
-    if (wf.sb_passed && wf.step >= 3) return 'contract';
-    if (!wf.sb_passed && !wf.rejected) return 'sb';
-    if (wf.rejected) return 'closed';
-    return 'new';
+    if (!wf)            return 'new';
+    if (wf.rejected)    return 'closed';
+    if (wf.completed)   return 'closed';
+    if (!wf.sb_passed)  return 'sb';
+    // sb_passed === true: классифицируем по step относительно гейтов flow
+    const flow = flowOf(a, wf);
+    const step = Number(wf.step) || 1;
+    if (step >= flow.downpayStep)  return 'active';
+    if (step >= flow.contractStep) return 'contract';
+    // sb_passed=true, но step < contractStep — аномалия legacy данных;
+    // безопаснее вернуть 'contract' (СБ уже пройдена, договор — следующий гейт).
+    return 'contract';
   }
 
   function render() {
