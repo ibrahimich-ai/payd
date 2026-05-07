@@ -926,6 +926,26 @@
     return next;
   }
 
+  // История действий по конкретной заявке (для вкладки «История» в карточке).
+  async function auditAppHistory(appId, limit = 100) {
+    if (!appId) return [];
+    if (!_isOnline) return [];
+    const sb = getSb();
+    if (!sb) return [];
+    try {
+      const { data, error } = await sb.from('application_history')
+        .select('*')
+        .eq('app_id', appId)
+        .order('ts', { ascending: false })
+        .limit(limit);
+      if (error) throw error;
+      return data || [];
+    } catch (e) {
+      console.warn('[PaydDB] auditAppHistory', e.message);
+      return [];
+    }
+  }
+
   // Сводка действий за сегодня (для счётчиков в СБ-странице).
   async function auditTodayStats() {
     const empty = { approved: 0, rejected: 0, decided: 0, raw: [] };
@@ -954,7 +974,7 @@
   window.PaydDB = {
     list, get, upsert, remove, count, bulkReplace,
     subscribe, exportAll, importAll, COLLECTIONS,
-    audit: { log: auditLog, flushOutbox: auditFlushOutbox, todayStats: auditTodayStats },
+    audit: { log: auditLog, flushOutbox: auditFlushOutbox, todayStats: auditTodayStats, appHistory: auditAppHistory },
     workflows: {
       get: workflowGet,
       advance: workflowAdvance,

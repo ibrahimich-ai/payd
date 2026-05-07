@@ -1571,34 +1571,33 @@
   }
 
   // ---- Persistent workflow state per application ----
+  // Контракт: snake_case везде. Запись через PaydDB.workflows.advance,
+  // чтение из localStorage (та же коллекция, что у PaydDB.workflows.get).
   const WF_KEY = 'payd.zayavka.wf.v1';
-  function _loadAllWf() { try { return JSON.parse(localStorage.getItem(WF_KEY) || '{}'); } catch (_) { return {}; } }
-  function _saveWf() {
-    try {
-      const all = _loadAllWf();
-      // Поле app_id обязательно для синка с Supabase application_workflows
-      all[_appId] = {
-        app_id: _appId,
-        step: wf.step,
-        sbPassed: wf.sbPassed,
-        sbScore: wf.sbScore,
-        rejected: wf.rejected,
-        completed: wf.completed,
-        type: wf.type
-      };
-      localStorage.setItem(WF_KEY, JSON.stringify(all));
-    } catch (_) {}
+  function _loadSavedWf() {
+    try { return JSON.parse(localStorage.getItem(WF_KEY) || '{}')[_appId] || null; }
+    catch (_) { return null; }
   }
-  const _savedWf = _loadAllWf()[_appId];
+  function _saveWf() {
+    if (!window.PaydDB?.workflows?.advance) return;
+    PaydDB.workflows.advance(_appId, wf.step, {
+      sb_passed: wf.sb_passed,
+      sb_score:  wf.sb_score,
+      rejected:  wf.rejected,
+      completed: wf.completed,
+      type:      wf.type
+    }).catch(e => console.warn('[zayavka] saveWf', e.message));
+  }
+  const _savedWf = _loadSavedWf();
 
-  // Mutable workflow state
+  // Mutable workflow state — snake_case-only (контракт зафиксирован в db.js).
   const wf = {
-    step: _savedWf?.step ?? (_app.progressStep || 1),
-    sbPassed: _savedWf?.sbPassed ?? !!_app.sbPassed,
-    sbScore: _savedWf?.sbScore ?? (_app.sbScore || 0),
-    rejected: _savedWf?.rejected ?? (_app.status === 'rejected'),
+    step:      _savedWf?.step      ?? (_app.progressStep || 1),
+    sb_passed: _savedWf?.sb_passed ?? !!_app.sbPassed,
+    sb_score:  _savedWf?.sb_score  ?? (_app.sbScore || 0),
+    rejected:  _savedWf?.rejected  ?? (_app.status === 'rejected'),
     completed: _savedWf?.completed ?? false,
-    type: _savedWf?.type ?? (_app.type || 'Товар со склада')
+    type:      _savedWf?.type      ?? (_app.type || 'Товар со склада')
   };
 
   function renderStepper() {
@@ -1738,12 +1737,12 @@
     const sbSub = document.getElementById('sb-status-sub');
     const sbDate = document.getElementById('sb-date');
     const sbShield = document.getElementById('sb-shield');
-    if (wf.sbPassed) {
+    if (wf.sb_passed) {
       sbStatus.style.background = 'var(--success-soft)';
       sbStatus.style.borderColor = '#a7f3d0';
       sbTitle.textContent = 'Проверка пройдена';
       sbTitle.style.color = '#047857';
-      sbSub.textContent = `Скоринг ${wf.sbScore} баллов · все проверки успешны`;
+      sbSub.textContent = `Скоринг ${wf.sb_score} баллов · все проверки успешны`;
       sbShield.style.background = 'white';
       sbShield.querySelector('svg').setAttribute('stroke', '#10b981');
       sbList.style.display = '';
@@ -1761,7 +1760,7 @@
       sbRunBtn.style.display = '';
       if (sbDate) sbDate.textContent = '—';
     }
-    document.querySelectorAll('[data-bind="sbScore"]').forEach(el => el.textContent = wf.sbScore || 0);
+    document.querySelectorAll('[data-bind="sbScore"]').forEach(el => el.textContent = wf.sb_score || 0);
 
     // Disable QA buttons by readiness — gating depends on flow steps
     const qa = document.getElementById('qa-list');
@@ -1783,7 +1782,7 @@
       // Contract: enabled only at the contract step, requires SB passed
       const contractBtn = qa.querySelector('[data-qa="contract"]');
       if (contractBtn) {
-        const ok = wf.sbPassed && wf.step === flow.contractStep;
+        const ok = wf.sb_passed && wf.step === flow.contractStep;
         if (!ok) { contractBtn.style.pointerEvents = 'none'; contractBtn.style.opacity = '.45'; }
       }
       // Downpay: enabled only at the downpay step
@@ -1815,37 +1814,39 @@
   }
 
   // ============= Загрузка реальной истории из application_history =============
+  // Через PaydDB.audit.appHistory — никаких прямых sb.from(...) из HTML.
+  const ACTION_LABELS = {
+    'application.created':  { label: 'Заявка создана',           icon: '+',  cls: 'primary' },
+    'sb.approved':          { label: 'Проверка СБ пройдена',     icon: '✓',  cls: 'success' },
+    'sb.rejected':          { label: 'Проверка СБ не пройдена',  icon: '✕',  cls: 'danger'  },
+    'stage.changed':        { label: 'Этап изменён',              icon: '→',  cls: 'primary' },
+    'contract.created':     { label: 'Договор создан',           icon: '📄', cls: 'primary' },
+    'contract.signed':      { label: 'Договор подписан',         icon: '✓',  cls: 'success' },
+    'payment.first_paid':   { label: 'Первый взнос принят',      icon: '$',  cls: 'success' },
+    'payment.accepted':     { label: 'Платёж принят',            icon: '$',  cls: 'success' },
+    'product.delivered':    { label: 'Товар выдан клиенту',      icon: '📦', cls: 'success' },
+    'application.rejected': { label: 'Заявка отклонена',         icon: '✕',  cls: 'danger'  },
+    'application.completed':{ label: 'Заявка завершена',         icon: '✓',  cls: 'success' }
+  };
+
   async function loadRealHistory() {
     const list = document.getElementById('hist-list-real');
     if (!list || !_appId) return;
-    const sb = window.PaydDB?.cloud?.sb?.();
-    if (!sb) {
+    if (!window.PaydDB?.audit?.appHistory) {
+      list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-3);font-size:12px;">История недоступна</div>';
+      return;
+    }
+    if (!window.PaydDB.cloud.isOnline()) {
       list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-3);font-size:12px;">Войдите в облако чтобы видеть историю</div>';
       return;
     }
     try {
-      const { data, error } = await sb.from('application_history')
-        .select('*').eq('app_id', _appId).order('ts', { ascending: false });
-      if (error) throw error;
-
-      const events = data || [];
+      const events = await PaydDB.audit.appHistory(_appId, 100);
       if (!events.length) {
         list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-3);font-size:12px;">История пуста</div>';
         return;
       }
 
-      const ACTION_LABELS = {
-        'application.created': { label: 'Заявка создана', icon: '+' , cls: 'primary' },
-        'sb.approved':         { label: 'Проверка СБ пройдена', icon: '✓', cls: 'success' },
-        'sb.rejected':         { label: 'Проверка СБ не пройдена', icon: '✕', cls: 'danger' },
-        'contract.created':    { label: 'Договор создан', icon: '📄', cls: 'primary' },
-        'contract.signed':     { label: 'Договор подписан', icon: '✓', cls: 'success' },
-        'payment.first_paid':  { label: 'Первый взнос принят', icon: '$', cls: 'success' },
-        'payment.accepted':    { label: 'Платёж принят', icon: '$', cls: 'success' },
-        'product.delivered':   { label: 'Товар выдан клиенту', icon: '📦', cls: 'success' },
-        'application.rejected':{ label: 'Заявка отклонена', icon: '✕', cls: 'danger' },
-        'application.completed':{ label: 'Заявка завершена', icon: '✓', cls: 'success' }
-      };
       const fmtTs = (iso) => {
         const d = new Date(iso);
         if (isNaN(d.getTime())) return '—';
@@ -1882,6 +1883,18 @@
   loadRealHistory();
   setInterval(loadRealHistory, 15000);
 
+  // При внешнем обновлении workflows (например, СБ одобрил в другом окне) —
+  // перечитываем wf и перерисовываем карточку.
+  if (window.PaydDB?.subscribe) {
+    PaydDB.subscribe('workflows', async () => {
+      const fresh = await PaydDB.workflows.get(_appId);
+      if (!fresh) return;
+      Object.assign(wf, fresh);
+      try { applyWorkflow(); } catch (_) {}
+      try { loadRealHistory(); } catch (_) {}
+    });
+  }
+
   // Кнопка «Открыть карточку клиента» — с параметрами phone+name
   const openClientLink = document.getElementById('open-client-link');
   if (openClientLink) {
@@ -1907,8 +1920,8 @@
 
     setTimeout(async () => {
       const passed = score >= 60;
-      wf.sbPassed = passed;
-      wf.sbScore = score;
+      wf.sb_passed = passed;
+      wf.sb_score = score;
       if (passed && wf.step < 2) wf.step = 2;
       if (!passed) wf.rejected = true;
       _app.sbDate = nowStr();
