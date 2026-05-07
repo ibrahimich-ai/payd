@@ -783,6 +783,154 @@
   }
 
   // ============================================================
+  //  TEMPLATES — рендер документов по шаблонам с {{маркерами}}
+  //  Контракт: шаблон — это HTML-строка с маркерами вида {{path.to.value}}.
+  //  render(html, ctx) подставляет значения через regex-replace.
+  //  Если значение отсутствует — пишет "—" (никаких "{{key}}" в готовых
+  //  документах).
+  // ============================================================
+  function _getNested(obj, path) {
+    if (!obj || !path) return undefined;
+    return path.split('.').reduce((o, k) => (o == null ? o : o[k]), obj);
+  }
+
+  function templateRender(html, context) {
+    if (typeof html !== 'string') return '';
+    return html.replace(/\{\{([\w]+(?:\.[\w]+)*)\}\}/g, (_match, key) => {
+      const v = _getNested(context, key);
+      if (v == null || v === '') return '—';
+      return String(v);
+    });
+  }
+
+  // Тестовый контекст для preview шаблонов — нейтральные тестовые
+  // значения, очевидно тестовые на глаз.
+  function templateTestContext() {
+    return {
+      client: {
+        full_name: 'Тестовый Тест Тестович',
+        passport: 'ТЕСТ 00 № 000000',
+        address: 'г. Тестовый, ул. Тестовая, 1',
+        phone: '+7 000 000-00-00',
+        email: 'test@example.com',
+        birthday: '01.01.1970',
+        inn: '000000000000'
+      },
+      guarantor: {
+        full_name: 'Поручитель Тест Тестович',
+        passport: 'ТЕСТ 00 № 000000',
+        phone: '+7 000 000-00-00'
+      },
+      debtor: { full_name: 'Должник Тест Тестович' },
+      product: {
+        name: 'Тестовый товар',
+        sku: '000000',
+        serial: 'TEST-SERIAL',
+        qty: 1
+      },
+      calc: { total: 0, purchase: 0, sale: 0, markup: 0, markup_pct: '0 %' },
+      application: { number: 'ТЕСТ-000', down_payment: 0, term: 0, monthly: 0 },
+      contract: {
+        number: 'ТЕСТ-000/2026',
+        signed_at: '01.01.2026',
+        terminated_at: '01.01.2027'
+      },
+      partner: {
+        name: 'Тестовый поставщик',
+        org: 'Тестовая организация',
+        director: 'Тестовый директор',
+        inn: '0000000000',
+        address: 'г. Тестовый, ул. Тестовая, 1',
+        commission_pct: '0 %',
+        min_volume: 0,
+        payment_period: 'Ежемесячно'
+      },
+      payment: { amount: 0, due_date: '01.01.2026', days_overdue: 0 },
+      company: {
+        name: 'ООО «Payd»',
+        inn: '—',
+        legal_address: '—',
+        phone: '—',
+        director_name: '—',
+        city: '—'
+      },
+      employee: { full_name: 'Тестовый Сотрудник' }
+    };
+  }
+
+  // Загрузка компании из settings (когда settings.html научится сохранять
+  // — вытащим из localStorage). Сейчас возвращаем пустой объект, и
+  // company-маркеры в шаблонах подставятся как "—".
+  // TODO: интегрировать с settings.html, см. DEMO_DEFAULTS.md → Волна 1.4
+  function templateLoadCompany() {
+    try {
+      const raw = localStorage.getItem('payd.settings.company.v1');
+      if (raw) return JSON.parse(raw) || {};
+    } catch (_) {}
+    return {};
+  }
+
+  // Сборка реального context из БД для конкретной заявки.
+  async function templateContextFromApp(appId) {
+    const ctx = {
+      client: {}, guarantor: {}, debtor: {},
+      product: {}, calc: {}, application: {},
+      contract: {}, partner: {}, payment: {},
+      company: templateLoadCompany(),
+      employee: {}
+    };
+    if (!appId) return ctx;
+
+    try {
+      const app = await get('applications', appId);
+      if (app) {
+        ctx.application = {
+          number: app.number,
+          type: app.type,
+          amount: app.amount,
+          down_payment: app.down_payment,
+          term: app.term,
+          monthly: app.monthly
+        };
+        ctx.client = {
+          full_name: app.client_name || app.client?.name,
+          phone: app.client_phone || app.client?.phone,
+          passport: app.client_passport,
+          address: app.client_address
+        };
+        ctx.product = {
+          name: app.product || app.calc?.product,
+          sku: app.product_id || ''
+        };
+        ctx.calc = {
+          total: app.amount,
+          purchase: app.calc?.purchase,
+          sale: app.calc?.sale || app.amount,
+          markup: app.calc?.markup,
+          markup_pct: app.calc?.markup_pct
+        };
+      }
+
+      const contracts = await list('contracts', { where: { app_id: appId } });
+      if (contracts && contracts.length) {
+        const c = contracts[0];
+        ctx.contract = {
+          number: c.number,
+          signed_at: c.signed_at,
+          terminated_at: c.terminated_at
+        };
+      }
+
+      const profile = await profileMe().catch(() => null);
+      if (profile?.full_name) ctx.employee.full_name = profile.full_name;
+    } catch (e) {
+      console.warn('[PaydDB] templateContextFromApp', e.message);
+    }
+
+    return ctx;
+  }
+
+  // ============================================================
   //  PROFILES — текущий пользователь и его расширенный профиль
   //  TODO: добавить таблицу profiles в COLLECTIONS, когда схема стабилизируется.
   //  Пока — прямой запрос к profiles по auth.user.id.
@@ -983,6 +1131,12 @@
       flowFor
     },
     profiles: { me: profileMe },
+    templates: {
+      render: templateRender,
+      testContext: templateTestContext,
+      contextFromApp: templateContextFromApp,
+      loadCompany: templateLoadCompany
+    },
     files: { upload: uploadFile, list: listFiles, getUrl: getFileUrl, delete: deleteFile },
     cloud: {
       connect: cloudConnect,

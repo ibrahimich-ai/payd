@@ -288,6 +288,30 @@ LEGACY MOCK ROWS в `<div style="display:none;">` (строки 111–366). Не
 
 ---
 
+## Открытые зависимости после Волны 1.2
+
+### Волна 1.4 — интеграция `contract.html` с `PaydDB.templates.render`
+
+`contract.html` сейчас не использует `TEMPLATES` и не вызывает `PaydDB.templates.render`. После завершения Волны 1.2 шаблоны живут в `template.html` и в `db.js` (рендер-функция), но генерация финальной карточки договора в `contract.html:135` (со строкой про директора `Джабраилов И. Магомедович`) — захардкоженный HTML, не привязанный к шаблонам.
+
+**Что делать в Волне 1.4:**
+1. В `contract.html` загружать заявку и собирать context через `PaydDB.templates.contextFromApp(appId)`.
+2. Выбирать шаблон по типу заявки (standard / murabaha / `application.type`).
+3. Рендерить `PaydDB.templates.render(templateContent, ctx)` в карточке.
+4. Удалить хардкод «Джабраилов И. Магомедович» из `contract.html:135` (как только рендер завязан на шаблон, эта строка автоматически уходит — в шаблоне маркер `{{company.director_name}}`).
+
+### Зависимость settings → templates
+
+`PaydDB.templates.contextFromApp()` собирает `company.*` через `PaydDB.templates.loadCompany()`, который читает `localStorage['payd.settings.company.v1']`. **Сейчас этот ключ нигде не пишется** — `settings.html` хранит реквизиты компании только как `value="..."` в `<input>`, без сохранения в localStorage / БД.
+
+В готовых документах поля `company.name`, `company.inn`, `company.legal_address`, `company.phone`, `company.director_name`, `company.city` будут отображаться как «—» до тех пор, пока не будет налажено сохранение реквизитов из `settings.html`.
+
+**Что делать (отдельной задачей в Волне 2):**
+1. В `settings.html` при сохранении формы реквизитов класть объект в `localStorage['payd.settings.company.v1']`.
+2. Опционально — синк в Supabase-таблицу `company_settings` (потребует миграцию).
+
+---
+
 ## Рекомендации по чистке (на следующий заход)
 
 В таком порядке:
