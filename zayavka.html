@@ -934,14 +934,13 @@
 
 </div>
 
-<script src="data.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="db.js"></script>
 <script src="app.js"></script>
 <script>
   // Read application id + back-source from URL
   const _params = new URLSearchParams(location.search);
-  const _appId = _params.get('id') || window.DEFAULT_APP_ID || '142';
+  const _appId = _params.get('id') || '';
 
   // ============================================================
   //  CALCULATOR-CREATED APPLICATIONS (id starts with 'A')
@@ -1059,22 +1058,39 @@
   }
 
   let _app;
-  // 1. Сначала ищем заявку в реальной БД (через PaydDB / localStorage cache)
-  let allApps = [];
-  try { allApps = JSON.parse(localStorage.getItem('payd.calc.applications') || '[]'); } catch (_) {}
-  const realApp = allApps.find(a => a.id === _appId || a.number === _appId);
-  if (realApp) {
-    _app = buildAppFromCalc(realApp);
-  } else if (window.APPLICATIONS && window.APPLICATIONS[_appId]) {
-    // 2. Fallback на demo data (для legacy ссылок типа ?id=142)
-    _app = window.APPLICATIONS[_appId];
+  let _appNotFound = false;
+
+  if (!_appId) {
+    _appNotFound = true;
   } else {
-    // 3. Не нашли — редирект на журнал
-    setTimeout(() => {
-      if (window.PaydApp?.toast) PaydApp.toast('Заявка не найдена', 'error');
-      location.href = 'zhurnal.html';
-    }, 300);
-    _app = window.APPLICATIONS && window.APPLICATIONS['142']; // временная заглушка пока редирект
+    // Ищем заявку в локальном кэше PaydDB (та же коллекция applications,
+    // которую заполняет облачный pull / синхронные upsert'ы).
+    let allApps = [];
+    try { allApps = JSON.parse(localStorage.getItem('payd.calc.applications') || '[]'); } catch (_) {}
+    const realApp = allApps.find(a => a.id === _appId || a.number === _appId);
+    if (realApp) {
+      _app = buildAppFromCalc(realApp);
+    } else {
+      _appNotFound = true;
+    }
+  }
+
+  if (_appNotFound) {
+    // Не нашли заявку в БД — редирект на журнал. Никаких demo-fallback'ов.
+    if (window.PaydApp?.toast) {
+      PaydApp.toast(_appId ? 'Заявка не найдена или была удалена' : 'Заявка не указана', 'error');
+    }
+    setTimeout(() => { location.replace('zhurnal.html'); }, 1500);
+    // Безопасная заглушка _app — чтобы код, исполняющийся до навигации,
+    // не падал на null/undefined. Никаких реальных ФИО/паспортов.
+    _app = {
+      id: _appId || '—',
+      number: _appId || '—',
+      type: 'Товар со склада',
+      amount: 0, down_payment: 0, term: 0, monthly: 0,
+      client_name: '—', client_phone: '—',
+      progressStep: 1
+    };
   }
 
   // Source-aware sidebar / breadcrumb / return URL
