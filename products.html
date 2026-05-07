@@ -1037,6 +1037,18 @@
       }
     });
 
+    // Бренды ноутбуков — orphan → под «Ноутбуки»
+    const laptops = cats.find(c => c.name === 'Ноутбуки' && !c.parent);
+    if (laptops) {
+      const laptopBrands = ['Apple', 'Dell', 'Lenovo', 'HP', 'ASUS'];
+      cats.forEach(c => {
+        if (laptopBrands.includes(c.name) && !c.parent) {
+          c.parent = laptops.id; moved++; mutated = true;
+        }
+      });
+      if (cats.some(c => c.parent === laptops.id)) expandedCats.add(laptops.id);
+    }
+
     if (mutated) {
       saveCats(cats);
       expandedCats.add(phones.id);
