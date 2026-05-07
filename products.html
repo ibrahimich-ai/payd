@@ -986,9 +986,13 @@
     refresh();
   });
 
-  // Fix tree — ищет orphan iPhone* категории и привязывает к Смартфоны → iPhone
-  document.getElementById('seed-fix-tree').addEventListener('click', () => {
+  // Нормализация дерева: iPhone N → iPhone → Смартфоны и т.д.
+  // Возвращает число перепривязанных категорий. Не трогает UI/тосты.
+  function normalizeCatTree() {
     const cats = loadCats();
+    let mutated = false;
+    let moved = 0;
+
     let phones = cats.find(c => c.name === 'Смартфоны' && !c.parent);
     if (!phones) {
       phones = { id: newCatId(), name: 'Смартфоны', parent: null, fields: [
@@ -997,47 +1001,62 @@
         { label: 'Цвет',   example: 'Black Titanium' }
       ]};
       cats.push(phones);
+      mutated = true;
     }
     let iphone = cats.find(c => c.name === 'iPhone' && c.parent === phones.id);
-    let iphoneOrphan = cats.find(c => c.name === 'iPhone' && c.parent !== phones.id);
+    const iphoneOrphan = cats.find(c => c.name === 'iPhone' && c.parent !== phones.id);
     if (!iphone && iphoneOrphan) {
       iphoneOrphan.parent = phones.id;
       iphone = iphoneOrphan;
+      moved++; mutated = true;
     } else if (!iphone) {
       iphone = { id: newCatId(), name: 'iPhone', parent: phones.id, fields: [] };
       cats.push(iphone);
+      mutated = true;
     }
     let samsung = cats.find(c => c.name === 'Samsung' && c.parent === phones.id);
-    let samsungOrphan = cats.find(c => c.name === 'Samsung' && c.parent !== phones.id);
+    const samsungOrphan = cats.find(c => c.name === 'Samsung' && c.parent !== phones.id);
     if (!samsung && samsungOrphan) {
       samsungOrphan.parent = phones.id;
       samsung = samsungOrphan;
+      moved++; mutated = true;
     }
-    let xiaomi = cats.find(c => c.name === 'Xiaomi' && c.parent === phones.id);
-    let xiaomiOrphan = cats.find(c => c.name === 'Xiaomi' && c.parent !== phones.id);
+    const xiaomi = cats.find(c => c.name === 'Xiaomi' && c.parent === phones.id);
+    const xiaomiOrphan = cats.find(c => c.name === 'Xiaomi' && c.parent !== phones.id);
     if (!xiaomi && xiaomiOrphan) {
       xiaomiOrphan.parent = phones.id;
+      moved++; mutated = true;
     }
 
-    // iPhone 12..17* → parent = iphone.id
-    let moved = 0;
     cats.forEach(c => {
-      if (/^iPhone\s*\d/.test(c.name) && c.name !== 'iPhone' && c.parent !== iphone.id) {
-        c.parent = iphone.id;
-        moved++;
+      if (/^iPhone\s*\d/i.test(c.name) && c.name !== 'iPhone' && c.parent !== iphone.id) {
+        c.parent = iphone.id; moved++; mutated = true;
       }
-      if (/^Galaxy\s/.test(c.name) && samsung && c.parent !== samsung.id) {
-        c.parent = samsung.id;
-        moved++;
+      if (/^Galaxy\s/i.test(c.name) && samsung && c.parent !== samsung.id) {
+        c.parent = samsung.id; moved++; mutated = true;
       }
     });
-    saveCats(cats);
-    expandedCats.add(phones.id);
-    expandedCats.add(iphone.id);
+
+    if (mutated) {
+      saveCats(cats);
+      expandedCats.add(phones.id);
+      if (iphone) expandedCats.add(iphone.id);
+    }
+    return moved;
+  }
+
+  // Кнопка «Привязать к родителям» — ручной вызов с тостом
+  document.getElementById('seed-fix-tree').addEventListener('click', () => {
+    const moved = normalizeCatTree();
     PaydApp.toast(moved ? `Перепривязано ${moved} категорий` : 'Дерево уже корректное', moved ? 'success' : 'info');
     renderCatManage();
     refresh();
   });
+
+  // Автоматически нормализуем дерево при загрузке — без тоста.
+  // Так iPhone-модели окажутся под «Смартфоны → iPhone», а карточки товаров
+  // получат правильную иконку (иконка наследуется от родителя).
+  normalizeCatTree();
 
 
   // ============ Search ============
