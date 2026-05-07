@@ -136,10 +136,10 @@ const SIDEBAR_HTML = `
   </nav>
 
   <div class="sb-user">
-    <div class="avatar c7 sm">ДИ</div>
+    <div class="avatar c7 sm" id="sb-user-avatar">—</div>
     <div class="sb-user-info">
-      <div class="n">Джабраилов Ибрагим</div>
-      <div class="r">Администратор</div>
+      <div class="n" id="sb-user-name">Загрузка…</div>
+      <div class="r" id="sb-user-role"></div>
     </div>
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-3)"><polyline points="6 9 12 15 18 9"/></svg>
   </div>
@@ -224,6 +224,40 @@ function mountShell({ active, title, breadcrumbs, actions }) {
   initMobileSidebar();
   initTopbarCalc();
   initTopbarBack({ active });
+  loadSidebarUser();
+}
+
+async function loadSidebarUser() {
+  if (!window.PaydDB) return;
+  try {
+    await PaydDB.cloud.connect().catch(() => {});
+    const profile = await PaydDB.profiles?.me?.().catch(() => null);
+    const user    = PaydDB.cloud.user?.();
+
+    const fullName = profile?.full_name
+                  || user?.user_metadata?.full_name
+                  || user?.email
+                  || 'Пользователь';
+
+    const ROLE_LABELS = {
+      admin: 'Администратор', manager: 'Менеджер', cashier: 'Кассир',
+      sb: 'Служба безопасности', collector: 'Взыскание',
+      inkassator: 'Инкассатор', partner: 'Партнёр', client: 'Клиент'
+    };
+    const roleLabel = ROLE_LABELS[profile?.role] || profile?.role || '';
+
+    const initials = String(fullName).trim().split(/\s+/)
+      .map(p => p[0] || '').slice(0, 2).join('').toUpperCase() || '—';
+
+    const nameEl = document.getElementById('sb-user-name');
+    const roleEl = document.getElementById('sb-user-role');
+    const avEl   = document.getElementById('sb-user-avatar');
+    if (nameEl) nameEl.textContent = fullName;
+    if (roleEl) roleEl.textContent = roleLabel;
+    if (avEl)   avEl.textContent   = initials;
+  } catch (e) {
+    console.warn('[app] loadSidebarUser', e.message);
+  }
 }
 
 async function authGuardBackground() {
@@ -905,7 +939,7 @@ function handleSemanticButton(e, btn) {
   // ---- Reports / generate schedule ----
   if (text.includes('сформировать график')) {
     e.preventDefault();
-    toast('График платежей сформирован', { type: 'success', subtitle: 'Создано 3 платежа по 3 500 ₽' });
+    toast('График платежей сформирован', 'success');
     return;
   }
   if (text === 'пересчитать') {
@@ -970,7 +1004,7 @@ function handleSemanticButton(e, btn) {
   // ---- Tester / test ----
   if (text.includes('тест на клиенте')) {
     e.preventDefault();
-    toast('Тест запущен на клиенте Даурбекова Л.', { type: 'info', subtitle: 'Проверьте превью справа' });
+    toast('Тест выполнен', { type: 'info', subtitle: 'Проверьте превью справа' });
     return;
   }
   if (text === 'дублировать') {
