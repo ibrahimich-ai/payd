@@ -108,20 +108,19 @@
   let allApps = [];
   let workflows = {};
   let selectedAppId = null;
-  let history = [];
+  let todayStats = { approved: 0, rejected: 0, decided: 0, raw: [] };
 
   async function load() {
-    const sb = PaydDB.cloud.sb();
-    if (!sb) return;
-    const [apps, wfs, { data: hist }] = await Promise.all([
+    // Все обращения к БД через PaydDB — никаких прямых sb.from(...) из HTML.
+    const [apps, wfs, stats] = await Promise.all([
       PaydDB.list('applications').catch(() => []),
       PaydDB.list('workflows').catch(() => []),
-      sb.from('application_history').select('*').gte('ts', new Date(new Date().setHours(0,0,0,0)).toISOString())
+      PaydDB.audit.todayStats().catch(() => ({ approved: 0, rejected: 0, decided: 0, raw: [] }))
     ]);
     allApps = apps;
     workflows = {};
     (Array.isArray(wfs) ? wfs : Object.values(wfs)).forEach(w => { if (w.app_id) workflows[w.app_id] = w; });
-    history = hist || [];
+    todayStats = stats || { approved: 0, rejected: 0, decided: 0, raw: [] };
     render();
   }
 
@@ -138,9 +137,9 @@
     const queue = getQueue();
     document.getElementById('queue-count').textContent = queue.length;
     document.getElementById('kpi-queue').textContent = queue.length;
-    document.getElementById('kpi-approved').textContent = history.filter(h => h.action === 'sb.approved').length;
-    document.getElementById('kpi-rejected').textContent = history.filter(h => h.action === 'sb.rejected').length;
-    document.getElementById('kpi-decided').textContent = history.filter(h => h.action?.startsWith('sb.')).length;
+    document.getElementById('kpi-approved').textContent = todayStats.approved;
+    document.getElementById('kpi-rejected').textContent = todayStats.rejected;
+    document.getElementById('kpi-decided').textContent = todayStats.decided;
     document.getElementById('sb-desc').textContent = 'В очереди ' + queue.length + ' заявок';
 
     const list = document.getElementById('queue-list');
@@ -223,12 +222,12 @@
       </div>
 
       <div class="decision-actions">
-        <button class="btn danger" data-act="reject" data-no-handler="true">✕ Отклонить</button>
-        <button class="btn primary" data-act="approve" data-no-handler="true">✓ Одобрить</button>
+        <button class="btn danger" data-act="reject">✕ Отклонить</button>
+        <button class="btn primary" data-act="approve">✓ Одобрить</button>
       </div>
     `;
-    document.querySelector('[data-act="approve"]')?.addEventListener('click', () => decide(a, true));
-    document.querySelector('[data-act="reject"]')?.addEventListener('click', () => decide(a, false));
+    document.querySelector('[data-act="approve"]')?.addEventListener('click', e => { e.stopPropagation(); decide(a, true); });
+    document.querySelector('[data-act="reject"]')?.addEventListener('click',  e => { e.stopPropagation(); decide(a, false); });
   }
 
   function plural(n, one, few, many) { n = Math.abs(n) % 100; const n1 = n % 10; if (n > 10 && n < 20) return many; if (n1 > 1 && n1 < 5) return few; if (n1 === 1) return one; return many; }
@@ -239,22 +238,22 @@
   }
 
   async function decide(a, approve) {
-    const action = approve ? 'sb.approved' : 'sb.rejected';
-    const wf = { app_id: a.id, sb_passed: approve, sb_score: 0, rejected: !approve, step: approve ? 2 : 0 };
-
     try {
-      await PaydDB.upsert('workflows', wf);
-      if (!approve) {
-        // Mark application as rejected
-        const updated = { ...a, rejected: true };
-        await PaydDB.upsert('applications', updated);
+      if (approve) {
+        // Все детали (загрузка type, выставление step=contractStep,
+        // запись sb.approved + stage.changed) централизованы в db.js.
+        await PaydDB.workflows.approve(a.id);
+        PaydApp.toast('Заявка одобрена', 'success');
+      } else {
+        // TODO: заменить prompt на модалку (см. AUDIT.md).
+        const reason = (prompt('Причина отказа? (необязательно)') || '').trim();
+        await PaydDB.workflows.reject(a.id, reason || null);
+        PaydApp.toast('Заявка отклонена', 'error');
       }
-      await PaydDB.audit.log(a.id, action);
-      PaydApp.toast(approve ? 'Заявка одобрена' : 'Заявка отклонена', approve ? 'success' : 'error');
       selectedAppId = null;
       load();
     } catch (e) {
-      PaydApp.toast('Ошибка: ' + e.message, 'error');
+      PaydApp.toast('Ошибка: ' + (e?.message || e), 'error');
     }
   }
 
