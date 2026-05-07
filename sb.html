@@ -36,6 +36,21 @@
   .data-grid .item .l { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; }
   .data-grid .item .v { font-size: 13px; font-weight: 600; margin-top: 2px; }
 
+  /* Rich detail dossier */
+  .sb-detail-header { display: flex; gap: 16px; align-items: flex-start; padding: 18px; border-bottom: 1px solid var(--border); }
+  .sb-detail-header .avatar.xl { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; color: white; flex-shrink: 0; }
+  .sb-detail-header .name { font-size: 18px; font-weight: 700; line-height: 1.2; }
+  .sb-detail-header .meta { font-size: 12px; color: var(--text-3); margin-top: 4px; }
+  .sb-detail-header .right { margin-left: auto; text-align: right; }
+  .sb-detail-header .amount { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .sb-detail-header .date  { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+  .sb-section { padding: 14px 18px; border-bottom: 1px solid var(--border); }
+  .sb-section h4 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); font-weight: 700; margin-bottom: 10px; }
+  .sb-comment { padding: 14px 18px; border-bottom: 1px solid var(--border); }
+  .sb-comment label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); font-weight: 700; margin-bottom: 8px; }
+  .sb-comment textarea { width: 100%; min-height: 72px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 13px; resize: vertical; box-sizing: border-box; }
+  .sb-comment textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, .12); }
+
   .decision-actions { display: flex; gap: 10px; padding: 18px; border-top: 1px solid var(--border); background: var(--surface-2); border-radius: 0 0 var(--radius) var(--radius); }
   .decision-actions .btn { flex: 1; justify-content: center; padding: 12px; font-size: 14px; font-weight: 600; }
 
@@ -179,55 +194,101 @@
   }
 
   function renderDetail(a) {
+    const card = document.getElementById('detail-card');
     if (!a) {
-      document.getElementById('detail-card').innerHTML = `<div class="empty">Заявка не найдена</div>`;
+      card.innerHTML = `<div class="empty">Заявка не найдена</div>`;
       return;
     }
-    const sale = +(a.amount || a.calc?.price) || 0;
-    const down = +(a.down_payment || a.calc?.dpAmount) || 0;
-    const term = a.term || a.calc?.term || 0;
-    const monthly = +(a.monthly || a.calc?.monthly) || 0;
+    const sale     = +(a.amount        || a.calc?.price)    || 0;
+    const down     = +(a.down_payment  || a.calc?.dpAmount) || 0;
+    const term     =   a.term          || a.calc?.term      || 0;
+    const monthly  = +(a.monthly       || a.calc?.monthly)  || 0;
+    const wf       = workflows[a.id] || {};
+    const sbScore  = Number(wf.sb_score) || 0;
+    const name     = a.client_name || a.client?.name || '—';
+    const initials = name.split(/\s+/).map(p => p[0] || '').slice(0, 2).join('').toUpperCase() || '·';
+    const colors   = ['c1','c2','c3','c4','c5','c6'];
+    const avCls    = colors[Math.abs((name || '').length) % colors.length];
 
-    document.getElementById('detail-card').innerHTML = `
-      <div class="card-hd">
-        <h3>Заявка #${escapeHtml(a.number || '')}</h3>
-        <a href="zayavka.html?id=${encodeURIComponent(a.id)}" class="text-sm" style="color:var(--primary);font-weight:600;">Полная карточка →</a>
-      </div>
-      <div class="data-grid">
-        <div class="item"><div class="l">Клиент</div><div class="v">${escapeHtml(a.client_name || a.client?.name || '—')}</div></div>
-        <div class="item"><div class="l">Телефон</div><div class="v">${escapeHtml(a.client_phone || a.client?.phone || '—')}</div></div>
-        <div class="item"><div class="l">Паспорт</div><div class="v">${escapeHtml(a.client_passport || '—')}</div></div>
-        <div class="item"><div class="l">Адрес</div><div class="v">${escapeHtml(a.client_address || '—')}</div></div>
-        <div class="item"><div class="l">Товар</div><div class="v">${escapeHtml(a.product || '—')}</div></div>
-        <div class="item"><div class="l">Тип</div><div class="v">${escapeHtml(a.type || '—')}</div></div>
-        <div class="item"><div class="l">Сумма</div><div class="v">${fmt(sale)}</div></div>
-        <div class="item"><div class="l">Первый взнос</div><div class="v">${fmt(down)}</div></div>
-        <div class="item"><div class="l">Срок</div><div class="v">${term} мес</div></div>
-        <div class="item"><div class="l">Ежемесячно</div><div class="v">${fmt(monthly)}</div></div>
+    // Скоринг — окрашиваем карточку по диапазону
+    let scoreCls = '';
+    if (sbScore >= 80) scoreCls = 'success';
+    else if (sbScore >= 60) scoreCls = 'warning';
+    else if (sbScore > 0)  scoreCls = 'danger';
+    const scoreText = sbScore ? `${sbScore} / 100` : '— / 100';
+    const scoreSub  = sbScore >= 80 ? 'низкий риск'
+                    : sbScore >= 60 ? 'средний риск'
+                    : sbScore > 0   ? 'высокий риск'
+                    : 'не проверено';
+
+    const prevCount = countAppsForClient(a);
+
+    card.innerHTML = `
+      <div class="sb-detail-header">
+        <div class="avatar xl ${avCls}">${escapeHtml(initials)}</div>
+        <div style="flex:1; min-width:0;">
+          <div class="name">${escapeHtml(name)}</div>
+          <div class="meta">Заявка #${escapeHtml(a.number || a.id || '—')} · ${escapeHtml(a.product || '—')}</div>
+        </div>
+        <div class="right">
+          <div class="amount">${fmt(sale)}</div>
+          <div class="date">${escapeHtml(fmtDate(a.ts || a.created_at))}</div>
+          <a href="zayavka.html?id=${encodeURIComponent(a.id)}" class="text-sm" style="color:var(--primary);font-weight:600;font-size:11px;display:inline-block;margin-top:6px;">Полная карточка →</a>
+        </div>
       </div>
 
-      <div style="padding: 0 18px 18px;">
+      <div class="sb-section">
+        <h4>Контакты клиента</h4>
+        <div class="data-grid" style="padding:0;">
+          <div class="item"><div class="l">Телефон</div><div class="v">${escapeHtml(a.client_phone || a.client?.phone || '—')}</div></div>
+          <div class="item"><div class="l">Паспорт</div><div class="v">${escapeHtml(a.client_passport || '—')}</div></div>
+          <div class="item"><div class="l">Адрес</div><div class="v">${escapeHtml(a.client_address || '—')}</div></div>
+          <div class="item"><div class="l">Email</div><div class="v">${escapeHtml(a.client_email || '—')}</div></div>
+        </div>
+      </div>
+
+      <div class="sb-section">
+        <h4>Параметры сделки</h4>
+        <div class="data-grid" style="padding:0; grid-template-columns: repeat(3, 1fr);">
+          <div class="item"><div class="l">Тип</div><div class="v">${escapeHtml(a.type || '—')}</div></div>
+          <div class="item"><div class="l">Сумма</div><div class="v">${fmt(sale)}</div></div>
+          <div class="item"><div class="l">Первый взнос</div><div class="v">${fmt(down)}</div></div>
+          <div class="item"><div class="l">Срок</div><div class="v">${term ? term + ' мес' : '—'}</div></div>
+          <div class="item"><div class="l">Ежемесячно</div><div class="v">${fmt(monthly)}</div></div>
+          <div class="item"><div class="l">Партнёр</div><div class="v">${escapeHtml(a.partner_id || a.partner_name || '—')}</div></div>
+        </div>
+      </div>
+
+      <div class="sb-section">
+        <h4>Проверки</h4>
         <div class="check-grid">
-          <div class="check-card success">
+          <div class="check-card ${scoreCls}">
             <div class="check-head"><span class="t">Скоринг</span></div>
-            <div class="v">— / 100</div>
-            <div class="s">авто-скоринг подключается отдельно</div>
+            <div class="v">${scoreText}</div>
+            <div class="s">${scoreSub}</div>
           </div>
           <div class="check-card">
             <div class="check-head"><span class="t">Ранее у клиента</span></div>
-            <div class="v">${countAppsForClient(a)} ${plural(countAppsForClient(a), 'заявка', 'заявки', 'заявок')}</div>
+            <div class="v">${prevCount} ${plural(prevCount, 'заявка', 'заявки', 'заявок')}</div>
             <div class="s">в системе</div>
           </div>
         </div>
       </div>
 
+      <div class="sb-comment">
+        <label for="sb-comment-text">Комментарий СБ</label>
+        <textarea id="sb-comment-text" placeholder="Обоснование решения, замечания, перечень запрошенных документов..."></textarea>
+      </div>
+
       <div class="decision-actions">
         <button class="btn danger" data-act="reject">✕ Отклонить</button>
+        <button class="btn"        data-act="docs">⟳ Запросить документы</button>
         <button class="btn primary" data-act="approve">✓ Одобрить</button>
       </div>
     `;
-    document.querySelector('[data-act="approve"]')?.addEventListener('click', e => { e.stopPropagation(); decide(a, true); });
-    document.querySelector('[data-act="reject"]')?.addEventListener('click',  e => { e.stopPropagation(); decide(a, false); });
+    card.querySelector('[data-act="approve"]')?.addEventListener('click', e => { e.stopPropagation(); decide(a, 'approve'); });
+    card.querySelector('[data-act="reject"]') ?.addEventListener('click', e => { e.stopPropagation(); decide(a, 'reject');  });
+    card.querySelector('[data-act="docs"]')   ?.addEventListener('click', e => { e.stopPropagation(); decide(a, 'docs');    });
   }
 
   function plural(n, one, few, many) { n = Math.abs(n) % 100; const n1 = n % 10; if (n > 10 && n < 20) return many; if (n1 > 1 && n1 < 5) return few; if (n1 === 1) return one; return many; }
@@ -237,21 +298,43 @@
     return allApps.filter(x => (x.client_phone || x.client?.phone) === phone).length;
   }
 
-  async function decide(a, approve) {
+  function selectNextInQueue() {
+    const queue = getQueue();
+    if (!queue.length) {
+      selectedAppId = null;
+      renderDetail(null);
+      return;
+    }
+    selectedAppId = queue[0].id;
+    render();
+  }
+
+  async function decide(a, action) {
+    const comment = (document.getElementById('sb-comment-text')?.value || '').trim();
     try {
-      if (approve) {
-        // Все детали (загрузка type, выставление step=contractStep,
-        // запись sb.approved + stage.changed) централизованы в db.js.
+      if (action === 'approve') {
         await PaydDB.workflows.approve(a.id);
+        if (comment) await PaydDB.audit.log(a.id, 'sb.note', { note: comment });
         PaydApp.toast('Заявка одобрена', 'success');
-      } else {
-        // TODO: заменить prompt на модалку (см. AUDIT.md).
-        const reason = (prompt('Причина отказа? (необязательно)') || '').trim();
+      } else if (action === 'reject') {
+        // Если есть комментарий — он же причина. Иначе спросим (TODO: модалка).
+        const reason = comment || (prompt('Причина отказа? (необязательно)') || '').trim();
         await PaydDB.workflows.reject(a.id, reason || null);
         PaydApp.toast('Заявка отклонена', 'error');
+      } else if (action === 'docs') {
+        // Запрос документов: не меняет workflow.step и не закрывает заявку,
+        // но фиксирует факт обращения в audit. Заявка остаётся в очереди.
+        const note = comment || (prompt('Что запросить у клиента?') || '').trim();
+        if (!note) return;
+        await PaydDB.audit.log(a.id, 'sb.docs_requested', { note });
+        PaydApp.toast('Запрос документов отправлен', 'info');
+      } else {
+        return;
       }
       selectedAppId = null;
-      load();
+      await load();
+      // Автоматически переходим к следующей заявке — если она есть.
+      selectNextInQueue();
     } catch (e) {
       PaydApp.toast('Ошибка: ' + (e?.message || e), 'error');
     }
