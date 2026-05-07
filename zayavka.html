@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Заявка рассрочки 0000000005 — Payd</title>
+<title>Заявка рассрочки — Payd</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -313,9 +313,23 @@
   }
   .doc-preview h2 { font-size: 18px; margin-bottom: 12px; }
   .doc-preview .row { display: flex; justify-content: space-between; padding: 4px 0; }
+
+  /* Loading overlay — показывается пока заявка ищется в БД (async retry).
+     Скрывает контент с дефолтными "—" чтобы не было flash перед реальными данными. */
+  .zay-overlay { position: fixed; inset: 0; z-index: 9000; display: flex; align-items: center; justify-content: center; background: #f4f6fb; }
+  .zay-overlay-box { text-align: center; color: var(--text-2); font-size: 14px; }
+  .zay-overlay-spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: zay-spin .8s linear infinite; margin: 0 auto 14px; }
+  @keyframes zay-spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
+
+<div class="zay-overlay" id="zay-overlay" style="display:none;">
+  <div class="zay-overlay-box">
+    <div class="zay-overlay-spinner"></div>
+    <div id="zay-overlay-text">Загрузка заявки…</div>
+  </div>
+</div>
 
 <div id="app-root">
 
@@ -353,33 +367,33 @@
 
     <div class="card client-card">
       <div class="client-head">
-        <div class="avatar c1" data-bind="clientInitials" data-bind-class="clientColor" data-bind-class-prefix="avatar c">ДЛ</div>
+        <div class="avatar c1" data-bind="clientInitials" data-bind-class="clientColor" data-bind-class-prefix="avatar c">—</div>
         <div class="client-meta">
           <div class="label">Клиент</div>
-          <div class="name" data-bind="clientName">Даурбекова Луиза Саид-Усмановна</div>
+          <div class="name" data-bind="clientName">—</div>
         </div>
       </div>
       <div class="client-rows">
         <div class="client-row">
           <div class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
-          <a href="tel:" class="v" data-bind="clientPhone">+7 989 918-51-58</a>
+          <a href="tel:" class="v" data-bind="clientPhone">—</a>
         </div>
         <div class="client-row">
           <div class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
-          <span class="v" data-bind="clientAddress">Грозный, ул. Кольцова 226</span>
+          <span class="v" data-bind="clientAddress">—</span>
         </div>
         <div class="client-row">
           <div class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg></div>
-          <span class="v" data-bind="clientBirthday">22.03.1973 (53 года)</span>
+          <span class="v" data-bind="clientBirthday">—</span>
         </div>
         <div class="client-row">
           <div class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/></svg></div>
-          <span class="v" data-bind="clientPassport">Паспорт 96 03 №451287</span>
+          <span class="v" data-bind="clientPassport">—</span>
         </div>
       </div>
       <div class="quick-stats">
-        <div class="qstat"><div class="l">Сделок</div><div class="v" data-bind="clientDeals">3</div></div>
-        <div class="qstat"><div class="l">На сумму</div><div class="v" data-bind="clientTotal">38 400 ₽</div></div>
+        <div class="qstat"><div class="l">Сделок</div><div class="v" data-bind="clientDeals">—</div></div>
+        <div class="qstat"><div class="l">На сумму</div><div class="v" data-bind="clientTotal">—</div></div>
       </div>
       <a href="client.html" id="open-client-link" class="btn sm" style="width: 100%; justify-content: center; margin-top: 12px;">Открыть карточку клиента →</a>
     </div>
@@ -416,7 +430,7 @@
         </div>
         <div class="sb-item">
           <div class="i"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>
-          <div class="info"><div class="n">Скоринг</div><div class="v"><span data-bind="sbScore">82</span> баллов</div></div>
+          <div class="info"><div class="n">Скоринг</div><div class="v"><span data-bind="sbScore">—</span> баллов</div></div>
           <div class="badge-ok"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
         </div>
       </div>
@@ -425,9 +439,9 @@
     <div class="card risk-card">
       <div class="risk-head">
         <div class="t">Уровень риска</div>
-        <span class="badge success" id="risk-badge" data-bind="sbScoreLabel">Низкий</span>
+        <span class="badge success" id="risk-badge" data-bind="sbScoreLabel">Не проверено</span>
       </div>
-      <div class="risk-score"><span data-bind="sbScore">82</span><small> / 100</small></div>
+      <div class="risk-score"><span data-bind="sbScore">—</span><small> / 100</small></div>
       <div class="risk-bar"><div class="risk-fill" id="risk-fill"></div></div>
       <div class="risk-meta"><span>Высокий риск</span><span>Низкий риск</span></div>
     </div>
@@ -448,8 +462,8 @@
       <div style="height: 14px"></div>
       <label class="field-label">Ответственный</label>
       <div style="display: flex; gap: 8px; align-items: center;">
-        <div class="avatar c2 sm" data-bind="managerInitials" data-bind-class="managerColor" data-bind-class-prefix="avatar c sm">БМ</div>
-        <select class="select" style="flex: 1;" data-bind-select="managerName"><option>Бекуев Муслим Денисович</option></select>
+        <div class="avatar c2 sm" data-bind="managerInitials" data-bind-class="managerColor" data-bind-class-prefix="avatar c sm">—</div>
+        <select class="select" style="flex: 1;" data-bind-select="managerName"><option value="">—</option></select>
       </div>
     </div>
 
@@ -475,12 +489,12 @@
       <div class="meta-grid">
         <div class="field">
           <label class="field-label">Номер</label>
-          <input class="input" data-bind-value="number" value="0000000005" readonly />
+          <input class="input" data-bind-value="number" value="" readonly />
         </div>
         <div class="field">
           <label class="field-label">Дата</label>
           <div class="field-input-wrap">
-            <input class="input" data-bind-value="date" value="19.04.2026 16:07:56" />
+            <input class="input" data-bind-value="date" value="" />
             <div class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg></div>
           </div>
         </div>
@@ -520,15 +534,15 @@
                 <div class="product-cell">
                   <div class="product-img" id="product-icon-cell"></div>
                   <div class="product-info">
-                    <div class="pname" data-bind="productName">Airpods 4 CASE MXP93 · Белый USB-C CHARGING ANC (eu)</div>
-                    <div class="pcode" data-bind="productCode">Код: 000001234</div>
+                    <div class="pname" data-bind="productName">—</div>
+                    <div class="pcode" data-bind="productCode">Код: —</div>
                   </div>
                 </div>
               </td>
-              <td data-bind="productQty">1 шт</td>
-              <td class="t-right t-mono" data-bind="productPurchase">11 500,00</td>
-              <td class="t-right t-mono" data-bind="productSale">12 800,00</td>
-              <td class="t-right t-mono t-strong" data-bind="productTotal">12 800,00</td>
+              <td data-bind="productQty">—</td>
+              <td class="t-right t-mono" data-bind="productPurchase">—</td>
+              <td class="t-right t-mono" data-bind="productSale">—</td>
+              <td class="t-right t-mono t-strong" data-bind="productTotal">—</td>
             </tr>
           </tbody>
         </table>
@@ -545,18 +559,18 @@
           <div class="term">
             <div class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div>
             <div class="l">Цена закупки</div>
-            <div class="v" data-bind="termsPurchase">11 500,00 ₽</div>
+            <div class="v" data-bind="termsPurchase">—</div>
           </div>
           <div class="term">
             <div class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-3a2 2 0 0 1-2-2V2"/><path d="M9 18a4.6 4.6 0 0 0 0-9H5"/></svg></div>
             <div class="l">Цена продажи</div>
-            <div class="v" data-bind="termsSale">12 800,00 ₽</div>
+            <div class="v" data-bind="termsSale">—</div>
           </div>
           <div class="term markup">
             <div class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
             <div class="l">Наценка</div>
-            <div class="v" data-bind="termsMarkup">1 300,00 ₽</div>
-            <div class="s" data-bind="termsMarkupPct">11,30 %</div>
+            <div class="v" data-bind="termsMarkup">—</div>
+            <div class="s" data-bind="termsMarkupPct">—</div>
           </div>
 
           <div class="term-summary">
@@ -564,32 +578,32 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>
               Условия одобрены
             </div>
-            <div class="ts-row"><span>Надбавка (раскрытая)</span><span class="v" data-bind="termsMarkup">1 300,00 ₽</span></div>
+            <div class="ts-row"><span>Надбавка (раскрытая)</span><span class="v" data-bind="termsMarkup">—</span></div>
             <div class="ts-row"><span style="font-size: 11px;">Штрафные проценты</span><span class="v" style="font-size: 11px; color: var(--text-3);">не применяются</span></div>
             <div class="ts-divider"></div>
-            <div class="ts-row ts-total"><span>Итого к оплате</span><span class="v" data-bind="termsTotal">12 800,00 ₽</span></div>
+            <div class="ts-row ts-total"><span>Итого к оплате</span><span class="v" data-bind="termsTotal">—</span></div>
           </div>
 
           <div class="term">
             <div class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
             <div class="l">Первоначальный взнос</div>
-            <div class="v" data-bind="termsDown">2 300,00 ₽</div>
-            <div class="s" data-bind="termsDownPct">10 %</div>
+            <div class="v" data-bind="termsDown">—</div>
+            <div class="s" data-bind="termsDownPct">—</div>
           </div>
           <div class="term">
             <div class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
             <div class="l">Срок рассрочки</div>
-            <div class="v" data-bind="termsTerm">3 мес.</div>
+            <div class="v" data-bind="termsTerm">—</div>
           </div>
           <div class="term">
             <div class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
             <div class="l">Платёж в месяц</div>
-            <div class="v" data-bind="termsMonthly">3 500,00 ₽</div>
+            <div class="v" data-bind="termsMonthly">—</div>
           </div>
           <div class="term" style="background: linear-gradient(135deg, #eff6ff, #dbeafe); border-color: #bfdbfe;">
             <div class="ti" style="color: var(--primary); background: white; border-color: #bfdbfe;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
             <div class="l" style="color: var(--primary-2);">Дата окончания</div>
-            <div class="v" style="color: var(--primary-2);" data-bind="termsEndDate">19.07.2026</div>
+            <div class="v" style="color: var(--primary-2);" data-bind="termsEndDate">—</div>
           </div>
         </div>
       </div>
@@ -1063,8 +1077,8 @@
   if (!_appId) {
     _appNotFound = true;
   } else {
-    // Ищем заявку в локальном кэше PaydDB (та же коллекция applications,
-    // которую заполняет облачный pull / синхронные upsert'ы).
+    // Sync — мгновенное чтение из локального кеша PaydDB (та же коллекция
+    // applications, которую заполняет cloud-pull / synchronous upsert'ы).
     let allApps = [];
     try { allApps = JSON.parse(localStorage.getItem('payd.calc.applications') || '[]'); } catch (_) {}
     const realApp = allApps.find(a => a.id === _appId || a.number === _appId);
@@ -1075,15 +1089,11 @@
     }
   }
 
-  if (_appNotFound) {
-    // Не нашли заявку в БД — редирект на журнал. Никаких demo-fallback'ов.
-    if (window.PaydApp?.toast) {
-      PaydApp.toast(_appId ? 'Заявка не найдена или была удалена' : 'Заявка не указана', 'error');
-    }
-    setTimeout(() => { location.replace('zhurnal.html'); }, 1500);
-    // Безопасная заглушка _app — чтобы код, исполняющийся до навигации,
-    // не падал на null/undefined. Никаких реальных ФИО/паспортов.
-    _app = {
+  // Безопасная нейтральная заглушка _app — чтобы код, исполняющийся до
+  // async retry, не падал на null/undefined. НЕ показывается пользователю
+  // (поверх лежит .zay-overlay со спиннером).
+  function _stubApp() {
+    return {
       id: _appId || '—',
       number: _appId || '—',
       type: 'Товар со склада',
@@ -1091,6 +1101,48 @@
       client_name: '—', client_phone: '—',
       progressStep: 1
     };
+  }
+
+  if (_appNotFound) {
+    _app = _stubApp();
+    // Показываем overlay со спиннером, пока ищем заявку в облаке.
+    // Это предотвращает flash дефолтных "—" перед реальными данными.
+    const _overlay = document.getElementById('zay-overlay');
+    const _overlayText = document.getElementById('zay-overlay-text');
+    if (_overlay) _overlay.style.display = '';
+
+    (async () => {
+      let found = null;
+      try {
+        if (window.PaydDB?.cloud?.connect) {
+          await PaydDB.cloud.connect().catch(() => {});
+          // Дать backgroundPull (запускается в connect) шанс докатить
+          // данные в localStorage. ~800мс — компромисс между скоростью и надёжностью.
+          await new Promise(r => setTimeout(r, 800));
+        }
+        if (_appId && window.PaydDB?.list) {
+          const apps = await PaydDB.list('applications').catch(() => []);
+          found = (apps || []).find(a => a.id === _appId || a.number === _appId) || null;
+        }
+      } catch (e) { console.warn('[zayavka] cloud retry', e.message); }
+
+      if (found) {
+        _app = buildAppFromCalc(found);
+        _appNotFound = false;
+        try { renderApp(_app); } catch (_) {}
+        try { applyWorkflow(); } catch (_) {}
+        try { loadRealHistory(); } catch (_) {}
+        document.title = `Заявка №${_app.number || _appId} — Payd`;
+        if (_overlay) _overlay.style.display = 'none';
+      } else {
+        // Async retry тоже не нашёл — редирект на журнал.
+        if (_overlayText) _overlayText.textContent = 'Заявка не найдена. Возврат к журналу…';
+        if (window.PaydApp?.toast) {
+          PaydApp.toast(_appId ? 'Заявка не найдена или была удалена' : 'Заявка не указана', 'error');
+        }
+        setTimeout(() => { location.replace('zhurnal.html'); }, 1200);
+      }
+    })();
   }
 
   // Source-aware sidebar / breadcrumb / return URL
@@ -1344,10 +1396,11 @@
         <div style="font-size: 11px; color: #888; margin-bottom: 18px;">К заявке № ${a.number} от ${a.date}</div>
       `;
       switch (docKey) {
-        case 'contract':
+        case 'contract': {
+          const _company = (window.PaydDB?.templates?.loadCompany?.()) || {};
           return head + `
-            <p><b>Кредитор:</b> ООО «Payd», ИНН 2014782301, г. Грозный</p>
-            <p><b>Заёмщик:</b> ${a.clientName}, ${a.clientPassport}, ${a.clientAddress}, тел. ${a.clientPhone}</p>
+            <p><b>Кредитор:</b> ${_company.name || 'ООО «Payd»'}, ИНН ${_company.inn || '—'}, г. ${_company.city || '—'}</p>
+            <p><b>Заёмщик:</b> ${a.clientName || '—'}, ${a.clientPassport || '—'}, ${a.clientAddress || '—'}, тел. ${a.clientPhone || '—'}</p>
             <p><b>Предмет договора:</b> ${a.productName}</p>
             <hr style="margin: 12px 0;" />
             <div class="row"><span>Сумма договора</span><span><b>${a.termsSale}</b></span></div>
@@ -1359,6 +1412,7 @@
             <hr style="margin: 12px 0;" />
             <p style="font-size: 11px; color: #888;">Стороны подтверждают согласие с условиями. Договор подписан простой электронной подписью через SMS-код.</p>
           `;
+        }
         case 'schedule': {
           const term = parseInt(a.termsTerm) || 3;
           const monthly = parseInt(String(a.termsMonthly).replace(/\D/g,'')) || 0;
@@ -2089,8 +2143,8 @@
       <div class="doc-preview" style="max-width: 580px;">
         <h2>Договор рассрочки</h2>
         <div style="font-size: 11px; color: #888; margin-bottom: 14px;">К заявке № ${_app.number} от ${_app.date}</div>
-        <p><b>Кредитор:</b> ООО «Payd», ИНН 2014782301</p>
-        <p><b>Заёмщик:</b> ${_app.clientName}<br/>${_app.clientPassport}<br/>${_app.clientAddress}, тел. ${_app.clientPhone}</p>
+        <p><b>Кредитор:</b> ${(window.PaydDB?.templates?.loadCompany?.() || {}).name || 'ООО «Payd»'}, ИНН ${(window.PaydDB?.templates?.loadCompany?.() || {}).inn || '—'}</p>
+        <p><b>Заёмщик:</b> ${_app.clientName || '—'}<br/>${_app.clientPassport || '—'}<br/>${_app.clientAddress || '—'}, тел. ${_app.clientPhone || '—'}</p>
         <p><b>Предмет:</b> ${_app.productName}</p>
         <hr style="margin: 12px 0;" />
         <div class="row"><span>Сумма</span><span><b>${_app.termsSale}</b></span></div>
@@ -2205,7 +2259,7 @@
         <div class="row"><span>Сумма продажи</span><span>${_app.termsSale}</span></div>
         <div style="margin-top: 14px;">
           <label style="font-size: 11px; color: #555; text-transform: uppercase; font-weight: 700; letter-spacing: .06em;">Кто выдал</label>
-          <input class="input" id="dl-by" style="width: 100%; margin-top: 6px;" placeholder="ФИО кассира/менеджера" value="Бекуев Муслим Д." />
+          <input class="input" id="dl-by" style="width: 100%; margin-top: 6px;" placeholder="ФИО кассира/менеджера" value="" />
         </div>
         <div style="margin-top: 10px; font-size: 12px; color: #888;">⚠️ Сверьте паспорт с заёмщиком!</div>
       `;
@@ -2231,6 +2285,14 @@
     const close = () => back.remove();
     back.addEventListener('click', e => { if (e.target === back) close(); });
     back.querySelector('[data-act="cancel"]').onclick = close;
+    // Автозаполнение "Кто выдал" из профиля текущего пользователя
+    const dlByEl = back.querySelector('#dl-by');
+    if (dlByEl && window.PaydDB?.profiles?.me) {
+      PaydDB.profiles.me().then(p => {
+        const name = p?.full_name || PaydDB.cloud.user?.()?.email || '';
+        if (name && !dlByEl.value) dlByEl.value = name;
+      }).catch(() => {});
+    }
     back.querySelector('[data-act="ok"]').onclick = () => {
       const by = back.querySelector('#dl-by')?.value.trim() || 'Менеджер';
       close();
