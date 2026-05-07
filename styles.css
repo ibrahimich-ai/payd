@@ -698,6 +698,7 @@ table.tbl tbody tr.clickable:hover td { background: #fafbff; }
    ============================================================ */
 
 .stat-grid { display: grid; gap: 16px; }
+.stat-grid.cols-5 { grid-template-columns: repeat(5, 1fr); }
 .stat-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
 .stat-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
 .stat-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
