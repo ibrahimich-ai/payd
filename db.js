@@ -52,6 +52,73 @@
   };
 
   // ============================================================
+  //  Workflow flow gates (per application type)
+  //  Полные labels/keys остаются в zayavka.html как UI-метаданные.
+  //  Здесь — только индексы этапов, нужные для логики (СБ→Договор→…).
+  // ============================================================
+  const WORKFLOW_FLOWS = {
+    'Товар со склада':   { contractStep: 3, downpayStep: 4, deliverStep: 5, totalSteps: 5 },
+    'Товар от партнёра': { contractStep: 6, downpayStep: 7, deliverStep: 8, totalSteps: 8 },
+    'Под заказ':         { contractStep: 3, downpayStep: 4, deliverStep: 7, totalSteps: 7 },
+    'Услуга':            { contractStep: 3, downpayStep: 4, deliverStep: 5, totalSteps: 5 },
+    default:             { contractStep: 3, downpayStep: 4, deliverStep: 5, totalSteps: 5 }
+  };
+  function flowFor(type) { return WORKFLOW_FLOWS[type] || WORKFLOW_FLOWS.default; }
+
+  // ============================================================
+  //  Snake_case нормализация workflow
+  //  Контракт: в БД и localStorage workflow всегда в snake_case.
+  //  Эти хелперы принимают объект и нормализуют его (idempotent).
+  // ============================================================
+  function workflowToSnake(item) {
+    if (!item || typeof item !== 'object') return item;
+    const out = { ...item };
+    if ('sbPassed' in out) { out.sb_passed = out.sbPassed; delete out.sbPassed; }
+    if ('sbScore'  in out) { out.sb_score  = out.sbScore;  delete out.sbScore; }
+    if ('appId'    in out) { out.app_id    = out.appId;    delete out.appId; }
+    return out;
+  }
+
+  // Одноразовая миграция camelCase → snake_case в localStorage workflows.
+  // Запускается при загрузке db.js. Идемпотентна.
+  function migrateWorkflowsLocalOnce() {
+    const def = COLLECTIONS.workflows;
+    let raw;
+    try { raw = JSON.parse(localStorage.getItem(def.ls) || '{}'); }
+    catch (_) { return; }
+    if (!raw || typeof raw !== 'object') return;
+    let mutated = false;
+    for (const key of Object.keys(raw)) {
+      const v = raw[key];
+      if (!v || typeof v !== 'object') continue;
+      if ('sbPassed' in v || 'sbScore' in v || 'appId' in v) {
+        raw[key] = workflowToSnake(v);
+        mutated = true;
+      }
+    }
+    if (mutated) {
+      // _origSetItem ещё не объявлен в этой точке файла — используем обычный setItem.
+      // Это безопасно: миграция не должна триггерить cloud push (мы не в _isOnline).
+      localStorage.setItem(def.ls, JSON.stringify(raw));
+      console.log('[PaydDB] workflows: migrated camelCase → snake_case');
+    }
+  }
+
+  // ============================================================
+  //  Audit outbox — очередь оффлайн-записей в application_history
+  // ============================================================
+  const AUDIT_OUTBOX_KEY = 'payd.audit.outbox.v1';
+  function auditQueue(entry) {
+    try {
+      const arr = JSON.parse(localStorage.getItem(AUDIT_OUTBOX_KEY) || '[]');
+      arr.push(entry);
+      localStorage.setItem(AUDIT_OUTBOX_KEY, JSON.stringify(arr));
+    } catch (e) {
+      console.warn('[PaydDB] audit queue write failed', e.message);
+    }
+  }
+
+  // ============================================================
   //  Supabase client (lazy init)
   // ============================================================
   let _sb = null;
@@ -133,6 +200,8 @@
 
   async function upsert(coll, item) {
     const def = COLLECTIONS[coll];
+    // Контракт snake_case для workflows — нормализуем любую входящую форму.
+    if (coll === 'workflows') item = workflowToSnake(item);
     const raw = loadLocal(coll);
     const pkVal = item[def.pk];
     if (pkVal == null) throw new Error('upsert: missing pk "' + def.pk + '"');
@@ -141,7 +210,9 @@
       if (idx >= 0) raw[idx] = { ...raw[idx], ...item };
       else raw.unshift(item);
     } else {
-      raw[pkVal] = { ...(raw[pkVal] || {}), ...item };
+      // Для workflows — сначала чистим прежние camelCase ключи у существующей записи.
+      const prev = raw[pkVal] ? (coll === 'workflows' ? workflowToSnake(raw[pkVal]) : raw[pkVal]) : {};
+      raw[pkVal] = { ...prev, ...item };
     }
     saveLocal(coll, raw);
     // Async push to cloud (не блокирующее)
@@ -192,6 +263,8 @@
       // Background pull + realtime subscribe — для актуальных данных на разных устройствах
       backgroundPull().catch(e => console.warn('[PaydDB] background pull', e.message));
       subscribeRealtime();
+      // Флашим offline audit-очередь, если что-то накопилось
+      auditFlushOutbox().catch(() => {});
       return true;
     }
     return false;
@@ -207,6 +280,7 @@
     window.dispatchEvent(new CustomEvent('payd:cloud:connected', { detail: { user: _user } }));
     backgroundPull().catch(e => console.warn('[PaydDB] background pull', e.message));
     subscribeRealtime();
+    auditFlushOutbox().catch(() => {});
     return _user;
   }
 
@@ -438,9 +512,16 @@
       out.cash_id = item.cashId;
     }
     if (coll === 'workflows') {
-      out.app_id = item.appId || item.app_id;
-      out.sb_passed = item.sbPassed;
-      out.sb_score = item.sbScore;
+      // Snake-only контракт. workflowToSnake уже отработал в upsert(),
+      // но на пути backgroundPull/syncPush сюда могут прийти любые объекты.
+      const norm = workflowToSnake(item);
+      out.app_id    = norm.app_id;
+      out.step      = norm.step;
+      out.sb_passed = norm.sb_passed;
+      out.sb_score  = norm.sb_score;
+      out.rejected  = norm.rejected;
+      out.completed = norm.completed;
+      out.type      = norm.type;
       // app_id обязательно (PK) — пропускаем если пустой
       if (!out.app_id) return null;
     }
@@ -553,9 +634,9 @@
       out.cashId = item.cash_id;
     }
     if (coll === 'workflows') {
-      out.appId = item.app_id;
-      out.sbPassed = item.sb_passed;
-      out.sbScore = item.sb_score;
+      // Snake-only контракт. Из БД приходит snake_case, оставляем как есть.
+      // Никаких camelCase псевдонимов — потребители (sb.html, manager.html, zayavka.html)
+      // должны читать sb_passed / sb_score / app_id напрямую.
     }
     if (coll === 'payouts') {
       out.deliveredAt = item.delivered_at;
@@ -629,6 +710,11 @@
       console.warn('[PaydDB] auto-sync', coll, e.message);
     }
   }
+
+  // ============================================================
+  //  One-time migration: workflows camelCase → snake_case в localStorage
+  // ============================================================
+  try { migrateWorkflowsLocalOnce(); } catch (e) { console.warn('[PaydDB] workflow migration', e.message); }
 
   // ============================================================
   //  Auto-connect on page load (если есть сессия)
@@ -716,29 +802,166 @@
 
   // ============================================================
   //  AUDIT LOG — запись действий в application_history
+  //  С оффлайн-очередью: если нет связи, кладём в outbox и
+  //  флашим при следующем cloudConnect.
   // ============================================================
   async function auditLog(appId, action, meta = {}) {
     if (!appId || !action) return;
-    if (!_isOnline) return;
+    const ts = new Date().toISOString();
+    const byUser = _user?.email || _user?.user_metadata?.full_name || 'system';
+    const entry = { app_id: appId, action, by_user: byUser, meta, ts };
+
+    if (!_isOnline) {
+      auditQueue(entry);
+      console.warn('[PaydDB] audit log queued (offline):', action);
+      return;
+    }
     const sb = getSb();
-    if (!sb) return;
+    if (!sb) {
+      auditQueue(entry);
+      console.warn('[PaydDB] audit log queued (no sb):', action);
+      return;
+    }
     try {
-      const byUser = _user?.email || _user?.user_metadata?.full_name || 'system';
-      await sb.from('application_history').insert({
-        app_id: appId,
-        action,
-        by_user: byUser,
-        meta
-      });
+      const { error } = await sb.from('application_history').insert(entry);
+      if (error) throw error;
     } catch (e) {
-      console.warn('[PaydDB] audit log', e.message);
+      console.warn('[PaydDB] audit log failed, queuing:', e.message);
+      auditQueue(entry);
+    }
+  }
+
+  // Флаш outbox в Supabase. Возвращает число залитых записей.
+  async function auditFlushOutbox() {
+    if (!_isOnline) return 0;
+    const sb = getSb();
+    if (!sb) return 0;
+    let arr;
+    try { arr = JSON.parse(localStorage.getItem(AUDIT_OUTBOX_KEY) || '[]'); }
+    catch (_) { return 0; }
+    if (!Array.isArray(arr) || !arr.length) return 0;
+    try {
+      const { error } = await sb.from('application_history').insert(arr);
+      if (error) throw error;
+      localStorage.setItem(AUDIT_OUTBOX_KEY, '[]');
+      console.log('[PaydDB] audit outbox flushed:', arr.length, 'entries');
+      return arr.length;
+    } catch (e) {
+      console.warn('[PaydDB] audit outbox flush failed:', e.message);
+      return 0;
+    }
+  }
+
+  // ============================================================
+  //  WORKFLOWS — централизованный API переходов по этапам
+  //  Все записи в snake_case, через PaydDB.upsert('workflows', ...)
+  //  Подписки и cloud-sync работают как обычно.
+  // ============================================================
+  async function workflowGet(appId) {
+    if (!appId) return null;
+    const map = loadLocal('workflows');
+    const v = map && typeof map === 'object' ? map[appId] : null;
+    return v ? workflowToSnake(v) : null;
+  }
+
+  async function workflowAdvance(appId, toStep, extra = {}) {
+    if (!appId) throw new Error('workflowAdvance: app_id required');
+    const prev = (await workflowGet(appId)) || {};
+    const next = workflowToSnake({
+      ...prev,
+      ...extra,
+      app_id: appId,
+      step: toStep,
+      updated_at: new Date().toISOString()
+    });
+    await upsert('workflows', next);
+    return next;
+  }
+
+  async function workflowApprove(appId) {
+    if (!appId) throw new Error('workflowApprove: app_id required');
+    const app = await get('applications', appId);
+    if (!app) throw new Error('Application not found: ' + appId);
+    const type = app.type || 'default';
+    const flow = flowFor(type);
+    const prev = (await workflowGet(appId)) || {};
+    const fromStep = Number(prev.step) || 1;
+    const toStep = flow.contractStep;
+
+    const next = await workflowAdvance(appId, toStep, {
+      sb_passed: true,
+      sb_score: prev.sb_score || 0,
+      rejected: false,
+      type
+    });
+    await auditLog(appId, 'sb.approved');
+    await auditLog(appId, 'stage.changed', {
+      from_step: fromStep,
+      to_step: toStep,
+      type
+    });
+    return next;
+  }
+
+  async function workflowReject(appId, reason) {
+    if (!appId) throw new Error('workflowReject: app_id required');
+    const prev = (await workflowGet(appId)) || {};
+    const fromStep = Number(prev.step) || 1;
+    const next = await workflowAdvance(appId, 0, {
+      sb_passed: false,
+      rejected: true
+    });
+    // Также пометить заявку rejected, если ещё не помечена
+    const app = await get('applications', appId);
+    if (app && !app.rejected) {
+      await upsert('applications', { ...app, rejected: true });
+    }
+    await auditLog(appId, 'sb.rejected', reason ? { reason } : {});
+    await auditLog(appId, 'stage.changed', {
+      from_step: fromStep,
+      to_step: 0,
+      rejected: true,
+      reason: reason || null
+    });
+    return next;
+  }
+
+  // Сводка действий за сегодня (для счётчиков в СБ-странице).
+  async function auditTodayStats() {
+    const empty = { approved: 0, rejected: 0, decided: 0, raw: [] };
+    if (!_isOnline) return empty;
+    const sb = getSb();
+    if (!sb) return empty;
+    const start = new Date(); start.setHours(0, 0, 0, 0);
+    try {
+      const { data, error } = await sb.from('application_history')
+        .select('action,ts,app_id')
+        .gte('ts', start.toISOString());
+      if (error) throw error;
+      const rows = data || [];
+      return {
+        approved: rows.filter(r => r.action === 'sb.approved').length,
+        rejected: rows.filter(r => r.action === 'sb.rejected').length,
+        decided:  rows.filter(r => typeof r.action === 'string' && r.action.startsWith('sb.')).length,
+        raw: rows
+      };
+    } catch (e) {
+      console.warn('[PaydDB] auditTodayStats', e.message);
+      return empty;
     }
   }
 
   window.PaydDB = {
     list, get, upsert, remove, count, bulkReplace,
     subscribe, exportAll, importAll, COLLECTIONS,
-    audit: { log: auditLog },
+    audit: { log: auditLog, flushOutbox: auditFlushOutbox, todayStats: auditTodayStats },
+    workflows: {
+      get: workflowGet,
+      advance: workflowAdvance,
+      approve: workflowApprove,
+      reject: workflowReject,
+      flowFor
+    },
     profiles: { me: profileMe },
     files: { upload: uploadFile, list: listFiles, getUrl: getFileUrl, delete: deleteFile },
     cloud: {
