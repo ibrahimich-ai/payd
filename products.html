@@ -633,7 +633,10 @@
 
   document.getElementById('btn-new-product').addEventListener('click', openNew);
   document.getElementById('m-cancel').addEventListener('click', closeProdModal);
-  prodModal.addEventListener('click', e => { if (e.target === prodModal) closeProdModal(); });
+  // Закрытие по клику на фон — только если mousedown тоже был на фоне.
+  // Иначе drag при выделении текста (mousedown в input → mouseup на фоне)
+  // ошибочно закрывал модалку.
+  bindBackdropClose(prodModal, closeProdModal);
 
   document.getElementById('m-save').addEventListener('click', () => {
     const catId = document.getElementById('m-cat').value;
@@ -869,14 +872,25 @@
     fieldsModal.classList.remove('open');
     renderCatManage();
   });
-  fieldsModal.addEventListener('click', e => { if (e.target === fieldsModal) { fieldsModal.classList.remove('open'); renderCatManage(); }});
+  bindBackdropClose(fieldsModal, () => { fieldsModal.classList.remove('open'); renderCatManage(); });
 
   document.getElementById('cat-manage-btn').addEventListener('click', () => {
     renderCatManage();
     catModal.classList.add('open');
   });
   document.getElementById('cat-close').addEventListener('click', () => catModal.classList.remove('open'));
-  catModal.addEventListener('click', e => { if (e.target === catModal) catModal.classList.remove('open'); });
+  bindBackdropClose(catModal, () => catModal.classList.remove('open'));
+
+  // Закрывает модалку только если жест начался И закончился на фоне (а не на input/кнопке).
+  // Защита от закрытия при выделении текста и drag за пределы модалки.
+  function bindBackdropClose(modal, close) {
+    let downOnBg = false;
+    modal.addEventListener('mousedown', e => { downOnBg = (e.target === modal); });
+    modal.addEventListener('click', e => {
+      if (e.target === modal && downOnBg) close();
+      downOnBg = false;
+    });
+  }
 
   document.getElementById('cat-add').addEventListener('click', () => {
     const inp = document.getElementById('cat-new-name');
