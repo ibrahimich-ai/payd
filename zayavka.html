@@ -1219,10 +1219,6 @@
       if (app[key] !== undefined && app[key] !== null) el.textContent = app[key];
     });
 
-    // Иконка товара — SVG из pickProductIcon вставляется в ячейку таблицы.
-    const productIconCell = document.getElementById('product-icon-cell');
-    if (productIconCell && app.productIcon) productIconCell.innerHTML = app.productIcon;
-
     // Input value bindings: <input data-bind-value="key">
     document.querySelectorAll('[data-bind-value]').forEach(el => {
       const key = el.dataset.bindValue;
