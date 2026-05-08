@@ -938,7 +938,9 @@
       const activeId = localStorage.getItem('payd.tariffs.active');
       if (!list.length) return { active: null, byId: {} };
       const byId = Object.fromEntries(list.map(t => [t.id, t]));
-      const active = byId[activeId] || list[0];
+      const active = byId[activeId]
+        || list.find(t => t.is_default || t.isDefault)
+        || list[0];
       return { active, byId };
     } catch (_) {
       return { active: null, byId: {} };
@@ -989,12 +991,23 @@
   const partnerCtx = resolvePartner();
   const tariff = partnerCtx.tariff;
 
-  // ===== Initial state (clamped to tariff) =====
+  // ===== Initial state (clamped to tariff). URL-параметры price/dp/term/type
+  // приходят из мини-калькулятора в app.js — применяем их поверх дефолтов. =====
+  const _urlParams = new URLSearchParams(window.location.search);
+  const _urlPrice = parseInt(_urlParams.get('price'), 10);
+  const _urlDp    = parseInt(_urlParams.get('dp'), 10);
+  const _urlTerm  = parseInt(_urlParams.get('term'), 10);
+  const _urlType  = _urlParams.get('type');
+
+  const _defaultPrice = Math.min(250000, tariff.maxAmount);
+  const _defaultDp    = tariff.minDp;
+  const _defaultTerm  = tariff.terms.includes(12) ? 12 : tariff.terms[Math.floor(tariff.terms.length / 2)];
+
   const state = {
-    type: tariff.types[0],
-    price: Math.min(250000, tariff.maxAmount),
-    dpPct: Math.max(10, tariff.minDp),
-    term: tariff.terms.includes(12) ? 12 : tariff.terms[Math.floor(tariff.terms.length / 2)],
+    type: (_urlType && tariff.types.includes(_urlType)) ? _urlType : tariff.types[0],
+    price: (_urlPrice >= 10000 && _urlPrice <= tariff.maxAmount) ? _urlPrice : _defaultPrice,
+    dpPct: (Number.isFinite(_urlDp) && _urlDp >= tariff.minDp && _urlDp <= 80) ? _urlDp : _defaultDp,
+    term:  (Number.isFinite(_urlTerm) && tariff.terms.includes(_urlTerm)) ? _urlTerm : _defaultTerm,
   };
 
   // ===== Refs =====

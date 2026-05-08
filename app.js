@@ -1447,6 +1447,7 @@ function openMiniCalc(opts = {}) {
     if (!link) return;
     const p = new URLSearchParams();
     if (opts.partner) p.set('partner', opts.partner);
+    if (ctx.src?.id) p.set('tariff', ctx.src.id);
     if (state.price) p.set('price', state.price);
     p.set('dp', state.dpPct);
     p.set('term', state.term);
