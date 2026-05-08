@@ -1286,7 +1286,10 @@ function openMiniCalc(opts = {}) {
       const list = JSON.parse(localStorage.getItem('payd.tariffs.v1') || '[]');
       const id = localStorage.getItem('payd.tariffs.active');
       const byId = Object.fromEntries(list.map(t => [t.id, t]));
-      return byId[id] || list[0] || null;
+      return byId[id]
+        || list.find(t => t.is_default || t.isDefault)
+        || list[0]
+        || null;
     } catch (_) { return null; }
   }
   function resolveTariff() {
@@ -1320,7 +1323,7 @@ function openMiniCalc(opts = {}) {
   const state = {
     type: tariff.types[0],
     price: Math.min(150000, tariff.maxAmount),
-    dpPct: Math.max(10, tariff.minDp),
+    dpPct: tariff.minDp,
     term: tariff.terms.includes(12) ? 12 : tariff.terms[Math.floor(tariff.terms.length / 2)],
     valid: true
   };
@@ -1387,7 +1390,7 @@ function openMiniCalc(opts = {}) {
         </div>
 
         <button class="pmc-cta" id="pmc-apply">Оформить заявку →</button>
-        <a href="calculator.html${opts.partner ? '?partner=' + encodeURIComponent(opts.partner) : ''}" target="_blank" class="pmc-link">Открыть полную версию ↗</a>
+        <a id="pmc-link" href="calculator.html" target="_blank" class="pmc-link">Открыть полную версию ↗</a>
       </div>
     </div>
   `;
@@ -1439,7 +1442,20 @@ function openMiniCalc(opts = {}) {
     }
   }
 
+  function updateFullLink() {
+    const link = $('#pmc-link');
+    if (!link) return;
+    const p = new URLSearchParams();
+    if (opts.partner) p.set('partner', opts.partner);
+    if (state.price) p.set('price', state.price);
+    p.set('dp', state.dpPct);
+    p.set('term', state.term);
+    p.set('type', state.type);
+    link.href = 'calculator.html?' + p.toString();
+  }
+
   function recalc() {
+    updateFullLink();
     const ok = state.valid && state.price >= MIN_PRICE;
     applyBtn.disabled = !ok;
     if (!ok) {
@@ -1594,9 +1610,20 @@ function openMiniCalc(opts = {}) {
     host.classList.remove('show');
     setTimeout(() => host.remove(), 250);
     document.removeEventListener('keydown', escClose);
+    window.removeEventListener('storage', onTariffStorage);
   }
   function escClose(e) { if (e.key === 'Escape') closeMini(); }
   document.addEventListener('keydown', escClose);
+
+  // Если в другой вкладке поменяли дефолтный тариф или список тарифов —
+  // переоткрываем калькулятор, чтобы подхватить новые параметры.
+  function onTariffStorage(e) {
+    if (e.key === 'payd.tariffs.active' || e.key === 'payd.tariffs.v1') {
+      closeMini();
+      setTimeout(() => window.PaydApp?.openMiniCalc?.(opts), 300);
+    }
+  }
+  window.addEventListener('storage', onTariffStorage);
 
   renderControls();
   recalc();
