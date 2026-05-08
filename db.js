@@ -810,6 +810,81 @@
     return app;
   }
 
+  // Удаление заявки с каскадом и блокирующими проверками.
+  // Блокирующие условия (бросают Error):
+  //   1. Любой платёж в payments со статусом != 'pending' и != 'cancelled'
+  //      (т.е. оплачен или в любом другом состоянии).
+  //   2. Подписанный договор (contracts.status='signed').
+  // Каскад (best-effort, без блокировки на сбое):
+  //   payments → partner_reservations → contracts(draft) → workflows
+  //   → applications.
+  // application_history НЕ удаляется — это audit trail. Запись
+  // 'application.deleted' пишется ДО удаления.
+  async function applicationsDelete(appId) {
+    if (!appId) throw new Error('app_id required');
+    const sb = getSb();
+
+    // 1. Блокирующие проверки
+    if (sb) {
+      // 1a. Платежи: любой со статусом не pending/cancelled → отказ
+      try {
+        const { data: nonPending, error } = await sb.from('payments')
+          .select('id,status')
+          .eq('app_id', appId)
+          .not('status', 'in', '(pending,cancelled)')
+          .limit(1);
+        if (error) throw error;
+        if (nonPending && nonPending.length > 0) {
+          throw new Error('Нельзя удалить: есть принятый платёж (status="' + nonPending[0].status + '")');
+        }
+      } catch (e) {
+        if (e.message?.startsWith('Нельзя удалить')) throw e;
+        console.warn('[applicationsDelete] payments check:', e.message);
+      }
+      // 1b. Подписанный договор → отказ
+      try {
+        const { count: signedCount, error } = await sb.from('contracts')
+          .select('id', { count: 'exact', head: true })
+          .eq('app_id', appId)
+          .eq('status', 'signed');
+        if (error) throw error;
+        if (signedCount && signedCount > 0) {
+          throw new Error('Нельзя удалить: договор уже подписан');
+        }
+      } catch (e) {
+        if (e.message?.startsWith('Нельзя удалить')) throw e;
+        console.warn('[applicationsDelete] contracts check:', e.message);
+      }
+    }
+
+    // 2. Audit log ДО физического удаления (чтобы app_id остался валидным)
+    try {
+      const app = await get('applications', appId);
+      await auditLog(appId, 'application.deleted', {
+        number: app?.number || null,
+        client_name: app?.client_name || null,
+        amount: app?.amount ?? null
+      });
+    } catch (_) {}
+
+    // 3. Cascade dependents (best-effort)
+    if (sb) {
+      try { await sb.from('payments').delete().eq('app_id', appId); }
+      catch (e) { console.warn('[applicationsDelete] payments delete:', e.message); }
+      try { await sb.from('partner_reservations').delete().eq('app_id', appId); }
+      catch (e) { console.warn('[applicationsDelete] partner_reservations delete:', e.message); }
+      try { await sb.from('contracts').delete().eq('app_id', appId).eq('status', 'draft'); }
+      catch (e) { console.warn('[applicationsDelete] contracts draft delete:', e.message); }
+    }
+
+    // 4. workflows + applications через PaydDB.remove — обновит local + cloud
+    try { await remove('workflows', appId); }
+    catch (e) { console.warn('[applicationsDelete] workflows remove:', e.message); }
+    await remove('applications', appId);
+
+    return true;
+  }
+
   async function applicationsFindByIdOrNumber(key) {
     if (!key) return null;
     // 1. PK lookup (мгновенно, если key — uuid)
@@ -1177,7 +1252,8 @@
     profiles: { me: profileMe },
     applications: {
       findByIdOrNumber: applicationsFindByIdOrNumber,
-      create: applicationsCreate
+      create: applicationsCreate,
+      delete: applicationsDelete
     },
     templates: {
       render: templateRender,

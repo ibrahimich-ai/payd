@@ -38,6 +38,15 @@
   .empty-row td { padding: 60px 20px; text-align: center; color: var(--text-3); }
   .empty-row .em-title { font-size: 14px; margin-bottom: 6px; }
   .empty-row .em-sub { font-size: 12px; }
+
+  /* Кнопка удаления заявки в строке журнала */
+  .zh-del-btn {
+    background: none; border: none; cursor: pointer; padding: 4px 6px;
+    font-size: 14px; line-height: 1; color: var(--text-3);
+    border-radius: 6px; opacity: 0.55; transition: all .12s;
+  }
+  tr.clickable:hover .zh-del-btn { opacity: 1; }
+  .zh-del-btn:hover { background: var(--danger-soft); color: var(--danger); opacity: 1; }
 </style>
 </head>
 <body>
@@ -123,11 +132,12 @@
         <th class="t-center">Срок</th>
         <th>Тип</th>
         <th>Статус</th>
+        <th class="t-right" style="width: 40px;"></th>
       </tr>
     </thead>
     <tbody id="zh-tbody">
       <tr class="empty-row">
-        <td colspan="8">Загрузка...</td>
+        <td colspan="9">Загрузка...</td>
       </tr>
     </tbody>
   </table>
@@ -182,9 +192,20 @@
   }
 
   let allApps = [];
+  // Право удалять заявки. Определяется по profile.role.
+  // admin / manager — могут. Остальные — кнопка не отображается.
+  let _canDelete = false;
+
+  async function loadProfileRights() {
+    try {
+      const p = await PaydDB.profiles?.me?.();
+      _canDelete = ['admin', 'manager'].includes(p?.role);
+    } catch (_) { _canDelete = false; }
+  }
 
   async function refresh() {
     if (!window.PaydDB) return;
+    await loadProfileRights();
     allApps = await PaydDB.list('applications', { orderBy: { field: 'ts', dir: 'desc' } }).catch(() => []);
 
     // Populate type filter
@@ -251,7 +272,7 @@
     if (!filtered.length) {
       tbody.innerHTML = `
         <tr class="empty-row">
-          <td colspan="8">
+          <td colspan="9">
             <div class="em-title">${allApps.length ? 'По фильтрам ничего не нашли' : 'Заявок пока нет'}</div>
             <div class="em-sub">${allApps.length
               ? 'Сбрось фильтры или измени запрос'
@@ -277,6 +298,10 @@
       const type = a.type || a.calc?.type || '—';
       const num = '#' + (a.number || (a.id || '').slice(-6));
 
+      const delCell = _canDelete
+        ? `<td class="t-right"><button class="zh-del-btn" data-id="${escapeHtml(a.id)}" title="Удалить заявку" aria-label="Удалить заявку">🗑</button></td>`
+        : `<td></td>`;
+
       return `
         <tr class="clickable" data-id="${escapeHtml(a.id)}">
           <td class="t-mono t-strong">${num}</td>
@@ -295,19 +320,65 @@
           <td class="t-center">${term} мес</td>
           <td><span class="badge primary">${escapeHtml(type)}</span></td>
           <td>${statusBadge(a)}</td>
+          ${delCell}
         </tr>
       `;
     }).join('');
 
     tbody.querySelectorAll('tr.clickable').forEach(tr => {
-      tr.addEventListener('click', () => {
+      tr.addEventListener('click', e => {
+        // Игнорируем клик по кнопке удаления — её обработчик ниже
+        if (e.target.closest('.zh-del-btn')) return;
         const id = tr.dataset.id;
         location.href = 'zayavka.html?id=' + encodeURIComponent(id);
       });
     });
 
+    tbody.querySelectorAll('.zh-del-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        e.preventDefault();
+        handleDelete(btn.dataset.id);
+      });
+    });
+
     document.getElementById('zh-pagination-info').textContent =
       'Показано ' + filtered.length + ' из ' + allApps.length;
+  }
+
+  // Удаление заявки с подтверждением и подробностями
+  function handleDelete(appId) {
+    const a = allApps.find(x => x.id === appId);
+    if (!a) {
+      PaydApp.toast('Заявка не найдена', 'error');
+      return;
+    }
+    const num = a.number || (a.id || '').slice(-6);
+    const name = a.client_name || a.client?.name || '—';
+    const amount = +(a.amount || a.calc?.price) || 0;
+    const dt = fmtDate(a.ts || a.created_at);
+
+    PaydApp.confirmDialog({
+      title: 'Удалить заявку #' + num + '?',
+      message:
+        '<div style="text-align:left; font-size:13px; line-height:1.6; margin: 8px 0 12px;">' +
+          '<div><b>Клиент:</b> ' + escapeHtml(name) + '</div>' +
+          '<div><b>Сумма:</b> ' + fmt(amount) + '</div>' +
+          '<div><b>Дата:</b> ' + dt.date + ' ' + dt.time + '</div>' +
+        '</div>' +
+        '<div style="color: var(--danger); font-size: 12px;">Это действие нельзя отменить. Будут также удалены: проверка СБ, график платежей, резервы партнёров и черновики договоров.</div>',
+      okText: 'Удалить',
+      danger: true,
+      onOk: async () => {
+        try {
+          await PaydDB.applications.delete(appId);
+          PaydApp.toast('Заявка #' + num + ' удалена', 'success');
+          await refresh();
+        } catch (err) {
+          PaydApp.toast(err.message || 'Ошибка удаления', 'error');
+        }
+      }
+    });
   }
 
   // Filter listeners
