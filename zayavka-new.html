@@ -553,7 +553,7 @@
   bind('dl-down', 'deal.down');
   bind('dl-partner', 'deal.partner');
 
-  document.getElementById('dl-term')?.addEventListener('change', e => { form.deal.term = +e.target.value; autoFillDown(); recalc(); saveDraft(); });
+  document.getElementById('dl-term')?.addEventListener('change', e => { form.deal.term = +e.target.value; autoFillDown(true); recalc(); saveDraft(); });
 
   // Показать/скрыть поля в зависимости от типа сделки
   function updateTypeVisibility() {
@@ -584,8 +584,10 @@
   });
   setTimeout(updateTypeVisibility, 0);
 
-  // Автозаполнение первого взноса — % от ИТОГОВОЙ цены (база + наценка)
-  function autoFillDown() {
+  // Автозаполнение первого взноса — % от ИТОГОВОЙ цены (база + наценка).
+  // force=true перезаписывает текущее значение (используется при смене тарифа/срока,
+  // чтобы взнос всегда соответствовал минимуму нового тарифа).
+  function autoFillDown(force = false) {
     const base = +form.product.purchase || 0;
     const tariff = allTariffs.find(t => t.id === form.deal.tariffId);
     const term = +form.deal.term || 0;
@@ -597,7 +599,8 @@
     const targetPct = minDpPct > 0 ? minDpPct : 20;
     const auto = Math.round(final * targetPct / 100);
     const downIn = document.getElementById('dl-down');
-    if (downIn && final > 0 && (!form.deal.down || form.deal.down === 0)) {
+    if (!downIn || final <= 0) return;
+    if (force || !form.deal.down || form.deal.down === 0) {
       downIn.value = auto;
       form.deal.down = auto;
     }
@@ -610,7 +613,7 @@
   document.getElementById('dl-tariff')?.addEventListener('change', e => {
     form.deal.tariffId = e.target.value;
     applyTariff();
-    autoFillDown();
+    autoFillDown(true);
     recalc();
     saveDraft();
   });
