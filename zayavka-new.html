@@ -91,10 +91,6 @@
     <div class="step-cell current" data-step="1"><div class="step-circle">1</div><div class="lbl">Клиент</div></div>
     <div class="step-line"></div>
     <div class="step-cell" data-step="2"><div class="step-circle">2</div><div class="lbl">Товар и условия</div></div>
-    <div class="step-line"></div>
-    <div class="step-cell" data-step="3"><div class="step-circle">3</div><div class="lbl">Документы</div></div>
-    <div class="step-line"></div>
-    <div class="step-cell" data-step="4"><div class="step-circle">4</div><div class="lbl">Подтверждение</div></div>
   </div>
 </div>
 
@@ -275,36 +271,7 @@
     </div>
 
     <!-- ============ STEP 3: DOCUMENTS ============ -->
-    <div class="step-pane" data-pane="3">
-      <div class="card">
-        <div class="card-hd"><h3>Документы</h3></div>
-        <div class="card-bd">
-          <div class="alert info">
-            <div class="ai">i</div>
-            <div>После создания заявки сгенерируются: договор Мурабаха, акт приёма-передачи, график платежей, SMS клиенту с условиями.</div>
-          </div>
-          <div class="field" style="margin-top: 14px;">
-            <label class="field-label">Комментарий к заявке (необязательно)</label>
-            <textarea class="textarea" id="dl-note" placeholder="Любая дополнительная информация"></textarea>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ============ STEP 4: CONFIRM ============ -->
-    <div class="step-pane" data-pane="4">
-      <div class="card">
-        <div class="card-hd"><h3>Подтверждение</h3></div>
-        <div class="card-bd">
-          <div class="alert info">
-            <div class="ai">✓</div>
-            <div>Проверьте сводку справа. После создания заявка попадёт в журнал и далее в работу.</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div style="display: flex; justify-content: space-between; gap: 8px;">
+<div style="display: flex; justify-content: space-between; gap: 8px;">
       <button class="btn" id="step-back" data-no-handler="true">← Назад</button>
       <button class="btn primary" id="step-next" data-no-handler="true">Далее →</button>
     </div>
@@ -339,17 +306,6 @@
       <div class="summary-row" style="font-size: 12px;" id="sm-margin-row"><span class="l">Маржа</span><span class="v" style="color: var(--success);" id="sm-margin">0 ₽</span></div>
     </div>
 
-    <!-- Что произойдёт — на шаге 4 -->
-    <div class="card" id="will-happen" style="padding: 18px; display: none;">
-      <div style="font-size: 13px; font-weight: 700; margin-bottom: 10px;">Что произойдёт после создания</div>
-      <div style="display: flex; flex-direction: column; gap: 10px;">
-        <div style="display: flex; gap: 8px; font-size: 12px; color: var(--text-2);"><span style="color: var(--success);">✓</span> Заявка создана и присвоен номер</div>
-        <div style="display: flex; gap: 8px; font-size: 12px; color: var(--text-2);"><span style="color: var(--success);">✓</span> Сформирован график платежей</div>
-        <div style="display: flex; gap: 8px; font-size: 12px; color: var(--text-2);"><span style="color: var(--success);">✓</span> Подготовлен договор для печати</div>
-        <div style="display: flex; gap: 8px; font-size: 12px; color: var(--text-2);"><span style="color: var(--success);">✓</span> Запись в облаке Supabase</div>
-        <div style="display: flex; gap: 8px; font-size: 12px; color: var(--text-2);"><span style="color: var(--text-3);">○</span> Кассир получит платёж первого взноса</div>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -477,7 +433,7 @@
   const form = draft?.form || {
     client: { name: '', phone: '', passport: '', address: '' },
     product: { name: '', color: '', purchase: 0, sale: 0 },
-    deal: { tariffId: '', type: 'Товар со склада', term: 6, down: 0, partner: '', note: '' }
+    deal: { tariffId: '', type: 'Товар со склада', term: 6, down: 0, partner: '' }
   };
   const fmt = (v) => Math.round(+v || 0).toLocaleString('ru-RU').replace(/,/g, ' ') + ' ₽';
 
@@ -562,7 +518,6 @@
   bind('pd-sale', 'product.sale');
   bind('deal-type', 'deal.type');
   bind('dl-down', 'deal.down');
-  bind('dl-note', 'deal.note');
   bind('dl-partner', 'deal.partner');
 
   document.getElementById('dl-term')?.addEventListener('change', e => { form.deal.term = +e.target.value; autoFillDown(); recalc(); saveDraft(); });
@@ -917,15 +872,13 @@
     document.querySelectorAll('.step-line').forEach((line, i) => line.classList.toggle('done', (i + 1) < current));
     document.querySelectorAll('.step-pane').forEach(p => p.classList.toggle('active', +p.dataset.pane === current));
     document.getElementById('step-back').style.visibility = current > 1 ? 'visible' : 'hidden';
-    document.getElementById('step-next').textContent = current === 4 ? '✓ Создать заявку' : 'Далее →';
+    document.getElementById('step-next').textContent = current === 2 ? '✓ Создать заявку' : 'Далее →';
 
     // Контекстная сводка справа
     const step1Hint = document.getElementById('step1-hint');
     const fullSum   = document.getElementById('full-summary');
-    const willHap   = document.getElementById('will-happen');
     if (step1Hint) step1Hint.style.display = current === 1 ? '' : 'none';
     if (fullSum)   fullSum.style.display   = current >= 2 ? '' : 'none';
-    if (willHap)   willHap.style.display   = current === 4 ? '' : 'none';
   }
 
   function validate(step) {
@@ -954,28 +907,63 @@
 
   document.getElementById('step-next').addEventListener('click', async e => {
     e.preventDefault();
-    if (current < 4) {
+    if (current < 2) {
       const err = validate(current);
       if (err) { PaydApp.toast(err, 'error'); return; }
       current++;
       renderStepper();
       window.scrollTo({ top: 0, behavior: 'smooth' });
       saveDraft();
-    } else {
-      // CREATE — защита от двойного клика
-      const btn = document.getElementById('step-next');
-      if (btn.disabled || isSaving) return;
-      isSaving = true;
-      btn.disabled = true;
-      const _origBtnHTML = btn.innerHTML;
-      btn.innerHTML = '<span class="ld-spinner"></span> Сохранение…';
+      return;
+    }
 
-      const number = String(Date.now()).slice(-10).padStart(10, '0');
-      const id = 'app_' + Date.now();
-      const sale = +form.product.sale || 0;
-      const down = +form.deal.down || 0;
-      const remaining = Math.max(0, sale - down);
-      const monthly = form.deal.term ? Math.round(remaining / form.deal.term) : 0;
+    // current === 2: CREATE flow.
+    // Сначала валидация шага 2.
+    const err2 = validate(2);
+    if (err2) { PaydApp.toast(err2, 'error'); return; }
+
+    // Confirm-диалог с резюме (заменяет бывший шаг "Подтверждение")
+    const _btn = document.getElementById('step-next');
+    if (_btn.disabled || isSaving) return;
+    const _saleNum = +form.product.sale || 0;
+    const _downNum = +form.deal.down || 0;
+    const _remaining = Math.max(0, _saleNum - _downNum);
+    const _monthlyNum = form.deal.term ? Math.round(_remaining / form.deal.term) : 0;
+    const _fmtRub = (n) => Math.round(+n || 0).toLocaleString('ru-RU').replace(/,/g, ' ') + ' ₽';
+
+    PaydApp.confirmDialog({
+      title: 'Создать заявку?',
+      message:
+        '<div style="text-align:left; font-size:13px; line-height:1.7; margin: 8px 0 4px;">' +
+          '<div><b>Клиент:</b> ' + (form.client.name || '—') + '</div>' +
+          '<div><b>Товар:</b> ' + (form.product.name || '—') + '</div>' +
+          '<div><b>Сумма:</b> ' + _fmtRub(_saleNum) + '</div>' +
+          '<div><b>Первый взнос:</b> ' + _fmtRub(_downNum) + '</div>' +
+          '<div><b>Срок:</b> ' + (form.deal.term || 0) + ' мес.</div>' +
+          '<div><b>Платёж/мес:</b> ' + _fmtRub(_monthlyNum) + '</div>' +
+        '</div>',
+      okText: '✓ Создать',
+      danger: false,
+      onOk: () => doCreate()
+    });
+  });
+
+  // Извлечённая CREATE-логика — вызывается после подтверждения в confirm-диалоге.
+  async function doCreate() {
+    // Защита от двойного клика
+    const btn = document.getElementById('step-next');
+    if (btn.disabled || isSaving) return;
+    isSaving = true;
+    btn.disabled = true;
+    const _origBtnHTML = btn.innerHTML;
+    btn.innerHTML = '<span class="ld-spinner"></span> Сохранение…';
+
+    const number = String(Date.now()).slice(-10).padStart(10, '0');
+    const id = 'app_' + Date.now();
+    const sale = +form.product.sale || 0;
+    const down = +form.deal.down || 0;
+    const remaining = Math.max(0, sale - down);
+    const monthly = form.deal.term ? Math.round(remaining / form.deal.term) : 0;
 
       // 1. Клиент → справочник
       try {
@@ -1087,8 +1075,7 @@
         isSaving = false;
         PaydApp.toast('Ошибка сохранения: ' + err.message, 'error');
       }
-    }
-  });
+  }
 
   renderStepper();
   if (draft) recalc();
@@ -1282,7 +1269,7 @@
         Object.assign(form, {
           client: { name: '', phone: '', passport: '', address: '' },
           product: { id: '', name: '', color: '', purchase: 0, sale: 0 },
-          deal: { tariffId: '', type: 'Товар со склада', term: 6, down: 0, partner: '', note: '' }
+          deal: { tariffId: '', type: 'Товар со склада', term: 6, down: 0, partner: '' }
         });
         location.href = 'zhurnal.html';
       }
