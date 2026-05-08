@@ -194,10 +194,9 @@
     if (wf && wf.rejected)  return '<span class="badge danger dot">Отклонена</span>';
     if (wf && wf.completed) return '<span class="badge success dot">Завершена</span>';
     if (!wf) return '<span class="badge primary dot">Новая</span>';
-    if (!wf.sb_passed) {
-      if (!wf.step || wf.step <= 1) return '<span class="badge primary dot">Новая</span>';
-      return '<span class="badge warning dot">На проверке СБ</span>';
-    }
+    // Если wf существует и СБ ещё не одобрила — заявка в очереди СБ.
+    // Совпадает с classifyApp в manager.html (Wave 4): !wf.sb_passed → 'sb'.
+    if (!wf.sb_passed) return '<span class="badge warning dot">На проверке СБ</span>';
     // sb_passed === true — классифицируем по step через flow заявки
     const flowFor = window.PaydDB?.workflows?.flowFor;
     const flow = flowFor ? flowFor(app.type || wf.type) : { contractStep: 3, downpayStep: 4 };
@@ -254,7 +253,7 @@
       const wf = allWorkflows[a.id];
       if (wf?.rejected) { countRejected++; return; }
       if (!wf || !wf.sb_passed) {
-        if (wf && wf.step > 1) countSb++;     // На проверке СБ
+        if (wf) countSb++;                    // wf есть, sb не пройдена → На СБ
         return;
       }
       countApproved++;                         // одобрена СБ (Договор + Активная)
