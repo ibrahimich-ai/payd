@@ -12,15 +12,48 @@
   .new-grid { display: grid; grid-template-columns: 1fr 360px; gap: 16px; }
   @media (max-width: 1200px) { .new-grid { grid-template-columns: 1fr; } }
 
-  .stepper-row { display: flex; align-items: center; gap: 0; padding: 18px; border-bottom: 1px solid var(--border); }
-  .step-cell { display: flex; align-items: center; gap: 8px; }
-  .step-circle { width: 32px; height: 32px; border-radius: 50%; background: var(--surface-3); color: var(--text-3); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; border: 2px solid var(--border-strong); }
-  .step-cell.done .step-circle { background: var(--success); color: white; border-color: var(--success); }
-  .step-cell.current .step-circle { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(37,99,235,.15); }
-  .step-cell .lbl { font-size: 12px; font-weight: 500; color: var(--text-3); }
-  .step-cell.done .lbl, .step-cell.current .lbl { color: var(--text); font-weight: 600; }
-  .step-line { flex: 1; height: 2px; background: var(--border-strong); margin: 0 12px; }
-  .step-line.done { background: var(--success); }
+  .stepper-row {
+    display: flex; align-items: center; gap: 0;
+    padding: 20px 28px;
+    background: linear-gradient(135deg, #f5f3ff 0%, #eff6ff 100%);
+    border-radius: var(--radius);
+    border: 1px solid #e2e8f0;
+  }
+  .step-cell { display: flex; align-items: center; gap: 12px; }
+  .step-circle {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: white; color: var(--text-3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 800;
+    border: 2px solid #cbd5e1;
+    box-shadow: 0 1px 2px rgba(0,0,0,.05);
+    transition: all .25s ease;
+  }
+  .step-cell.done .step-circle {
+    background: linear-gradient(135deg, #10b981, #059669); color: white;
+    border-color: #10b981;
+    box-shadow: 0 4px 12px rgba(16,185,129,.30);
+  }
+  .step-cell.current .step-circle {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 6px rgba(37,99,235,.16), 0 4px 12px rgba(37,99,235,.30);
+    transform: scale(1.05);
+  }
+  .step-cell .lbl { font-size: 13px; font-weight: 600; color: var(--text-3); letter-spacing: .01em; }
+  .step-cell.done .lbl    { color: #047857; font-weight: 700; }
+  .step-cell.current .lbl { color: #1d4ed8; font-weight: 700; }
+  .step-line {
+    flex: 1; height: 3px;
+    background: #cbd5e1;
+    margin: 0 18px;
+    border-radius: 2px;
+    position: relative;
+    overflow: hidden;
+  }
+  .step-line.done {
+    background: linear-gradient(to right, #10b981, #34d399);
+  }
 
   .step-pane { display: none; }
   .step-pane.active { display: block; }
@@ -79,7 +112,7 @@
 <div class="page-head">
   <div>
     <h1>Новая заявка рассрочки</h1>
-    <div class="desc">Заполните 4 шага и заявка будет создана</div>
+    <div class="desc">Заполните 2 шага и заявка будет создана</div>
   </div>
   <div class="page-head-actions">
     <button class="btn" id="btn-cancel-form" data-no-handler="true">Отмена</button>
@@ -283,7 +316,7 @@
     <div class="card" id="step1-hint" style="padding: 18px;">
       <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
         <div style="width: 32px; height: 32px; background: var(--primary-soft); color: var(--primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800;">1</div>
-        <div style="font-size: 13px; font-weight: 700;">Шаг 1 из 4 · Клиент</div>
+        <div style="font-size: 13px; font-weight: 700;">Шаг 1 из 2 · Клиент</div>
       </div>
       <div style="font-size: 12px; color: var(--text-2); line-height: 1.6;">
         Найдите клиента в базе или создайте нового. После выбора клиента вы перейдёте к выбору товара и параметров рассрочки.
