@@ -765,20 +765,30 @@
     if (allTariffs.length === 0) {
       sel.innerHTML = '<option value="">— нет тарифов в системе —</option>';
     } else {
-      let activeId = '';
-      try { activeId = localStorage.getItem('payd.tariffs.active') || ''; } catch (_) {}
-      const defaultT = allTariffs.find(t => t.id === activeId) ||
-                       allTariffs.find(t => t.is_default || t.isDefault) ||
-                       allTariffs[0];
-      allTariffs.forEach(t => {
+      const rank = name => {
+        const n = (name || '').toLowerCase();
+        if (n.includes('базов')) return 0;
+        if (n.includes('вип') || n.includes('vip')) return 1;
+        if (n.includes('акци')) return 2;
+        return 3;
+      };
+      const sorted = [...allTariffs].sort((a, b) => rank(a.name) - rank(b.name) || (a.name || '').localeCompare(b.name || ''));
+      sel.innerHTML = '<option value="" disabled selected>— Выберите тариф —</option>';
+      sorted.forEach(t => {
         const opt = document.createElement('option');
         opt.value = t.id;
-        opt.textContent = t.name + (t === defaultT ? ' (по умолчанию)' : '');
+        opt.textContent = t.name;
         sel.appendChild(opt);
       });
-      sel.value = defaultT.id;
-      form.deal.tariffId = defaultT.id;
-      applyTariff();
+      const draftTariffId = form.deal.tariffId;
+      const draftValid = draftTariffId && allTariffs.some(t => t.id === draftTariffId);
+      if (draftValid) {
+        sel.value = draftTariffId;
+        applyTariff();
+      } else {
+        sel.value = '';
+        form.deal.tariffId = '';
+      }
     }
 
     // 2. Partners
@@ -922,6 +932,7 @@
     if (step === 2) {
       if (!form.product.name?.trim()) return 'Введите наименование товара';
       if (!form.product.sale) return 'Введите цену продажи';
+      if (!form.deal.tariffId) return 'Выберите тариф';
       if (form.deal.down >= form.product.sale) return 'Первый взнос больше или равен цене';
       const t = allTariffs.find(t => t.id === form.deal.tariffId);
       const minDp = (+t?.minDp || +t?.min_dp || 0);
