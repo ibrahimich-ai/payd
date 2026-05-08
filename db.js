@@ -788,6 +788,28 @@
   //  PaydDB.get('applications', key) ищет только по pk='id'. Этот хелпер
   //  делает безопасный двойной поиск: PK-lookup + full scan по number.
   // ============================================================
+  // Создание заявки с проверкой idempotency_key — защита от дублей при
+  // двойном клике "Создать". Если в коллекции уже есть запись с таким же
+  // idempotency_key — возвращаем её, не делаем повторный upsert.
+  // Внимание: idempotency_key пока НЕ в ALLOWED_COLUMNS.applications, поэтому
+  // в облако не уезжает, защита работает только локально (одна вкладка).
+  // Cross-tab/cross-device защита появится после миграции БД.
+  async function applicationsCreate(app) {
+    const key = app && app.idempotency_key;
+    if (key) {
+      try {
+        const all = await list('applications');
+        const existing = (all || []).find(a => a.idempotency_key === key);
+        if (existing) {
+          console.warn('[PaydDB] applications.create: idempotent hit, returning existing', existing.id);
+          return existing;
+        }
+      } catch (_) {}
+    }
+    await upsert('applications', app);
+    return app;
+  }
+
   async function applicationsFindByIdOrNumber(key) {
     if (!key) return null;
     // 1. PK lookup (мгновенно, если key — uuid)
@@ -1153,7 +1175,10 @@
       flowFor
     },
     profiles: { me: profileMe },
-    applications: { findByIdOrNumber: applicationsFindByIdOrNumber },
+    applications: {
+      findByIdOrNumber: applicationsFindByIdOrNumber,
+      create: applicationsCreate
+    },
     templates: {
       render: templateRender,
       testContext: templateTestContext,

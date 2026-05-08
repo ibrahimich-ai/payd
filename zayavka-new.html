@@ -66,6 +66,10 @@
   .pp-empty { grid-column: 1/-1; padding: 40px; text-align: center; color: var(--text-3); font-size: 13px; }
   .pp-search { margin-bottom: 12px; }
   .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+
+  /* inline-spinner для кнопки "Сохранение…" */
+  .ld-spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: ld-spin .7s linear infinite; vertical-align: -2px; margin-right: 6px; }
+  @keyframes ld-spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -421,8 +425,15 @@
     breadcrumbs: []
   });
 
-  // ============ Draft persistence ============
+  // ============ Draft persistence + dirty/saving flags ============
   const DRAFT_KEY = 'payd.zayavka.draft.v1';
+  const IDEM_KEY  = 'payd.zayavka-new.idem.v1';
+
+  // Защита от закрытия вкладки с несохранённой формой
+  let formIsDirty = false;
+  // Защита от двойного клика по "Создать заявку"
+  let isSaving   = false;
+
   function loadDraft() {
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
@@ -430,12 +441,37 @@
     } catch (_) { return null; }
   }
   function saveDraft() {
+    formIsDirty = true;
     try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, current })); }
     catch (_) {}
   }
   function clearDraft() {
+    formIsDirty = false;
     try { localStorage.removeItem(DRAFT_KEY); } catch (_) {}
+    try { localStorage.removeItem(IDEM_KEY); } catch (_) {}
   }
+
+  // Idempotency key: один на сессию формы. Сохраняется в localStorage,
+  // чтобы при reload-е возвращался тот же ключ — два upsert'а с одним
+  // ключом вернут одну и ту же запись (PaydDB.applications.create).
+  const _idempotencyKey = (function () {
+    let k = null;
+    try { k = localStorage.getItem(IDEM_KEY); } catch (_) {}
+    if (!k) {
+      k = 'idem_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+      try { localStorage.setItem(IDEM_KEY, k); } catch (_) {}
+    }
+    return k;
+  })();
+
+  // Предупреждение при попытке закрыть вкладку с грязной формой.
+  // Текст диалога контролирует браузер — мы только триггерим показ.
+  window.addEventListener('beforeunload', (e) => {
+    if (formIsDirty && !isSaving) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  });
 
   const draft = loadDraft();
   const form = draft?.form || {
@@ -926,7 +962,14 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
       saveDraft();
     } else {
-      // CREATE
+      // CREATE — защита от двойного клика
+      const btn = document.getElementById('step-next');
+      if (btn.disabled || isSaving) return;
+      isSaving = true;
+      btn.disabled = true;
+      const _origBtnHTML = btn.innerHTML;
+      btn.innerHTML = '<span class="ld-spinner"></span> Сохранение…';
+
       const number = String(Date.now()).slice(-10).padStart(10, '0');
       const id = 'app_' + Date.now();
       const sale = +form.product.sale || 0;
@@ -965,6 +1008,7 @@
       const app = {
         id,
         number,
+        idempotency_key: _idempotencyKey,
         // FK refs
         client_id: null,                                     // заполнится сервером по phone
         product_id: form.product.id || null,
@@ -996,7 +1040,15 @@
       };
 
       try {
-        await PaydDB.upsert('applications', app);
+        // applications.create — с idempotency-проверкой: повторный вызов
+        // с тем же idempotency_key вернёт уже созданную заявку, не сделав
+        // новую запись.
+        const created = await (window.PaydDB?.applications?.create
+          ? PaydDB.applications.create(app)
+          : PaydDB.upsert('applications', app));
+        // Если idempotency hit вернул существующую заявку с другим id —
+        // используем её id для последующих операций (платежей, audit).
+        const finalAppId = (created && created.id) || id;
 
         // 4. График платежей (N+1) сразу в payments
         const sb = window.PaydDB?.cloud?.sb?.();
@@ -1004,14 +1056,14 @@
           const today = new Date();
           const isoDate = (d) => d.toISOString().slice(0, 10);
           const payments = [{
-            app_id: id, num: 0, amount: down,
+            app_id: finalAppId, num: 0, amount: down,
             due_date: isoDate(today), status: 'pending', kind: 'down_payment'
           }];
           for (let i = 1; i <= form.deal.term; i++) {
             const due = new Date(today);
             due.setMonth(due.getMonth() + i);
             payments.push({
-              app_id: id, num: i, amount: monthly,
+              app_id: finalAppId, num: i, amount: monthly,
               due_date: isoDate(due), status: 'pending', kind: 'installment'
             });
           }
@@ -1021,13 +1073,18 @@
         }
 
         // 5. Audit log
-        try { await PaydDB.audit?.log?.(id, 'application.created', { number, amount: final, base, markup: markupAmount }); } catch (_) {}
+        try { await PaydDB.audit?.log?.(finalAppId, 'application.created', { number, amount: final, base, markup: markupAmount }); } catch (_) {}
 
         clearDraft();
+        // formIsDirty=false уже выставлено в clearDraft() — beforeunload не помешает редиректу
         PaydApp.toast('Заявка создана', { type: 'success', subtitle: 'Номер #' + number + ' · график на ' + (form.deal.term + 1) + ' платежей' });
         setTimeout(() => { location.href = 'zhurnal.html'; }, 900);
       } catch (err) {
         console.error(err);
+        // Разблокировать кнопку — пользователь сможет повторить
+        btn.disabled = false;
+        btn.innerHTML = _origBtnHTML;
+        isSaving = false;
         PaydApp.toast('Ошибка сохранения: ' + err.message, 'error');
       }
     }
