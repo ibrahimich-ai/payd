@@ -1683,11 +1683,18 @@
   // Контракт: snake_case везде. Запись через PaydDB.workflows.advance,
   // чтение из localStorage (та же коллекция, что у PaydDB.workflows.get).
   const WF_KEY = 'payd.zayavka.wf.v1';
+  // Suppress-flag — защита от бесконечной петли:
+  // applyWorkflow → _saveWf → PaydDB.workflows.advance → upsert → notify
+  // → subscribe('workflows') → applyWorkflow → петля. Когда subscribe-
+  // callback зовёт applyWorkflow для отрисовки внешнего изменения —
+  // ставит флаг, чтобы внутренний _saveWf не сделал повторный upsert.
+  let _suppressWfSave = false;
   function _loadSavedWf() {
     try { return JSON.parse(localStorage.getItem(WF_KEY) || '{}')[_appId] || null; }
     catch (_) { return null; }
   }
   function _saveWf() {
+    if (_suppressWfSave) return;
     if (!window.PaydDB?.workflows?.advance) return;
     PaydDB.workflows.advance(_appId, wf.step, {
       sb_passed: wf.sb_passed,
@@ -1994,12 +2001,23 @@
 
   // При внешнем обновлении workflows (например, СБ одобрил в другом окне) —
   // перечитываем wf и перерисовываем карточку.
+  // ВАЖНО: applyWorkflow() сам вызывает _saveWf(), который пишет в workflows
+  // и триггерит этот же subscribe → бесконечная петля. Suppress-flag
+  // блокирует повторный save во время реактивного рендера.
   if (window.PaydDB?.subscribe) {
     PaydDB.subscribe('workflows', async () => {
+      // Игнорируем нотификацию, если она вызвана нашим же _saveWf
+      if (_suppressWfSave) return;
       const fresh = await PaydDB.workflows.get(_appId);
       if (!fresh) return;
+      // Если данные не отличаются от текущих — нечего перерисовывать
+      if (fresh.step === wf.step && fresh.sb_passed === wf.sb_passed
+          && fresh.sb_score === wf.sb_score && fresh.rejected === wf.rejected
+          && fresh.completed === wf.completed) return;
       Object.assign(wf, fresh);
+      _suppressWfSave = true;
       try { applyWorkflow(); } catch (_) {}
+      _suppressWfSave = false;
       try { loadRealHistory(); } catch (_) {}
     });
   }
