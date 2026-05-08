@@ -182,16 +182,34 @@
     return parts[0] + ' ' + parts[1][0] + '.' + (parts[2] ? ' ' + parts[2][0] + '.' : '');
   }
 
+  // Статус считается из application_workflows (живая правда), а не
+  // из устаревших полей applications.sbPassed/contractSigned (их в БД
+  // либо нет, либо никто не обновляет — отсюда баг "все Новые").
   function statusBadge(app) {
-    if (app.rejected) return '<span class="badge danger dot">Отклонена</span>';
-    if (app.closed) return '<span class="badge gray dot">Закрыта</span>';
-    if (app.contractSigned) return '<span class="badge success dot">Активная</span>';
-    if (app.sbPassed) return '<span class="badge success dot">Одобрена</span>';
-    if (app.sbInReview) return '<span class="badge warning dot">На проверке</span>';
-    return '<span class="badge primary dot">Новая</span>';
+    // Жёсткий верх — флаги на самой заявке
+    if (app.rejected || app.closed) {
+      return '<span class="badge gray dot">Закрыта/Отказ</span>';
+    }
+    const wf = allWorkflows[app.id];
+    if (wf && wf.rejected)  return '<span class="badge danger dot">Отклонена</span>';
+    if (wf && wf.completed) return '<span class="badge success dot">Завершена</span>';
+    if (!wf) return '<span class="badge primary dot">Новая</span>';
+    if (!wf.sb_passed) {
+      if (!wf.step || wf.step <= 1) return '<span class="badge primary dot">Новая</span>';
+      return '<span class="badge warning dot">На проверке СБ</span>';
+    }
+    // sb_passed === true — классифицируем по step через flow заявки
+    const flowFor = window.PaydDB?.workflows?.flowFor;
+    const flow = flowFor ? flowFor(app.type || wf.type) : { contractStep: 3, downpayStep: 4 };
+    const step = Number(wf.step) || 1;
+    if (step >= flow.downpayStep)  return '<span class="badge success dot">Активная</span>';
+    if (step >= flow.contractStep) return '<span class="badge purple dot">Договор</span>';
+    // sb_passed=true но step<contractStep — anomaly из legacy данных
+    return '<span class="badge purple dot">Договор</span>';
   }
 
   let allApps = [];
+  let allWorkflows = {};  // Map по app_id для O(1) lookup в statusBadge/renderStats
   // Право удалять заявки. Определяется по profile.role.
   // admin / manager — могут. Остальные — кнопка не отображается.
   let _canDelete = false;
@@ -206,7 +224,15 @@
   async function refresh() {
     if (!window.PaydDB) return;
     await loadProfileRights();
-    allApps = await PaydDB.list('applications', { orderBy: { field: 'ts', dir: 'desc' } }).catch(() => []);
+    // Параллельно: applications (отсортированные) + workflows (для статусов).
+    const [apps, wfs] = await Promise.all([
+      PaydDB.list('applications', { orderBy: { field: 'ts', dir: 'desc' } }).catch(() => []),
+      PaydDB.list('workflows').catch(() => [])
+    ]);
+    allApps = apps;
+    allWorkflows = {};
+    (Array.isArray(wfs) ? wfs : Object.values(wfs))
+      .forEach(w => { if (w && w.app_id) allWorkflows[w.app_id] = w; });
 
     // Populate type filter
     const typesInData = [...new Set(allApps.map(a => a.type || a.calc?.type).filter(Boolean))];
@@ -219,12 +245,30 @@
   }
 
   function renderStats() {
-    document.getElementById('kpi-total').textContent = allApps.length;
+    // KPI считаем через allWorkflows — те же критерии, что в statusBadge,
+    // чтобы числа в KPI совпадали с бейджами в строках.
+    let countSb = 0, countApproved = 0, countWorking = 0, countRejected = 0;
+    const flowFor = window.PaydDB?.workflows?.flowFor;
+    allApps.forEach(a => {
+      if (a.rejected || a.closed) { if (a.rejected) countRejected++; return; }
+      const wf = allWorkflows[a.id];
+      if (wf?.rejected) { countRejected++; return; }
+      if (!wf || !wf.sb_passed) {
+        if (wf && wf.step > 1) countSb++;     // На проверке СБ
+        return;
+      }
+      countApproved++;                         // одобрена СБ (Договор + Активная)
+      const flow = flowFor ? flowFor(a.type || wf.type) : { contractStep: 3, downpayStep: 4 };
+      const step = Number(wf.step) || 1;
+      if (step >= flow.downpayStep) countWorking++;
+    });
+
+    document.getElementById('kpi-total').textContent     = allApps.length;
     document.getElementById('kpi-total-sub').textContent = allApps.length === 0 ? 'нет заявок' : 'за всё время';
-    document.getElementById('kpi-approved').textContent = allApps.filter(a => a.sbPassed && !a.rejected && !a.closed).length;
-    document.getElementById('kpi-working').textContent = allApps.filter(a => a.contractSigned && !a.closed && !a.rejected).length;
-    document.getElementById('kpi-sb').textContent = allApps.filter(a => a.sbInReview).length;
-    document.getElementById('kpi-rejected').textContent = allApps.filter(a => a.rejected).length;
+    document.getElementById('kpi-approved').textContent  = countApproved;
+    document.getElementById('kpi-working').textContent   = countWorking;
+    document.getElementById('kpi-sb').textContent        = countSb;
+    document.getElementById('kpi-rejected').textContent  = countRejected;
 
     document.getElementById('zh-desc').textContent = allApps.length
       ? 'Все заявки рассрочки · ' + allApps.length + ' шт.'
@@ -422,7 +466,10 @@
   });
 
   refresh();
-  if (window.PaydDB?.subscribe) PaydDB.subscribe('applications', refresh);
+  if (window.PaydDB?.subscribe) {
+    PaydDB.subscribe('applications', refresh);
+    PaydDB.subscribe('workflows', refresh);
+  }
 </script>
 </body>
 </html>
