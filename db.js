@@ -783,6 +783,28 @@
   }
 
   // ============================================================
+  //  APPLICATIONS — общий хелпер поиска по id (uuid) ИЛИ number (текст)
+  //  В URL карточки заявки часто передаётся не uuid, а number ("8100868473").
+  //  PaydDB.get('applications', key) ищет только по pk='id'. Этот хелпер
+  //  делает безопасный двойной поиск: PK-lookup + full scan по number.
+  // ============================================================
+  async function applicationsFindByIdOrNumber(key) {
+    if (!key) return null;
+    // 1. PK lookup (мгновенно, если key — uuid)
+    try {
+      const byId = await get('applications', key);
+      if (byId) return byId;
+    } catch (_) {}
+    // 2. Full scan по number
+    try {
+      const apps = await list('applications');
+      return (apps || []).find(a => a.number === key) || null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ============================================================
   //  TEMPLATES — рендер документов по шаблонам с {{маркерами}}
   //  Контракт: шаблон — это HTML-строка с маркерами вида {{path.to.value}}.
   //  render(html, ctx) подставляет значения через regex-replace.
@@ -1131,6 +1153,7 @@
       flowFor
     },
     profiles: { me: profileMe },
+    applications: { findByIdOrNumber: applicationsFindByIdOrNumber },
     templates: {
       render: templateRender,
       testContext: templateTestContext,

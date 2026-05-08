@@ -1105,27 +1105,65 @@
 
   if (_appNotFound) {
     _app = _stubApp();
-    // Показываем overlay со спиннером, пока ищем заявку в облаке.
-    // Это предотвращает flash дефолтных "—" перед реальными данными.
     const _overlay = document.getElementById('zay-overlay');
     const _overlayText = document.getElementById('zay-overlay-text');
+    const _overlayBox = _overlay?.querySelector('.zay-overlay-box');
     if (_overlay) _overlay.style.display = '';
 
-    (async () => {
-      let found = null;
+    // Async-поиск с явным дожиданием pull + watchdog timeout 8с.
+    // Helper PaydDB.applications.findByIdOrNumber обрабатывает оба
+    // случая: id-uuid и number-text в URL.
+    async function _doSearch() {
       try {
         if (window.PaydDB?.cloud?.connect) {
           await PaydDB.cloud.connect().catch(() => {});
-          // Дать backgroundPull (запускается в connect) шанс докатить
-          // данные в localStorage. ~800мс — компромисс между скоростью и надёжностью.
-          await new Promise(r => setTimeout(r, 800));
         }
-        if (_appId && window.PaydDB?.list) {
-          const apps = await PaydDB.list('applications').catch(() => []);
-          found = (apps || []).find(a => a.id === _appId || a.number === _appId) || null;
+        // Явно ждём pull коллекции applications — а не угадываем 800мс.
+        // pullCollection идемпотентна (см. _pullDone в db.js).
+        if (window.PaydDB?.sync?.pullCollection) {
+          await PaydDB.sync.pullCollection().catch(() => {});
         }
-      } catch (e) { console.warn('[zayavka] cloud retry', e.message); }
+        if (!_appId) return null;
+        if (window.PaydDB?.applications?.findByIdOrNumber) {
+          return await PaydDB.applications.findByIdOrNumber(_appId);
+        }
+        // Fallback на старую логику если helper'а нет
+        const apps = await PaydDB.list('applications').catch(() => []);
+        return (apps || []).find(a => a.id === _appId || a.number === _appId) || null;
+      } catch (e) {
+        console.warn('[zayavka] search failed:', e.message);
+        return null;
+      }
+    }
 
+    function _showOverlayError() {
+      if (!_overlayBox) return;
+      _overlayBox.innerHTML = `
+        <div style="font-size:32px; margin-bottom:14px; color: var(--danger);">⚠</div>
+        <div style="font-size:15px; font-weight:600; color: var(--text); margin-bottom:6px;">Не удалось загрузить заявку</div>
+        <div style="font-size:13px; color: var(--text-2); margin-bottom:18px;">Проверьте подключение к интернету и попробуйте снова.</div>
+        <div style="display:flex; gap:10px; justify-content:center;">
+          <button class="btn" id="zay-retry-btn">Попробовать снова</button>
+          <button class="btn primary" id="zay-back-btn">← К журналу</button>
+        </div>
+      `;
+      _overlayBox.querySelector('#zay-retry-btn')?.addEventListener('click', () => location.reload());
+      _overlayBox.querySelector('#zay-back-btn')?.addEventListener('click', () => { location.href = 'zhurnal.html'; });
+    }
+
+    (async () => {
+      const WATCHDOG_MS = 8000;
+      let timedOut = false;
+      const watchdog = new Promise(resolve => setTimeout(() => { timedOut = true; resolve('timeout'); }, WATCHDOG_MS));
+      const result = await Promise.race([_doSearch(), watchdog]);
+
+      if (result === 'timeout' || timedOut) {
+        // Сеть/cloud не ответили за 8 секунд — показываем error-state.
+        _showOverlayError();
+        return;
+      }
+
+      const found = result;
       if (found) {
         _app = buildAppFromCalc(found);
         _appNotFound = false;
@@ -1135,7 +1173,8 @@
         document.title = `Заявка №${_app.number || _appId} — Payd`;
         if (_overlay) _overlay.style.display = 'none';
       } else {
-        // Async retry тоже не нашёл — редирект на журнал.
+        // Cloud вернул, но заявка не нашлась нигде — это уже не таймаут,
+        // показываем тост + редирект через 1.2с.
         if (_overlayText) _overlayText.textContent = 'Заявка не найдена. Возврат к журналу…';
         if (window.PaydApp?.toast) {
           PaydApp.toast(_appId ? 'Заявка не найдена или была удалена' : 'Заявка не указана', 'error');
