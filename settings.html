@@ -917,8 +917,12 @@
         return;
       }
       const TYPE_LABEL = { standard: 'Стандартная', murabaha: 'Мурабаха', ijara: 'Иджара' };
+      // Приоритет: is_default из БД (после Шага 1A SQL-миграции).
+      // Фолбэк: payd.tariffs.active в localStorage (legacy, для случая когда
+      // ни у одного тарифа is_default не выставлено — переходный период).
+      const hasDbFlag = list.some(t => t.is_default === true);
       host.innerHTML = list.map(t => {
-        const isDefault = t.id === activeId;
+        const isDefault = hasDbFlag ? (t.is_default === true) : (t.id === activeId);
         const typeLabels = (t.types || []).map(x => TYPE_LABEL[x] || x).join(' + ');
         const termsLabel = (t.terms || []).join('/') + ' мес';
         const dpLabel = `мин. взнос ${t.minDp || 0}%`;
@@ -959,6 +963,13 @@
       host.querySelectorAll('.tariff-row').forEach(row => {
         const id = row.dataset.id;
         row.querySelector('[data-act="default"]')?.addEventListener('click', () => {
+          // Атомарно: снять is_default у всех, выставить у выбранного.
+          // saveAll → перехват setItem в db.js → push в облако с is_default
+          // (нормализатор пропустит is_default через ALLOWED_COLUMNS.tariffs).
+          const all = loadAll().map(t => ({ ...t, is_default: t.id === id }));
+          saveAll(all);
+          // Backward-compat: payd.tariffs.active читают калькуляторы и UI
+          // как фолбэк, пока они не переехали на is_default из БД.
           setActiveId(id);
           if (window.PaydApp?.toast) PaydApp.toast('Тариф по умолчанию изменён', 'success');
           render();
@@ -1151,7 +1162,12 @@
           const v = parseFloat(inp.value);
           if (!isNaN(v) && v >= 0) ijaraRates[parseInt(inp.dataset.irate, 10)] = v;
         });
+        // ...old сохраняет is_default + любые поля, которых нет в форме редактирования
+        // (created_at, и любые будущие колонки). Без spread is_default сбрасывался бы
+        // в undefined → нормализатор не отправлял бы его → флаг бы не доехал до БД.
+        const old = loadAll().find(t => t.id === id) || {};
         const updated = {
+          ...old,
           id,
           name: ed.querySelector('[data-fld="name"]').value.trim() || 'Тариф',
           desc: ed.querySelector('[data-fld="desc"]').value.trim(),

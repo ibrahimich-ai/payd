@@ -960,6 +960,10 @@
   }
 
   // ===== Resolve partner & tariff =====
+  // Тариф берём через единый PaydDB.tariffs.getActive() (см. db.js).
+  // Приоритет: ?tariff=<id> > partner.tariff > is_default > legacy.
+  // Локально оставлен только разбор URL и поиск партнёра в localStorage —
+  // эта часть UI-специфична и в getActive() не входит.
   function resolvePartner() {
     const params = new URLSearchParams(window.location.search);
     const partnerName = params.get('partner');
@@ -971,25 +975,36 @@
       const t = globals.byId[tariffId];
       return { name: null, tariff: normalizeTariff(t), tariffName: t.name };
     }
-    // 2) Partner — используется только для отметки источника, тариф всегда глобальный
+    // 2) Partner: getActive() сам разрулит partner.tariff vs is_default
     if (partnerName) {
       let all = {};
       try { all = JSON.parse(localStorage.getItem('payd.partners.v1') || '{}'); } catch (_) {}
-      const p = all[partnerName] || all[decodeURIComponent(partnerName)];
-      const base = globals.active || FALLBACK_TARIFF;
-      if (!p) return { name: decodeURIComponent(partnerName), tariff: normalizeTariff(base), missing: true };
-      return { name: p.name, partnerData: p, tariff: normalizeTariff(base) };
+      const decodedName = decodeURIComponent(partnerName);
+      const p = all[partnerName] || all[decodedName];
+      const tActive = (window.PaydDB?.tariffs?.getActive?.(p?.id || p?.name)) || globals.active || FALLBACK_TARIFF;
+      if (!p) return { name: decodedName, tariff: normalizeTariff(tActive), missing: true, tariffName: tActive.name };
+      return { name: p.name, partnerData: p, tariff: normalizeTariff(tActive), tariffName: tActive.name };
     }
-    // 3) No partner → global default tariff
-    if (globals.active) {
-      return { name: null, tariff: normalizeTariff(globals.active), tariffName: globals.active.name };
-    }
-    // 4) Hardcoded fallback
-    return { name: null, tariff: FALLBACK_TARIFF };
+    // 3) No partner → global default
+    const tActive = (window.PaydDB?.tariffs?.getActive?.()) || globals.active || FALLBACK_TARIFF;
+    return { name: null, tariff: normalizeTariff(tActive), tariffName: tActive.name };
   }
 
-  const partnerCtx = resolvePartner();
-  const tariff = partnerCtx.tariff;
+  let partnerCtx = resolvePartner();
+  let tariff = partnerCtx.tariff;
+
+  // Применяет (новый) активный тариф к UI калькулятора. Вызывается:
+  //  - при первом рендере (через renderPartnerBadge внизу),
+  //  - при storage-event на payd.tariffs.v1 / payd.tariffs.active (Шаг 4).
+  function applyTariff() {
+    partnerCtx = resolvePartner();
+    tariff = partnerCtx.tariff;
+    // Forward-references: функции определены ниже в файле, к моменту
+    // первого срабатывания storage-event они уже инициализированы.
+    if (typeof renderControls === 'function') renderControls();
+    if (typeof renderPartnerBadge === 'function') renderPartnerBadge();
+    if (typeof recalc === 'function') recalc();
+  }
 
   // ===== Initial state (clamped to tariff). URL-параметры price/dp/term/type
   // приходят из мини-калькулятора в app.js — применяем их поверх дефолтов. =====
@@ -1074,13 +1089,16 @@
   function renderPartnerBadge() {
     const eyebrow = document.getElementById('heroEyebrow');
     const sub = document.getElementById('heroSub');
-    if (partnerCtx.name && !partnerCtx.missing) {
-      eyebrow.innerHTML = `<span class="dot"></span>Тариф · ${partnerCtx.name}`;
+    // Имя тарифа: всегда показываем (берём из partnerCtx.tariffName,
+    // которое заполняется в resolvePartner() для всех веток).
+    const tariffLabel = partnerCtx.tariffName || tariff.name || 'тариф';
+    if (partnerCtx.missing) {
+      eyebrow.innerHTML = `<span class="dot" style="background:#f59e0b; box-shadow: 0 0 10px rgba(245,158,11,.5);"></span>Партнёр «${partnerCtx.name}» не найден — общий тариф · ${tariffLabel}`;
+    } else if (partnerCtx.name) {
+      eyebrow.innerHTML = `<span class="dot"></span>Партнёр · ${partnerCtx.name} · тариф «${tariffLabel}»`;
       sub.textContent = `Условия ${partnerCtx.name}: ${tariff.types.map(t => TYPE_LABELS[t]).join(' и ')}, сроки ${tariff.terms.join('/')} мес, мин. взнос ${tariff.minDp}%.`;
-    } else if (partnerCtx.missing) {
-      eyebrow.innerHTML = `<span class="dot" style="background:#f59e0b; box-shadow: 0 0 10px rgba(245,158,11,.5);"></span>Партнёр «${partnerCtx.name}» не найден — общий тариф`;
-    } else if (partnerCtx.tariffName) {
-      eyebrow.innerHTML = `<span class="dot"></span>Тариф · ${partnerCtx.tariffName}`;
+    } else {
+      eyebrow.innerHTML = `<span class="dot"></span>Тариф · ${tariffLabel}`;
     }
   }
 
@@ -1121,11 +1139,16 @@
       overpay = 0;
       monthly = principal / state.term;
     } else {
-      const annual = ratesFor(state.type)[state.term] ?? 12;
-      const markup = principal * (annual / 100) * (state.term / 12);
-      total = principal + markup;
-      overpay = markup;
-      monthly = total / state.term;
+      const annual = ratesFor(state.type)[state.term] ?? 0;
+      const m = (window.PaydDB?.calc?.murabahaPayment)
+        ? PaydDB.calc.murabahaPayment(state.price, state.dpPct, state.term, annual)
+        : (() => {
+            const markup = principal * (annual / 100) * (state.term / 12);
+            return { markup, total: principal + markup, monthly: (principal + markup) / state.term };
+          })();
+      total = m.total;
+      overpay = m.markup;
+      monthly = m.monthly;
     }
 
     monthlyAmount.textContent = fmt(monthly);
@@ -1188,10 +1211,18 @@
   }
 
   function buildFullSchedule() {
-    const principal = state.price * (1 - state.dpPct / 100);
-    const annual = (state.type === 'murabaha' || state.type === 'ijara') ? (ratesFor(state.type)[state.term] ?? 0) : 0;
-    const markup = (state.type === 'murabaha' || state.type === 'ijara') ? principal * (annual / 100) * (state.term / 12) : 0;
-    const monthly = (principal + markup) / state.term;
+    const isInstallment = (state.type === 'murabaha' || state.type === 'ijara');
+    const annual = isInstallment ? (ratesFor(state.type)[state.term] ?? 0) : 0;
+    const m = (window.PaydDB?.calc?.murabahaPayment)
+      ? PaydDB.calc.murabahaPayment(state.price, state.dpPct, state.term, isInstallment ? annual : 0)
+      : (() => {
+          const _p = state.price * (1 - state.dpPct / 100);
+          const _markup = isInstallment ? _p * (annual / 100) * (state.term / 12) : 0;
+          return { body: _p, markup: _markup, total: _p + _markup, monthly: (_p + _markup) / state.term };
+        })();
+    const principal = m.body;
+    const markup = m.markup;
+    const monthly = m.monthly;
     const today = new Date();
     let remaining = monthly * state.term;
     const rows = [];
@@ -1403,11 +1434,20 @@
   }
 
   function snapshotHTML() {
-    const principal = state.price * (1 - state.dpPct / 100);
-    const annual = (state.type === 'murabaha' || state.type === 'ijara') ? (ratesFor(state.type)[state.term] ?? 0) : 0;
-    const markup = (state.type === 'murabaha' || state.type === 'ijara') ? principal * (annual / 100) * (state.term / 12) : 0;
-    const total = principal + markup + state.price * state.dpPct / 100;
-    const monthly = (principal + markup) / state.term;
+    const isInstallment = (state.type === 'murabaha' || state.type === 'ijara');
+    const annual = isInstallment ? (ratesFor(state.type)[state.term] ?? 0) : 0;
+    const m = (window.PaydDB?.calc?.murabahaPayment)
+      ? PaydDB.calc.murabahaPayment(state.price, state.dpPct, state.term, isInstallment ? annual : 0)
+      : (() => {
+          const _p = state.price * (1 - state.dpPct / 100);
+          const _markup = isInstallment ? _p * (annual / 100) * (state.term / 12) : 0;
+          return { dp: state.price * state.dpPct / 100, body: _p, markup: _markup, total: _p + _markup, monthly: (_p + _markup) / state.term };
+        })();
+    const principal = m.body;
+    const markup = m.markup;
+    // total в snapshotHTML — "вся сумма к выплате включая первый взнос"
+    const total = m.body + m.markup + m.dp;
+    const monthly = m.monthly;
     return `
       <div class="snap">
         <div class="snap-row"><div class="l">Тип</div><div class="v">${state.type === 'standard' ? 'Стандартная' : 'Мурабаха'}</div></div>
@@ -1474,11 +1514,19 @@
         return;
       }
       const num = nextAppNumber();
-      const principal = state.price * (1 - state.dpPct / 100);
-      const annual = (state.type === 'murabaha' || state.type === 'ijara') ? (ratesFor(state.type)[state.term] ?? 0) : 0;
-      const markup = (state.type === 'murabaha' || state.type === 'ijara') ? principal * (annual / 100) * (state.term / 12) : 0;
-      const total = principal + markup + state.price * state.dpPct / 100;
-      const monthly = (principal + markup) / state.term;
+      const isInstallment = (state.type === 'murabaha' || state.type === 'ijara');
+      const annual = isInstallment ? (ratesFor(state.type)[state.term] ?? 0) : 0;
+      const m = (window.PaydDB?.calc?.murabahaPayment)
+        ? PaydDB.calc.murabahaPayment(state.price, state.dpPct, state.term, isInstallment ? annual : 0)
+        : (() => {
+            const _p = state.price * (1 - state.dpPct / 100);
+            const _markup = isInstallment ? _p * (annual / 100) * (state.term / 12) : 0;
+            return { dp: state.price * state.dpPct / 100, body: _p, markup: _markup, total: _p + _markup, monthly: (_p + _markup) / state.term };
+          })();
+      const principal = m.body;
+      const markup = m.markup;
+      const total = m.body + m.markup + m.dp;
+      const monthly = m.monthly;
       const app = {
         id: (window.PaydDB?.utils?.uuid?.() || _localGenAppId()),
         number: String(num).padStart(10, '0'),
@@ -1523,6 +1571,14 @@
       const p = ['+', d.slice(0,1), d.slice(1,4) ? ' ' + d.slice(1,4) : '', d.slice(4,7) ? ' ' + d.slice(4,7) : '', d.slice(7,9) ? '-' + d.slice(7,9) : '', d.slice(9,11) ? '-' + d.slice(9,11) : ''].join('');
       e.target.value = d.length ? p : '';
     });
+  });
+
+  // Realtime: реакция на изменения тарифа (settings.html на другой вкладке /
+  // realtime-эхо из db.js handleRealtimeChange → setItem).
+  window.addEventListener('storage', e => {
+    if (e.key === 'payd.tariffs.v1' || e.key === 'payd.tariffs.active' || e.key === 'payd.partners.v1') {
+      try { applyTariff(); } catch (err) { console.warn('[calculator] applyTariff failed', err); }
+    }
   });
 
 </script>

@@ -1292,22 +1292,23 @@ function openMiniCalc(opts = {}) {
         || null;
     } catch (_) { return null; }
   }
+  // Тариф через единый PaydDB.tariffs.getActive(partnerId?).
+  // Локальный fallback на loadGlobalActive() — на случай если db.js не успел
+  // загрузиться (mini-calc встраивается в страницы где app.js идёт сразу после).
   function resolveTariff() {
-    if (opts.partner) {
-      try {
-        const all = JSON.parse(localStorage.getItem('payd.partners.v1') || '{}');
-        const p = all[opts.partner];
-        if (p && p.tariff && (p.tariff.types?.length || p.tariff.terms?.length)) {
-          return { name: p.name, src: p.tariff };
-        }
-      } catch (_) {}
-    }
-    const g = loadGlobalActive();
-    return { name: opts.partner || (g ? g.name : null), src: g || FALLBACK };
+    const src = (window.PaydDB?.tariffs?.getActive?.(opts.partner)) || loadGlobalActive() || FALLBACK;
+    // Семантика name (для подзаголовка "Тариф · X"):
+    //   partner с custom tariff → имя партнёра (src._partnerName);
+    //   partner без custom → opts.partner (имя партнёра, тариф глобальный);
+    //   нет партнёра → имя глобального тарифа.
+    const name = opts.partner
+      ? (src._partnerName || opts.partner)
+      : (src.name || null);
+    return { name, src };
   }
-  const ctx = resolveTariff();
-  const t = ctx.src;
-  const tariff = {
+  let ctx = resolveTariff();
+  let t = ctx.src;
+  let tariff = {
     types: (t.types?.length) ? t.types : FALLBACK.types,
     terms: (t.terms?.length) ? t.terms : FALLBACK.terms,
     minDp: t.minDp ?? 0,
@@ -1317,7 +1318,7 @@ function openMiniCalc(opts = {}) {
 
   const fmt = n => Math.round(n).toLocaleString('ru-RU');
   const parseNum = s => parseInt(String(s).replace(/\D/g, ''), 10) || 0;
-  const TYPES = { standard: 'Стандартная', murabaha: 'Мурабаха' };
+  const TYPES = { standard: 'Стандартная', murabaha: 'Мурабаха', ijara: 'Иджара' };
   const MIN_PRICE = 10000;
 
   const state = {
@@ -1410,6 +1411,26 @@ function openMiniCalc(opts = {}) {
   dpSlider.min = tariff.minDp;
   dpSlider.value = state.dpPct;
 
+  // Применяет (новый) активный тариф к UI mini-calc. Вызывается:
+  //  - при первом рендере (через renderControls внизу),
+  //  - при storage-event на payd.tariffs.v1 / payd.tariffs.active.
+  // Без перезапуска mini-calc, без мигания UI.
+  function applyTariff() {
+    ctx = resolveTariff();
+    t = ctx.src || {};
+    tariff = {
+      types: (t.types?.length) ? t.types : FALLBACK.types,
+      terms: (t.terms?.length) ? t.terms : FALLBACK.terms,
+      minDp: t.minDp ?? 0,
+      maxAmount: t.maxAmount || 3000000,
+      murabahaRates: (t.murabahaRates && Object.keys(t.murabahaRates).length) ? t.murabahaRates : FALLBACK.murabahaRates
+    };
+    priceSlider.max = tariff.maxAmount;
+    dpSlider.min = tariff.minDp;
+    if (typeof renderControls === 'function') renderControls();
+    if (typeof recalc === 'function') recalc();
+  }
+
   // ----- Renderers -----
   function renderControls() {
     $('#pmc-types').innerHTML = tariff.types.map(t =>
@@ -1474,9 +1495,14 @@ function openMiniCalc(opts = {}) {
     if (state.type === 'standard') {
       total = principal; over = 0; monthly = principal / state.term;
     } else {
-      const annual = tariff.murabahaRates[state.term] ?? 12;
-      const markup = principal * (annual / 100) * (state.term / 12);
-      total = principal + markup; over = markup; monthly = total / state.term;
+      const annual = tariff.murabahaRates[state.term] ?? 0;
+      const m = (window.PaydDB?.calc?.murabahaPayment)
+        ? PaydDB.calc.murabahaPayment(state.price, state.dpPct, state.term, annual)
+        : (() => {
+            const _markup = principal * (annual / 100) * (state.term / 12);
+            return { markup: _markup, total: principal + _markup, monthly: (principal + _markup) / state.term };
+          })();
+      total = m.total; over = m.markup; monthly = m.monthly;
     }
     monthlyEl.textContent = fmt(monthly);
     totalEl.textContent = fmt(total + state.price * state.dpPct / 100);
@@ -1524,11 +1550,18 @@ function openMiniCalc(opts = {}) {
 
   // Apply — show inline form, then success
   applyBtn.addEventListener('click', () => {
-    const principal = state.price * (1 - state.dpPct / 100);
     const annual = state.type === 'murabaha' ? (tariff.murabahaRates[state.term] ?? 0) : 0;
-    const markup = state.type === 'murabaha' ? principal * (annual / 100) * (state.term / 12) : 0;
-    const total = principal + markup + state.price * state.dpPct / 100;
-    const monthly = (principal + markup) / state.term;
+    const m = (window.PaydDB?.calc?.murabahaPayment)
+      ? PaydDB.calc.murabahaPayment(state.price, state.dpPct, state.term, state.type === 'murabaha' ? annual : 0)
+      : (() => {
+          const _p = state.price * (1 - state.dpPct / 100);
+          const _markup = state.type === 'murabaha' ? _p * (annual / 100) * (state.term / 12) : 0;
+          return { dp: state.price * state.dpPct / 100, body: _p, markup: _markup, total: _p + _markup, monthly: (_p + _markup) / state.term };
+        })();
+    const principal = m.body;
+    const markup = m.markup;
+    const total = m.body + m.markup + m.dp;
+    const monthly = m.monthly;
 
     const content = host.querySelector('.pmc-content');
     content.innerHTML = `
@@ -1616,12 +1649,11 @@ function openMiniCalc(opts = {}) {
   function escClose(e) { if (e.key === 'Escape') closeMini(); }
   document.addEventListener('keydown', escClose);
 
-  // Если в другой вкладке поменяли дефолтный тариф или список тарифов —
-  // переоткрываем калькулятор, чтобы подхватить новые параметры.
+  // Если в другой вкладке поменяли тариф / список тарифов / партнёра —
+  // перерисовываем mini-calc через applyTariff (без перезапуска и мигания).
   function onTariffStorage(e) {
-    if (e.key === 'payd.tariffs.active' || e.key === 'payd.tariffs.v1') {
-      closeMini();
-      setTimeout(() => window.PaydApp?.openMiniCalc?.(opts), 300);
+    if (e.key === 'payd.tariffs.active' || e.key === 'payd.tariffs.v1' || e.key === 'payd.partners.v1') {
+      try { applyTariff(); } catch (err) { console.warn('[mini-calc] applyTariff failed', err); }
     }
   }
   window.addEventListener('storage', onTariffStorage);

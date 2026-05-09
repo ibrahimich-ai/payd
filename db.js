@@ -124,6 +124,69 @@
   }
 
   // ============================================================
+  //  TARIFFS — выбор активного тарифа.
+  //  Приоритет:
+  //    1) custom тариф у партнёра (partner.tariff — объект с types/terms);
+  //    2) тариф с is_default = true в payd.tariffs.v1;
+  //    3) фолбэк по payd.tariffs.active (legacy на переходный период,
+  //       пока is_default не везде выставлен в БД);
+  //    4) самый старый по created_at (последний резерв).
+  //  Возвращает объект тарифа с camelCase-полями (как читают калькуляторы)
+  //  + служебное поле _source ('partner' | 'default' | 'legacy' | 'fallback').
+  // ============================================================
+  function tariffsGetActive(partnerId) {
+    const all = JSON.parse(localStorage.getItem('payd.tariffs.v1') || '[]');
+    if (!Array.isArray(all) || !all.length) return null;
+
+    // 1) Custom тариф у партнёра
+    if (partnerId) {
+      try {
+        const partnersRaw = JSON.parse(localStorage.getItem('payd.partners.v1') || '{}');
+        const partnersList = Array.isArray(partnersRaw) ? partnersRaw : Object.values(partnersRaw);
+        const p = partnersList.find(x => String(x?.id || x?.name) === String(partnerId));
+        if (p && p.tariff && typeof p.tariff === 'object'
+            && (p.tariff.types?.length || p.tariff.terms?.length)) {
+          return { ...p.tariff, _source: 'partner', _partnerName: p.name };
+        }
+      } catch (_) {}
+    }
+
+    // 2) is_default = true
+    const def = all.find(t => t.is_default === true);
+    if (def) return { ...def, _source: 'default' };
+
+    // 3) Legacy фолбэк
+    const activeId = localStorage.getItem('payd.tariffs.active');
+    if (activeId) {
+      const byActive = all.find(t => t.id === activeId);
+      if (byActive) return { ...byActive, _source: 'legacy' };
+    }
+
+    // 4) Самый старый
+    const sorted = [...all].sort((a, b) =>
+      String(a?.created_at || '').localeCompare(String(b?.created_at || '')));
+    return { ...sorted[0], _source: 'fallback' };
+  }
+
+  // ============================================================
+  //  CALC — формула расчёта Мурабахи.
+  //  Возвращает RAW float (без Math.round) — округление применяется
+  //  в местах сохранения в БД, чтобы не менять семантику UI.
+  // ============================================================
+  function calcMurabahaPayment(amount, dpPercent, term, ratePercent) {
+    const a = Number(amount) || 0;
+    const dpP = Number(dpPercent) || 0;
+    const t = Number(term) || 0;
+    const r = Number(ratePercent) || 0;
+    const dp = a * dpP / 100;
+    const body = a - dp;
+    const markup = body * r / 100 * (t / 12);
+    const total = body + markup;
+    const monthly = t > 0 ? total / t : 0;
+    return { dp, body, markup, total, monthly };
+  }
+
+  // ============================================================
   //  Audit outbox — очередь оффлайн-записей в application_history
   // ============================================================
   const AUDIT_OUTBOX_KEY = 'payd.audit.outbox.v1';
@@ -1361,6 +1424,22 @@
       delete: applicationsDelete
     },
     utils: { uuid: utilsUuid },
+    /**
+     * tariffs.getActive(partnerId?) — единая точка выбора активного тарифа.
+     * @param {string} [partnerId] — id или name партнёра. Если у него есть
+     *   объект `tariff` с непустыми `types` или `terms` — он будет возвращён.
+     * @returns {object|null} объект тарифа из payd.tariffs.v1 (camelCase
+     *   поля: types, terms, minDp, maxAmount, murabahaRates, ijaraRates,
+     *   name, id, is_default), плюс служебные:
+     *     _source: 'partner' — кастомный тариф у партнёра;
+     *             | 'default' — выбран по is_default = true в БД;
+     *             | 'legacy'  — фолбэк на payd.tariffs.active в localStorage;
+     *             | 'fallback' — самый старый по created_at (последний резерв).
+     *     _partnerName: string — только при _source === 'partner'.
+     *   Возвращает null, если в payd.tariffs.v1 пусто (нет ни одного тарифа).
+     */
+    tariffs: { getActive: tariffsGetActive },
+    calc: { murabahaPayment: calcMurabahaPayment },
     templates: {
       render: templateRender,
       testContext: templateTestContext,

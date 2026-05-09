@@ -1343,6 +1343,21 @@
       }
     });
   });
+
+  // Реакция на изменения тарифов в БД (через realtime-эхо или другую вкладку):
+  // перезагружаем allTariffs и, если выбранный сейчас тариф ещё валиден,
+  // перестраиваем опции сроков. Без перезагрузки страницы.
+  window.addEventListener('storage', async e => {
+    if (e.key === 'payd.tariffs.v1') {
+      try {
+        allTariffs = (await PaydDB.list('tariffs')) || [];
+        if (form.deal.tariffId && allTariffs.some(t => t.id === form.deal.tariffId)) {
+          applyTariff();
+          recalc();
+        }
+      } catch (err) { console.warn('[zayavka-new] tariffs reload failed', err); }
+    }
+  });
 </script>
 </body>
 </html>
