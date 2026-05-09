@@ -995,6 +995,27 @@
     });
   });
 
+  // applications.id — uuid в БД. Если положить сюда 'app_<num>', нормализатор
+  // в db.js удалит его при push в облако, сервер выдаст свой uuid, а realtime
+  // вернёт запись с этим uuid → дубль в localStorage.
+  // Основной путь — PaydDB.utils.uuid() (см. db.js). Локальный фолбэк ниже —
+  // на случай, если db.js по какой-то причине не загрузился.
+  function _localGenAppId() {
+    if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+    if (window.crypto?.getRandomValues) {
+      const b = new Uint8Array(16);
+      window.crypto.getRandomValues(b);
+      b[6] = (b[6] & 0x0f) | 0x40;
+      b[8] = (b[8] & 0x3f) | 0x80;
+      const h = Array.from(b, x => x.toString(16).padStart(2, '0'));
+      return `${h.slice(0,4).join('')}-${h.slice(4,6).join('')}-${h.slice(6,8).join('')}-${h.slice(8,10).join('')}-${h.slice(10,16).join('')}`;
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0;
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+  }
+
   // Извлечённая CREATE-логика — вызывается после подтверждения в confirm-диалоге.
   async function doCreate() {
     // Защита от двойного клика
@@ -1006,7 +1027,7 @@
     btn.innerHTML = '<span class="ld-spinner"></span> Сохранение…';
 
     const number = String(Date.now()).slice(-10).padStart(10, '0');
-    const id = 'app_' + Date.now();
+    const id = window.PaydDB?.utils?.uuid?.() || _localGenAppId();
     const sale = +form.product.sale || 0;
     const down = +form.deal.down || 0;
     const remaining = Math.max(0, sale - down);

@@ -105,6 +105,25 @@
   }
 
   // ============================================================
+  //  UTILS — общие хелперы (доступны через PaydDB.utils.*)
+  // ============================================================
+  function utilsUuid() {
+    if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+    if (window.crypto?.getRandomValues) {
+      const b = new Uint8Array(16);
+      window.crypto.getRandomValues(b);
+      b[6] = (b[6] & 0x0f) | 0x40;
+      b[8] = (b[8] & 0x3f) | 0x80;
+      const h = Array.from(b, x => x.toString(16).padStart(2, '0'));
+      return `${h.slice(0,4).join('')}-${h.slice(4,6).join('')}-${h.slice(6,8).join('')}-${h.slice(8,10).join('')}-${h.slice(10,16).join('')}`;
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0;
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+  }
+
+  // ============================================================
   //  Audit outbox — очередь оффлайн-записей в application_history
   // ============================================================
   const AUDIT_OUTBOX_KEY = 'payd.audit.outbox.v1';
@@ -260,8 +279,12 @@
       _user = session.user;
       _isOnline = true;
       window.dispatchEvent(new CustomEvent('payd:cloud:connected', { detail: { user: _user } }));
-      // Background pull + realtime subscribe — для актуальных данных на разных устройствах
-      backgroundPull().catch(e => console.warn('[PaydDB] background pull', e.message));
+      // Background pull + realtime subscribe — для актуальных данных на разных устройствах.
+      // После pull — cleanupBrokenAppIds: удаляем legacy-фантомы, у которых
+      // в localStorage уже есть uuid-двойник от cloud-эха.
+      backgroundPull()
+        .then(() => cleanupBrokenAppIds())
+        .catch(e => console.warn('[PaydDB] background pull', e.message));
       subscribeRealtime();
       // Флашим offline audit-очередь, если что-то накопилось
       auditFlushOutbox().catch(() => {});
@@ -278,7 +301,9 @@
     _user = data.user;
     _isOnline = true;
     window.dispatchEvent(new CustomEvent('payd:cloud:connected', { detail: { user: _user } }));
-    backgroundPull().catch(e => console.warn('[PaydDB] background pull', e.message));
+    backgroundPull()
+      .then(() => cleanupBrokenAppIds())
+      .catch(e => console.warn('[PaydDB] background pull', e.message));
     subscribeRealtime();
     auditFlushOutbox().catch(() => {});
     return _user;
@@ -607,6 +632,10 @@
       const uuidLike = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       const uuidPkTables = ['partners','applications','cash_ops','payouts','reserv_stages'];
       if (uuidPkTables.includes(coll) && filtered.id && !uuidLike.test(String(filtered.id))) {
+        // Сигнал разработчику: где-то ещё генерируется не-uuid id для uuid-PK
+        // таблицы. Поведение прежнее (id удаляется, сервер выдаёт свой uuid),
+        // но теперь это видно в консоли — легко локализовать источник.
+        console.warn('[PaydDB] normalizeForCloud: non-uuid id for uuid-PK table', coll, '→ dropping', filtered.id);
         delete filtered.id;
       }
       return filtered;
@@ -1074,6 +1103,14 @@
   // ============================================================
   async function auditLog(appId, action, meta = {}) {
     if (!appId || !action) return;
+    // Защита от рассинхрона: app_id должен быть uuid (FK на applications.id).
+    // Если кто-то передал legacy-формат — не пишем в outbox, чтобы битая запись
+    // не блокировала flush всей пачки 400-ой ошибкой при следующем cloudConnect.
+    const _uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!_uuidRe.test(String(appId))) {
+      console.warn('[PaydDB] auditLog: non-uuid app_id, skipping', appId, action);
+      return;
+    }
     const ts = new Date().toISOString();
     const byUser = _user?.email || _user?.user_metadata?.full_name || 'system';
     const entry = { app_id: appId, action, by_user: byUser, meta, ts };
@@ -1107,15 +1144,83 @@
     try { arr = JSON.parse(localStorage.getItem(AUDIT_OUTBOX_KEY) || '[]'); }
     catch (_) { return 0; }
     if (!Array.isArray(arr) || !arr.length) return 0;
+    // Чистка отравленной очереди: legacy-записи с не-uuid app_id отбрасываем,
+    // иначе они блокируют flush всей пачки (400 invalid input syntax for type uuid).
+    const _uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const valid = arr.filter(e => _uuidRe.test(String(e?.app_id)));
+    const dropped = arr.length - valid.length;
+    if (dropped) console.warn('[PaydDB] audit outbox: dropping', dropped, 'rows with non-uuid app_id');
+    if (!valid.length) {
+      localStorage.setItem(AUDIT_OUTBOX_KEY, '[]');
+      return 0;
+    }
     try {
-      const { error } = await sb.from('application_history').insert(arr);
+      const { error } = await sb.from('application_history').insert(valid);
       if (error) throw error;
       localStorage.setItem(AUDIT_OUTBOX_KEY, '[]');
-      console.log('[PaydDB] audit outbox flushed:', arr.length, 'entries');
-      return arr.length;
+      console.log('[PaydDB] audit outbox flushed:', valid.length, 'entries');
+      return valid.length;
     } catch (e) {
       console.warn('[PaydDB] audit outbox flush failed:', e.message);
       return 0;
+    }
+  }
+
+  // ============================================================
+  //  CLEANUP — удаление фантомов в payd.calc.applications.
+  //  Заявка считается фантомом, если её id не uuid И в localStorage уже
+  //  есть uuid-двойник по бизнес-ключу (number + client_phone) — это
+  //  значит, cloud-копия точно подтянута через backgroundPull/realtime.
+  //  Фантомы без cloud-двойника НЕ удаляем: они ещё не уехали в облако
+  //  (например, оффлайн-сессия) — pushCollection их отправит, на следующем
+  //  cloudConnect самоочистятся.
+  //  Без флага: каждый cloudConnect → idempotent.
+  // ============================================================
+  function cleanupBrokenAppIds() {
+    try {
+      const def = COLLECTIONS.applications;
+      if (!def) return;
+      const isUuid = v => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v || ''));
+      const apps = JSON.parse(localStorage.getItem(def.ls) || '[]');
+      if (!Array.isArray(apps)) {
+        console.warn('[PaydDB] cleanupBrokenAppIds: unexpected non-array storage shape', typeof apps, '— skipping');
+        return;
+      }
+      if (!apps.length) return;
+
+      const phoneOf = a => String(a?.client_phone || a?.client?.phone || '').trim();
+      const dropped = [];
+      const keptNoPhone = [];
+      const keptNoTwin = [];
+      for (const b of apps) {
+        if (isUuid(b.id)) continue;
+        const bPhone = phoneOf(b);
+        if (!bPhone) {
+          // Без телефона матчинг ненадёжен — оставляем, диагностируем отдельно.
+          keptNoPhone.push(b);
+          continue;
+        }
+        const hasCloudTwin = apps.some(a =>
+          isUuid(a.id) &&
+          String(a.number) === String(b.number) &&
+          phoneOf(a) === bPhone
+        );
+        if (hasCloudTwin) dropped.push(b);
+        else keptNoTwin.push(b);
+      }
+      if (keptNoPhone.length) {
+        console.warn('[PaydDB] cleanupBrokenAppIds: keeping', keptNoPhone.length, 'broken-id apps without client_phone (matching unreliable, leaving as-is)');
+      }
+      if (keptNoTwin.length) {
+        console.warn('[PaydDB] cleanupBrokenAppIds: keeping', keptNoTwin.length, 'broken-id apps without cloud twin (will dedupe on next sync)');
+      }
+      if (!dropped.length) return;
+      console.warn('[PaydDB] cleanupBrokenAppIds: dropping', dropped.map(d => ({ id: d.id, number: d.number, ts: d.ts })));
+      const cleaned = apps.filter(a => !dropped.includes(a));
+      _origSetItem.call(localStorage, def.ls, JSON.stringify(cleaned));
+      notify('applications');
+    } catch (e) {
+      console.warn('[PaydDB] cleanupBrokenAppIds failed', e.message);
     }
   }
 
@@ -1255,6 +1360,7 @@
       create: applicationsCreate,
       delete: applicationsDelete
     },
+    utils: { uuid: utilsUuid },
     templates: {
       render: templateRender,
       testContext: templateTestContext,

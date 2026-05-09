@@ -1571,7 +1571,7 @@ function openMiniCalc(opts = {}) {
       try { list = JSON.parse(localStorage.getItem('payd.calc.applications') || '[]'); } catch (_) {}
       const num = String(200 + list.length + 1).padStart(10, '0');
       const app = {
-        id: 'A' + Date.now(),
+        id: (window.PaydDB?.utils?.uuid?.() || ('A' + Date.now())),
         number: num,
         ts: new Date().toISOString(),
         partner: opts.partner || null,

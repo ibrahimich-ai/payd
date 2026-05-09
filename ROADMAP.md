@@ -28,6 +28,43 @@
 
 ---
 
+### Не-uuid id-генераторы для uuid-PK таблиц (тот же класс бага, не выстрелил)
+
+**Контекст.** При фиксе бага audit log uuid (см. раздел выше) выяснилось: помимо `applications`, в проекте ещё несколько uuid-PK таблиц, для которых id генерируется в формате `<префикс>_<Date.now>`. По коду db.js:608 список uuid-PK таблиц: `partners, applications, cash_ops, payouts, reserv_stages`. Из них в коде создаются:
+
+- `cash_ops` — [zayavka.html:2157, 2247, 2364](zayavka.html#L2157), [kassa.html:641](kassa.html#L641): `'op_' + Date.now()`
+- (и через `applications` — уже починено)
+
+Также есть некритичные (не в списке uuid-PK, но всё равно стоит унифицировать на `PaydDB.utils.uuid()`):
+
+- `cashes` — [kassa.html:483](kassa.html#L483): `'c_' + Date.now()`
+- `cash_articles` — [kassa.html:850](kassa.html#L850): `'a_' + Date.now()`
+- `tariffs` — [settings.html:1177](settings.html#L1177): `'t_' + Date.now()`
+- `product_categories` — [products.html:333](products.html#L333): `'cat_' + Math.random()`
+
+**Что произойдёт, когда выстрелит** (для uuid-PK):
+1. Запись в localStorage с `'op_<num>'` id.
+2. `pushCollection` пушит в облако, нормализатор удаляет non-uuid id (теперь с warn — после фикса audit-бага).
+3. Сервер генерирует свой uuid.
+4. Realtime эхо приходит с серверным uuid → handleRealtimeChange ищет по pk, не находит → дубль в localStorage.
+
+То же самое, что было с `applications` 2026-05-08, просто пока не выстрелило, потому что cash_ops через realtime реже эхает на тех же страницах.
+
+**Что сделать:**
+1. Заменить генераторы на `window.PaydDB?.utils?.uuid?.()` с фолбэком на старый формат (тот же паттерн, что в applications-фиксе).
+2. Расширить `cleanupBrokenAppIds` в db.js до универсальной `cleanupBrokenIds(coll)`, прогонять для всех uuid-PK таблиц после `backgroundPull`.
+3. Аналогично — расширить outbox guard, если для других таблиц появится audit-логирование.
+
+**Зачем** (приоритет):
+- Не выстрелило — но это вопрос времени. cash_ops пишутся при каждом платеже, и если кто-то откроет zayavka.html (платежи) на двух устройствах одновременно — возможен дубль платежа.
+- Платёж задвоить **опаснее**, чем заявку: ломает баланс кассы, остаток долга, отчёты по выручке.
+
+**Зависимости:** требует уже применённого фикса audit log uuid (для `PaydDB.utils.uuid()`).
+
+**Контекст в истории:** разговор от 2026-05-09 о фиксе бага audit log uuid — там же диагностика причины (рассинхрон id между localStorage и облаком через `Storage.prototype.setItem` перехватчик + realtime).
+
+---
+
 ### Soft delete заявок
 
 **Задача.** Сейчас удаление заявки в `zhurnal.html` — hard delete с каскадом по `payments / partner_reservations / contracts(draft) / workflows`. `application_history` сохраняется как audit trail. Откат удаления невозможен — данные потеряны навсегда.

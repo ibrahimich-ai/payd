@@ -1325,6 +1325,27 @@
   // ============================================================
   const APPS_KEY = 'payd.calc.applications';
 
+  // applications.id в БД — uuid. calculator.html — standalone-страница без db.js,
+  // поэтому PaydDB.utils.uuid() здесь недоступен. Дублируем генератор локально:
+  // это инвариант схемы БД, не бизнес-логика, дублирование 5 строк — приемлемо.
+  // Если на calculator.html в будущем подключат db.js — fallback в строке создания
+  // заявки автоматически переключится на PaydDB.utils.uuid().
+  function _localGenAppId() {
+    if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+    if (window.crypto?.getRandomValues) {
+      const b = new Uint8Array(16);
+      window.crypto.getRandomValues(b);
+      b[6] = (b[6] & 0x0f) | 0x40;
+      b[8] = (b[8] & 0x3f) | 0x80;
+      const h = Array.from(b, x => x.toString(16).padStart(2, '0'));
+      return `${h.slice(0,4).join('')}-${h.slice(4,6).join('')}-${h.slice(6,8).join('')}-${h.slice(8,10).join('')}-${h.slice(10,16).join('')}`;
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0;
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+  }
+
   function loadApps() {
     try { return JSON.parse(localStorage.getItem(APPS_KEY) || '[]'); }
     catch (_) { return []; }
@@ -1459,7 +1480,7 @@
       const total = principal + markup + state.price * state.dpPct / 100;
       const monthly = (principal + markup) / state.term;
       const app = {
-        id: 'A' + Date.now(),
+        id: (window.PaydDB?.utils?.uuid?.() || _localGenAppId()),
         number: String(num).padStart(10, '0'),
         ts: new Date().toISOString(),
         partner: partnerCtx.name || null,
