@@ -960,10 +960,14 @@
   }
 
   // ===== Resolve partner & tariff =====
-  // Тариф берём через единый PaydDB.tariffs.getActive() (см. db.js).
+  // ⚠️ calculator.html — standalone-страница без db.js (см. <script> теги).
+  // window.PaydDB здесь ВСЕГДА undefined, optional chain ниже всегда падает
+  // на fallback `globals.active`. Это не баг — это design.
+  // Тариф через PaydDB.tariffs.getActive() (см. db.js) — для согласованности
+  // API на тех страницах, где db.js подключён. На calculator.html работает
+  // fallback на loadGlobalTariffs(), которая уже умеет приоритет
+  // activeId → is_default → first.
   // Приоритет: ?tariff=<id> > partner.tariff > is_default > legacy.
-  // Локально оставлен только разбор URL и поиск партнёра в localStorage —
-  // эта часть UI-специфична и в getActive() не входит.
   function resolvePartner() {
     const params = new URLSearchParams(window.location.search);
     const partnerName = params.get('partner');
@@ -1140,6 +1144,8 @@
       monthly = principal / state.term;
     } else {
       const annual = ratesFor(state.type)[state.term] ?? 0;
+      // calculator.html standalone — PaydDB не подключён, fallback ниже
+      // активен всегда. Формула идентична PaydDB.calc.murabahaPayment.
       const m = (window.PaydDB?.calc?.murabahaPayment)
         ? PaydDB.calc.murabahaPayment(state.price, state.dpPct, state.term, annual)
         : (() => {
@@ -1213,6 +1219,8 @@
   function buildFullSchedule() {
     const isInstallment = (state.type === 'murabaha' || state.type === 'ijara');
     const annual = isInstallment ? (ratesFor(state.type)[state.term] ?? 0) : 0;
+    // calculator.html standalone — PaydDB не подключён, fallback ниже
+    // активен всегда. Формула идентична PaydDB.calc.murabahaPayment.
     const m = (window.PaydDB?.calc?.murabahaPayment)
       ? PaydDB.calc.murabahaPayment(state.price, state.dpPct, state.term, isInstallment ? annual : 0)
       : (() => {
@@ -1436,6 +1444,8 @@
   function snapshotHTML() {
     const isInstallment = (state.type === 'murabaha' || state.type === 'ijara');
     const annual = isInstallment ? (ratesFor(state.type)[state.term] ?? 0) : 0;
+    // calculator.html standalone — PaydDB не подключён, fallback ниже
+    // активен всегда. Формула идентична PaydDB.calc.murabahaPayment.
     const m = (window.PaydDB?.calc?.murabahaPayment)
       ? PaydDB.calc.murabahaPayment(state.price, state.dpPct, state.term, isInstallment ? annual : 0)
       : (() => {
@@ -1516,6 +1526,8 @@
       const num = nextAppNumber();
       const isInstallment = (state.type === 'murabaha' || state.type === 'ijara');
       const annual = isInstallment ? (ratesFor(state.type)[state.term] ?? 0) : 0;
+      // calculator.html standalone — PaydDB не подключён, fallback ниже
+      // активен всегда. Формула идентична PaydDB.calc.murabahaPayment.
       const m = (window.PaydDB?.calc?.murabahaPayment)
         ? PaydDB.calc.murabahaPayment(state.price, state.dpPct, state.term, isInstallment ? annual : 0)
         : (() => {
@@ -1575,6 +1587,9 @@
 
   // Realtime: реакция на изменения тарифа (settings.html на другой вкладке /
   // realtime-эхо из db.js handleRealtimeChange → setItem).
+  // Storage listener работает на standalone-странице БЕЗ db.js: applyTariff →
+  // resolvePartner → loadGlobalTariffs() перечитывает localStorage с нуля,
+  // поэтому свежие данные подхватываются автоматически без PaydDB.
   window.addEventListener('storage', e => {
     if (e.key === 'payd.tariffs.v1' || e.key === 'payd.tariffs.active' || e.key === 'payd.partners.v1') {
       try { applyTariff(); } catch (err) { console.warn('[calculator] applyTariff failed', err); }
