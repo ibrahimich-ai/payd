@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Inbox · Payd</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  /* ─── общий каркас ────────────────────────────────────────────── */
+  .inbox-toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+  .inbox-toolbar .seg { display: inline-flex; background: var(--surface-2); border-radius: 10px; padding: 3px; }
+  .inbox-toolbar .seg button {
+    border: none; background: transparent; padding: 6px 14px; font-size: 13px;
+    font-weight: 600; color: var(--text-2); border-radius: 8px; cursor: pointer;
+  }
+  .inbox-toolbar .seg button.active { background: var(--surface); color: var(--text-1); box-shadow: var(--shadow-sm); }
+  .inbox-toolbar input.search { flex: 1; min-width: 200px; max-width: 360px; }
+  .inbox-toolbar select { padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; background: var(--surface); }
+
+  /* ─── канбан ──────────────────────────────────────────────────── */
+  .kb-board { display: grid; grid-auto-flow: column; grid-auto-columns: 280px; gap: 12px; overflow-x: auto; min-height: 70vh; padding-bottom: 8px; }
+  .kb-col { background: var(--surface-2); border-radius: var(--radius); padding: 10px; display: flex; flex-direction: column; min-height: 200px; }
+  .kb-col.drag-over { background: var(--primary-faded, #e0e7ff); }
+  .kb-col-head { display: flex; align-items: center; justify-content: space-between; padding: 4px 8px 10px; }
+  .kb-col-head .t { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; display: flex; align-items: center; gap: 6px; }
+  .kb-col-head .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .kb-col-head .n { font-size: 11px; color: var(--text-3); font-weight: 700; padding: 2px 8px; background: white; border-radius: 999px; }
+
+  .conv-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; cursor: pointer; transition: all .12s; position: relative; }
+  .conv-card:hover { border-color: var(--primary); box-shadow: var(--shadow-sm); }
+  .conv-card.unread { border-left: 3px solid var(--primary); padding-left: 9px; }
+  .conv-card .row { display: flex; align-items: center; gap: 8px; }
+  .conv-card .ch-badge { width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; }
+  .conv-card .name { font-size: 13px; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .conv-card .when { font-size: 10px; color: var(--text-3); }
+  .conv-card .preview { font-size: 12px; color: var(--text-2); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .conv-card .preview.out::before { content: '↗ '; color: var(--text-3); }
+  .conv-card .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; gap: 6px; }
+  .conv-card .tags { display: flex; gap: 4px; flex-wrap: wrap; }
+  .conv-card .tag { font-size: 10px; padding: 1px 6px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); }
+  .conv-card .badge-unread { font-size: 10px; background: var(--primary); color: white; padding: 1px 7px; border-radius: 999px; font-weight: 700; }
+  .conv-card .star { position: absolute; top: 8px; right: 10px; cursor: pointer; color: var(--text-3); }
+  .conv-card .star.on { color: var(--warning); }
+
+  /* ─── список + чат (двухпанельный режим) ──────────────────────── */
+  .inbox-grid { display: grid; grid-template-columns: 340px 1fr 300px; gap: 0; height: calc(100vh - 200px); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  @media (max-width: 1100px) { .inbox-grid { grid-template-columns: 300px 1fr; } .inbox-grid .client-panel { display: none; } }
+  @media (max-width: 700px)  { .inbox-grid { grid-template-columns: 1fr; } .inbox-grid .chat-panel, .inbox-grid .client-panel { display: none; } }
+
+  .conv-list { border-right: 1px solid var(--border); overflow-y: auto; }
+  .conv-list .item { padding: 10px 12px; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .conv-list .item:hover { background: var(--surface-2); }
+  .conv-list .item.active { background: var(--primary-faded, #eef2ff); }
+  .conv-list .item.unread { border-left: 3px solid var(--primary); padding-left: 9px; }
+
+  .chat-panel { display: flex; flex-direction: column; overflow: hidden; }
+  .chat-head { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+  .chat-head .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--surface-2); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--text-2); }
+  .chat-head .who { flex: 1; }
+  .chat-head .who .nm { font-weight: 700; font-size: 14px; }
+  .chat-head .who .meta { font-size: 11px; color: var(--text-3); }
+  .chat-head .actions { display: flex; gap: 6px; }
+
+  .chat-stream { flex: 1; overflow-y: auto; padding: 16px; background: var(--surface-2); display: flex; flex-direction: column; gap: 6px; }
+  .msg { max-width: 70%; padding: 8px 12px; border-radius: 14px; font-size: 13px; line-height: 1.4; word-wrap: break-word; }
+  .msg.in  { align-self: flex-start; background: var(--surface); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+  .msg.out { align-self: flex-end;   background: var(--primary, #4f46e5); color: white; border-bottom-right-radius: 4px; }
+  .msg .ts { font-size: 10px; opacity: .7; margin-top: 4px; display: block; }
+  .msg .att { margin-top: 6px; }
+  .msg .att img { max-width: 240px; max-height: 240px; border-radius: 6px; display: block; }
+  .msg .att a { color: inherit; text-decoration: underline; font-size: 12px; }
+  .msg.failed { background: var(--danger, #ef4444) !important; color: white; }
+
+  .chat-compose { border-top: 1px solid var(--border); padding: 10px 12px; display: flex; gap: 8px; align-items: flex-end; background: var(--surface); }
+  .chat-compose textarea { flex: 1; border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; font-family: inherit; font-size: 13px; resize: none; min-height: 38px; max-height: 120px; }
+  .chat-compose .send-actions { display: flex; gap: 4px; }
+
+  .client-panel { border-left: 1px solid var(--border); overflow-y: auto; padding: 14px; }
+  .client-panel h3 { font-size: 12px; text-transform: uppercase; color: var(--text-3); margin: 14px 0 6px; letter-spacing: .04em; font-weight: 700; }
+  .client-panel h3:first-child { margin-top: 0; }
+  .client-panel .field { font-size: 13px; margin-bottom: 4px; }
+  .client-panel .field .lbl { color: var(--text-3); font-size: 11px; }
+  .client-panel .app-link { display: block; padding: 6px 8px; background: var(--surface-2); border-radius: 6px; font-size: 12px; margin-bottom: 4px; }
+  .client-panel .app-link:hover { background: var(--primary-faded, #e0e7ff); }
+  .client-panel .note { font-size: 12px; padding: 6px 8px; background: var(--surface-2); border-radius: 6px; margin-bottom: 4px; }
+  .client-panel .note .meta { font-size: 10px; color: var(--text-3); margin-top: 3px; }
+  .client-panel .unlinked { padding: 10px; border: 1px dashed var(--border); border-radius: 8px; text-align: center; font-size: 12px; color: var(--text-3); }
+
+  .empty-state { padding: 60px 20px; text-align: center; color: var(--text-3); font-size: 13px; }
+
+  /* ─── chip channels ──────────────────────────────────────────── */
+  .ch-icon-wa { background: #25D366; color: white; }
+  .ch-icon-tg { background: #229ED9; color: white; }
+  .ch-icon-ig { background: linear-gradient(45deg, #F58529, #DD2A7B, #8134AF); color: white; }
+
+  /* ─── модалка calc-pick ──────────────────────────────────────── */
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: none; z-index: 1000; }
+  .modal-backdrop.show { display: flex; align-items: center; justify-content: center; }
+  .modal-box { background: var(--surface); border-radius: 14px; max-width: 720px; width: 90%; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
+  .modal-box header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .modal-box header h2 { margin: 0; font-size: 16px; }
+  .modal-box .body { padding: 18px; overflow-y: auto; }
+  .modal-box footer { padding: 12px 18px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+</style>
+</head>
+<body>
+<div id="app-root">
+
+<div class="page-head">
+  <div>
+    <h1>Inbox · Чаты с клиентами</h1>
+    <div class="desc" id="ix-desc">Загрузка…</div>
+  </div>
+  <div class="page-head-actions">
+    <a href="settings.html#channels" class="btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Каналы
+    </a>
+  </div>
+</div>
+
+<div class="inbox-toolbar">
+  <div class="seg" id="ix-view-seg">
+    <button data-view="kanban" class="active">Канбан</button>
+    <button data-view="list">Список</button>
+  </div>
+  <input class="search" id="ix-search" placeholder="Поиск по имени, телефону, тексту…" />
+  <select id="ix-filter-channel"><option value="">Все каналы</option></select>
+  <select id="ix-filter-assigned">
+    <option value="">Все операторы</option>
+    <option value="me">Мои</option>
+    <option value="unassigned">Без оператора</option>
+  </select>
+  <select id="ix-filter-unread">
+    <option value="">Все</option>
+    <option value="1">Непрочитанные</option>
+  </select>
+</div>
+
+<div id="ix-view-kanban" class="kb-board"></div>
+
+<div id="ix-view-list" class="inbox-grid" style="display:none">
+  <div class="conv-list" id="ix-list"></div>
+  <div class="chat-panel" id="ix-chat">
+    <div class="empty-state" id="ix-chat-empty">Выберите диалог из списка слева</div>
+  </div>
+  <div class="client-panel" id="ix-client"><div class="empty-state">—</div></div>
+</div>
+
+</div>
+
+<!-- модалка калькулятора -->
+<div class="modal-backdrop" id="modal-calc">
+  <div class="modal-box">
+    <header>
+      <h2>Расчёт для клиента</h2>
+      <button class="btn sm" onclick="closeCalcModal()">✕</button>
+    </header>
+    <div class="body">
+      <iframe id="calc-iframe" src="" style="width:100%; height:560px; border:0; border-radius:8px;"></iframe>
+    </div>
+    <footer>
+      <button class="btn" onclick="closeCalcModal()">Отмена</button>
+      <button class="btn primary" id="calc-send-btn">Отправить расчёт клиенту</button>
+    </footer>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="db.js"></script>
+<script src="app.js"></script>
+<script>
+  PaydApp.mountShell({ active: 'inbox', title: 'Inbox', breadcrumbs: [] });
+
+  // ─── state ───────────────────────────────────────────────────
+  const state = {
+    view: 'kanban',
+    search: '',
+    filterChannel: '',
+    filterAssigned: '',
+    filterUnread: '',
+    channels: [],
+    columns: [],
+    conversations: [],
+    messagesByConv: {},
+    notes: [],
+    activeConvId: null,
+    me: null
+  };
+
+  const $ = s => document.querySelector(s);
+  const fmtRel = ts => {
+    if (!ts) return '';
+    const d = (Date.now() - new Date(ts).getTime()) / 1000;
+    if (d < 60) return 'сейчас';
+    if (d < 3600) return Math.round(d/60) + ' мин';
+    if (d < 86400) return Math.round(d/3600) + ' ч';
+    if (d < 86400*7) return Math.round(d/86400) + ' дн';
+    return new Date(ts).toLocaleDateString('ru-RU');
+  };
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]);
+  const fmtMoney = v => Math.round(+v || 0).toLocaleString('ru-RU').replace(/,/g, ' ') + ' ₽';
+
+  function providerBadge(channelId) {
+    const ch = state.channels.find(c => c.id === channelId);
+    if (!ch) return { cls: '', label: '?', name: '—' };
+    if (ch.provider === 'green_api')    return { cls: 'ch-icon-wa', label: 'W', name: ch.name };
+    if (ch.provider === 'telegram_bot') return { cls: 'ch-icon-tg', label: 'T', name: ch.name };
+    return { cls: '', label: '?', name: ch.name };
+  }
+
+  // ─── загрузка ────────────────────────────────────────────────
+  async function load() {
+    state.me = PaydDB.cloud?.user?.() || null;
+    const [channels, columns, conversations] = await Promise.all([
+      PaydDB.list('channels'),
+      PaydDB.list('lead_columns'),
+      PaydDB.list('conversations')
+    ]);
+    state.channels = Array.isArray(channels) ? channels : Object.values(channels || {});
+    state.columns = (Array.isArray(columns) ? columns : Object.values(columns || {}))
+      .sort((a, b) => (a.position || 0) - (b.position || 0));
+    state.conversations = (Array.isArray(conversations) ? conversations : Object.values(conversations || {}))
+      .sort((a, b) => new Date(b.last_message_at || 0) - new Date(a.last_message_at || 0));
+
+    populateFilters();
+    render();
+  }
+
+  function populateFilters() {
+    const chSel = $('#ix-filter-channel');
+    const cur = chSel.value;
+    chSel.innerHTML = '<option value="">Все каналы</option>' +
+      state.channels.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+    chSel.value = cur;
+  }
+
+  function filtered() {
+    const q = state.search.trim().toLowerCase();
+    return state.conversations.filter(c => {
+      if (state.filterChannel && c.channel_id !== state.filterChannel) return false;
+      if (state.filterUnread === '1' && !(c.unread_count > 0)) return false;
+      if (state.filterAssigned === 'me' && c.assigned_to !== state.me?.id) return false;
+      if (state.filterAssigned === 'unassigned' && c.assigned_to) return false;
+      if (q) {
+        const hay = [c.contact_name, c.contact_phone, c.last_message_preview].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }
+
+  // ─── render ──────────────────────────────────────────────────
+  function render() {
+    if (state.view === 'kanban') {
+      $('#ix-view-kanban').style.display = '';
+      $('#ix-view-list').style.display = 'none';
+      renderKanban();
+    } else {
+      $('#ix-view-kanban').style.display = 'none';
+      $('#ix-view-list').style.display = '';
+      renderList();
+    }
+    const total = state.conversations.length;
+    const unread = state.conversations.filter(c => c.unread_count > 0).length;
+    $('#ix-desc').textContent = `Диалогов: ${total} · непрочитанных: ${unread}`;
+  }
+
+  function renderKanban() {
+    const data = filtered();
+    const byCol = {};
+    state.columns.forEach(c => byCol[c.id] = []);
+    data.forEach(c => {
+      const k = c.status_id || (state.columns[0]?.id);
+      if (!byCol[k]) byCol[k] = [];
+      byCol[k].push(c);
+    });
+
+    const board = $('#ix-view-kanban');
+    board.innerHTML = state.columns.map(col => `
+      <div class="kb-col" data-col="${esc(col.id)}">
+        <div class="kb-col-head">
+          <span class="t"><span class="dot" style="background:${esc(col.color)}"></span>${esc(col.name)}</span>
+          <span class="n">${(byCol[col.id] || []).length}</span>
+        </div>
+        <div class="kb-col-body">
+          ${(byCol[col.id] || []).slice(0, 50).map(renderConvCard).join('') || '<div class="empty-col" style="padding:20px 8px;text-align:center;color:var(--text-3);font-size:11px">—</div>'}
+        </div>
+      </div>
+    `).join('');
+
+    // drag-and-drop
+    board.querySelectorAll('.conv-card').forEach(card => {
+      card.draggable = true;
+      card.addEventListener('dragstart', e => { e.dataTransfer.setData('conv-id', card.dataset.id); });
+      card.addEventListener('click', () => openConversation(card.dataset.id));
+    });
+    board.querySelectorAll('.kb-col').forEach(col => {
+      col.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('drag-over'); });
+      col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+      col.addEventListener('drop', async e => {
+        e.preventDefault(); col.classList.remove('drag-over');
+        const id = e.dataTransfer.getData('conv-id');
+        const colId = col.dataset.col;
+        if (id && colId) {
+          await PaydDB.inbox.moveColumn(id, colId);
+          await load();
+        }
+      });
+    });
+    board.querySelectorAll('.conv-card .star').forEach(s => {
+      s.addEventListener('click', async e => {
+        e.stopPropagation();
+        const id = s.closest('.conv-card').dataset.id;
+        const conv = state.conversations.find(c => c.id === id);
+        if (!conv) return;
+        await PaydDB.upsert('conversations', { ...conv, starred: !conv.starred, updated_at: new Date().toISOString() });
+        await load();
+      });
+    });
+  }
+
+  function renderConvCard(c) {
+    const ch = providerBadge(c.channel_id);
+    const tags = (c.tags || []).map(t => `<span class="tag">${esc(t)}</span>`).join('');
+    return `
+      <div class="conv-card ${c.unread_count > 0 ? 'unread' : ''}" data-id="${esc(c.id)}">
+        <div class="star ${c.starred ? 'on' : ''}" title="Закрепить">★</div>
+        <div class="row">
+          <span class="ch-badge ${ch.cls}" title="${esc(ch.name)}">${ch.label}</span>
+          <span class="name">${esc(c.contact_name || c.contact_phone || c.contact_external_id)}</span>
+          <span class="when">${fmtRel(c.last_message_at)}</span>
+        </div>
+        <div class="preview ${c.last_message_direction === 'out' ? 'out' : ''}">${esc(c.last_message_preview || '—')}</div>
+        <div class="foot">
+          <div class="tags">${tags}</div>
+          ${c.unread_count > 0 ? `<span class="badge-unread">${c.unread_count}</span>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderList() {
+    const data = filtered();
+    $('#ix-list').innerHTML = data.length === 0
+      ? '<div class="empty-state">Нет диалогов</div>'
+      : data.map(c => {
+          const ch = providerBadge(c.channel_id);
+          return `
+            <div class="item ${c.unread_count > 0 ? 'unread' : ''} ${c.id === state.activeConvId ? 'active' : ''}" data-id="${esc(c.id)}">
+              <div style="display:flex;gap:8px;align-items:center">
+                <span class="ch-badge ${ch.cls}">${ch.label}</span>
+                <strong style="flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.contact_name || c.contact_phone || c.contact_external_id)}</strong>
+                <span style="font-size:10px;color:var(--text-3)">${fmtRel(c.last_message_at)}</span>
+              </div>
+              <div style="font-size:12px;color:var(--text-2);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.last_message_preview || '—')}</div>
+              ${c.unread_count > 0 ? `<span class="badge-unread" style="margin-top:4px;display:inline-block">${c.unread_count}</span>` : ''}
+            </div>
+          `;
+        }).join('');
+    $('#ix-list').querySelectorAll('.item').forEach(it => {
+      it.addEventListener('click', () => openConversation(it.dataset.id));
+    });
+    if (state.activeConvId) renderChat(); else { $('#ix-chat').innerHTML = '<div class="empty-state">Выберите диалог</div>'; $('#ix-client').innerHTML = '<div class="empty-state">—</div>'; }
+  }
+
+  async function openConversation(id) {
+    state.activeConvId = id;
+    state.view = 'list';
+    $('#ix-view-seg').querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.view === 'list'));
+    await PaydDB.inbox.markRead(id);
+    await loadConvMessages(id);
+    await loadConvNotes(id);
+    const conv = state.conversations.find(c => c.id === id);
+    if (conv) conv.unread_count = 0;
+    render();
+  }
+
+  async function loadConvMessages(convId) {
+    const all = await PaydDB.list('messages');
+    const arr = Array.isArray(all) ? all : Object.values(all || {});
+    state.messagesByConv[convId] = arr
+      .filter(m => m.conversation_id === convId)
+      .sort((a, b) => new Date(a.sent_at || 0) - new Date(b.sent_at || 0));
+  }
+
+  async function loadConvNotes(convId) {
+    const all = await PaydDB.list('conversation_notes');
+    const arr = Array.isArray(all) ? all : Object.values(all || {});
+    state.notes = arr.filter(n => n.conversation_id === convId)
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  }
+
+  function renderChat() {
+    const conv = state.conversations.find(c => c.id === state.activeConvId);
+    if (!conv) return;
+    const msgs = state.messagesByConv[conv.id] || [];
+    const ch = providerBadge(conv.channel_id);
+    const initials = (conv.contact_name || '?').split(/\s+/).map(s => s[0]).join('').slice(0, 2).toUpperCase();
+
+    $('#ix-chat').innerHTML = `
+      <div class="chat-head">
+        <div class="avatar">${esc(initials)}</div>
+        <div class="who">
+          <div class="nm">${esc(conv.contact_name || conv.contact_phone || conv.contact_external_id)}</div>
+          <div class="meta"><span class="ch-badge ${ch.cls}" style="display:inline-flex;width:14px;height:14px;font-size:8px;vertical-align:-2px">${ch.label}</span> ${esc(ch.name)} · ${esc(conv.contact_phone || '—')}</div>
+        </div>
+        <div class="actions">
+          <button class="btn sm" id="btn-calc">📊 Расчёт</button>
+          <button class="btn sm primary" id="btn-create-app">📋 Создать заявку</button>
+        </div>
+      </div>
+      <div class="chat-stream" id="chat-stream">
+        ${msgs.map(renderMsg).join('') || '<div class="empty-state">Сообщений пока нет</div>'}
+      </div>
+      <div class="chat-compose">
+        <textarea id="msg-input" placeholder="Написать сообщение…" rows="1"></textarea>
+        <div class="send-actions">
+          <button class="btn primary" id="btn-send">Отправить</button>
+        </div>
+      </div>
+    `;
+    const stream = $('#chat-stream');
+    stream.scrollTop = stream.scrollHeight;
+
+    $('#btn-send').addEventListener('click', sendCurrentMessage);
+    $('#msg-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendCurrentMessage(); }
+    });
+    $('#btn-calc').addEventListener('click', openCalcModal);
+    $('#btn-create-app').addEventListener('click', createApplicationFromChat);
+
+    renderClientPanel(conv);
+  }
+
+  function renderMsg(m) {
+    const att = (m.attachments || []).map(a => {
+      if (a.kind === 'image' && a.url) return `<div class="att"><img src="${esc(a.url)}" alt=""></div>`;
+      if (a.url) return `<div class="att"><a href="${esc(a.url)}" target="_blank">${esc(a.name || 'файл')}</a></div>`;
+      return '';
+    }).join('');
+    const statusIcon = m.direction === 'out'
+      ? (m.status === 'failed' ? ' ⚠'
+         : m.status === 'read' ? ' ✓✓'
+         : m.status === 'delivered' ? ' ✓✓'
+         : ' ✓')
+      : '';
+    return `
+      <div class="msg ${m.direction} ${m.status === 'failed' ? 'failed' : ''}">
+        ${m.body ? esc(m.body).replace(/\n/g, '<br>') : ''}
+        ${att}
+        <span class="ts">${fmtRel(m.sent_at)}${statusIcon}</span>
+      </div>
+    `;
+  }
+
+  async function sendCurrentMessage() {
+    const txt = $('#msg-input').value.trim();
+    if (!txt) return;
+    const convId = state.activeConvId;
+    $('#msg-input').value = '';
+    $('#msg-input').disabled = true;
+    try {
+      await PaydDB.inbox.sendMessage({ conversationId: convId, body: txt });
+      await loadConvMessages(convId);
+      renderChat();
+    } catch (e) {
+      PaydApp.toast?.('Не удалось отправить: ' + e.message, { type: 'error' });
+    } finally {
+      $('#msg-input').disabled = false;
+      $('#msg-input').focus();
+    }
+  }
+
+  // ─── панель клиента ──────────────────────────────────────────
+  async function renderClientPanel(conv) {
+    const panel = $('#ix-client');
+    let client = null;
+    if (conv.client_id) {
+      client = await PaydDB.get('clients', conv.client_id);
+    }
+    if (!client) {
+      panel.innerHTML = `
+        <div class="unlinked">
+          Клиент не привязан<br><br>
+          <button class="btn sm" id="btn-link-existing">Найти в базе</button>
+          <button class="btn sm primary" id="btn-create-client" style="margin-top:6px">Создать клиента</button>
+        </div>
+        <h3>Контакт</h3>
+        <div class="field"><div class="lbl">Имя из мессенджера</div>${esc(conv.contact_name || '—')}</div>
+        <div class="field"><div class="lbl">Телефон</div>${esc(conv.contact_phone || '—')}</div>
+        <h3>Внутренние заметки</h3>
+        ${renderNotes()}
+        ${renderNoteForm()}
+      `;
+      $('#btn-link-existing').addEventListener('click', () => linkClientByPhone(conv));
+      $('#btn-create-client').addEventListener('click', () => createClientFromConv(conv));
+      wireNoteForm(conv.id);
+      return;
+    }
+    const apps = await PaydDB.list('applications');
+    const appsArr = Array.isArray(apps) ? apps : Object.values(apps || {});
+    const myApps = appsArr.filter(a => a.client_id === client.id).slice(0, 10);
+    panel.innerHTML = `
+      <h3>Клиент</h3>
+      <div class="field"><div class="lbl">ФИО</div><strong>${esc(client.full_name || '—')}</strong></div>
+      <div class="field"><div class="lbl">Телефон</div>${esc(client.phone || '—')}</div>
+      <div class="field"><div class="lbl">Паспорт</div>${esc(client.passport || '—')}</div>
+      ${client.is_blacklisted ? '<div class="field" style="color:var(--danger);font-weight:700">⚠ В чёрном списке</div>' : ''}
+      <a href="client.html?id=${esc(client.id)}" class="btn sm" style="margin-top:8px">Открыть карточку</a>
+
+      <h3>История заявок (${myApps.length})</h3>
+      ${myApps.length === 0 ? '<div style="font-size:12px;color:var(--text-3)">Заявок нет</div>'
+        : myApps.map(a => `
+          <a href="zayavka.html?id=${esc(a.id)}" class="app-link">
+            <div style="font-weight:600">#${esc(a.number || '—')} · ${fmtMoney(a.amount || 0)}</div>
+            <div style="font-size:11px;color:var(--text-3)">${esc(a.product || '—')}</div>
+          </a>
+        `).join('')}
+
+      <h3>Теги диалога</h3>
+      <div id="tag-host">${(conv.tags || []).map(t => `<span class="tag" style="margin:2px">${esc(t)}</span>`).join('') || '<span style="font-size:12px;color:var(--text-3)">—</span>'}</div>
+      <button class="btn sm" id="btn-add-tag" style="margin-top:6px">+ Тег</button>
+
+      <h3>Внутренние заметки</h3>
+      ${renderNotes()}
+      ${renderNoteForm()}
+    `;
+    $('#btn-add-tag')?.addEventListener('click', () => addTag(conv));
+    wireNoteForm(conv.id);
+  }
+
+  function renderNotes() {
+    if (state.notes.length === 0) return '<div style="font-size:12px;color:var(--text-3)">Заметок нет</div>';
+    return state.notes.map(n => `
+      <div class="note">
+        ${esc(n.body)}
+        <div class="meta">${esc(n.user_name || '—')} · ${fmtRel(n.created_at)}</div>
+      </div>
+    `).join('');
+  }
+
+  function renderNoteForm() {
+    return `
+      <div style="margin-top:8px">
+        <textarea id="note-input" rows="2" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:6px;font-family:inherit;font-size:12px" placeholder="Комментарий для коллег…"></textarea>
+        <button class="btn sm" id="btn-add-note" style="margin-top:4px">Добавить заметку</button>
+      </div>
+    `;
+  }
+
+  function wireNoteForm(convId) {
+    $('#btn-add-note')?.addEventListener('click', async () => {
+      const txt = $('#note-input').value.trim();
+      if (!txt) return;
+      const user = PaydDB.cloud?.user?.();
+      await PaydDB.upsert('conversation_notes', {
+        id: PaydDB.utils.uuid(),
+        conversation_id: convId,
+        user_id: user?.id || null,
+        user_name: user?.user_metadata?.full_name || user?.email || 'Я',
+        body: txt,
+        created_at: new Date().toISOString()
+      });
+      await loadConvNotes(convId);
+      const conv = state.conversations.find(c => c.id === convId);
+      if (conv) renderClientPanel(conv);
+    });
+  }
+
+  async function addTag(conv) {
+    const tag = prompt('Тег:');
+    if (!tag) return;
+    const tags = [...(conv.tags || []), tag.trim()].filter((v, i, a) => v && a.indexOf(v) === i);
+    await PaydDB.upsert('conversations', { ...conv, tags, updated_at: new Date().toISOString() });
+    conv.tags = tags;
+    renderClientPanel(conv);
+  }
+
+  async function linkClientByPhone(conv) {
+    const phone = prompt('Телефон клиента для поиска:', conv.contact_phone || '');
+    if (!phone) return;
+    const norm = PaydDB.utils.phoneNormalize(phone);
+    if (!norm) { PaydApp.toast?.('Не похоже на телефон', { type: 'error' }); return; }
+    const clients = await PaydDB.list('clients');
+    const arr = Array.isArray(clients) ? clients : Object.values(clients || {});
+    const found = arr.find(c => PaydDB.utils.phoneNormalize(c.phone) === norm);
+    if (!found) { PaydApp.toast?.('Клиент не найден — создайте через кнопку', { type: 'warning' }); return; }
+    await PaydDB.inbox.linkClient(conv.id, found.id);
+    conv.client_id = found.id;
+    renderClientPanel(conv);
+    PaydApp.toast?.('Привязан: ' + found.full_name);
+  }
+
+  async function createClientFromConv(conv) {
+    const fullName = prompt('ФИО клиента:', conv.contact_name || '');
+    if (!fullName) return;
+    const phone = PaydDB.utils.phoneNormalize(conv.contact_phone || '') || '';
+    const client = {
+      id: PaydDB.utils.uuid(),
+      full_name: fullName,
+      phone,
+      created_at: new Date().toISOString()
+    };
+    await PaydDB.upsert('clients', client);
+    await PaydDB.inbox.linkClient(conv.id, client.id);
+    conv.client_id = client.id;
+    renderClientPanel(conv);
+    PaydApp.toast?.('Клиент создан');
+  }
+
+  // ─── создать заявку из чата ──────────────────────────────────
+  async function createApplicationFromChat() {
+    const conv = state.conversations.find(c => c.id === state.activeConvId);
+    if (!conv) return;
+    if (!conv.client_id) {
+      if (!confirm('Клиент не привязан. Создать заявку с контактом из мессенджера?')) return;
+    }
+    try {
+      const app = await PaydDB.inbox.createApplicationFromConversation(conv.id, {});
+      const appId = app.id || app[0]?.id;
+      if (appId) location.href = 'zayavka.html?id=' + encodeURIComponent(appId);
+    } catch (e) {
+      PaydApp.toast?.('Ошибка: ' + e.message, { type: 'error' });
+    }
+  }
+
+  // ─── калькулятор в модалке ───────────────────────────────────
+  function openCalcModal() {
+    const conv = state.conversations.find(c => c.id === state.activeConvId);
+    if (!conv) return;
+    const iframe = $('#calc-iframe');
+    iframe.src = 'calculator.html?inbox=' + encodeURIComponent(conv.id);
+    $('#modal-calc').classList.add('show');
+    $('#calc-send-btn').onclick = async () => {
+      try {
+        const calc = iframe.contentWindow?.window?.PaydCalcState;
+        let text;
+        if (calc && typeof calc === 'object') {
+          const price = calc.price, dp = Math.round(calc.price * calc.dpPct / 100);
+          text = `Расчёт рассрочки:\n— Товар: ${calc.product || '—'}\n— Цена: ${price?.toLocaleString('ru-RU')} ₽\n— Первый взнос: ${dp.toLocaleString('ru-RU')} ₽\n— На ${calc.term} мес × ${Math.round(calc.monthly).toLocaleString('ru-RU')} ₽/мес`;
+        } else {
+          text = prompt('Не удалось прочитать состояние калькулятора. Скопируйте текст вручную:', 'Расчёт рассрочки: …') || '';
+        }
+        if (text.trim()) {
+          await PaydDB.inbox.sendMessage({ conversationId: conv.id, body: text });
+          await loadConvMessages(conv.id);
+          renderChat();
+          PaydApp.toast?.('Расчёт отправлен');
+        }
+      } catch (e) {
+        PaydApp.toast?.('Ошибка: ' + e.message, { type: 'error' });
+      } finally {
+        closeCalcModal();
+      }
+    };
+  }
+  function closeCalcModal() {
+    $('#modal-calc').classList.remove('show');
+    $('#calc-iframe').src = '';
+  }
+  window.closeCalcModal = closeCalcModal;
+
+  // ─── toolbar ─────────────────────────────────────────────────
+  $('#ix-view-seg').addEventListener('click', e => {
+    const b = e.target.closest('button[data-view]');
+    if (!b) return;
+    $('#ix-view-seg').querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+    state.view = b.dataset.view;
+    render();
+  });
+  $('#ix-search').addEventListener('input', e => { state.search = e.target.value; render(); });
+  $('#ix-filter-channel').addEventListener('change', e => { state.filterChannel = e.target.value; render(); });
+  $('#ix-filter-assigned').addEventListener('change', e => { state.filterAssigned = e.target.value; render(); });
+  $('#ix-filter-unread').addEventListener('change', e => { state.filterUnread = e.target.value; render(); });
+
+  // ─── realtime ────────────────────────────────────────────────
+  load();
+  if (window.PaydDB?.subscribe) {
+    PaydDB.subscribe('conversations', load);
+    PaydDB.subscribe('messages', async () => {
+      if (state.activeConvId) await loadConvMessages(state.activeConvId);
+      await load();
+    });
+    PaydDB.subscribe('channels', load);
+    PaydDB.subscribe('lead_columns', load);
+    PaydDB.subscribe('conversation_notes', async () => {
+      if (state.activeConvId) await loadConvNotes(state.activeConvId);
+      if (state.activeConvId) {
+        const c = state.conversations.find(x => x.id === state.activeConvId);
+        if (c) renderClientPanel(c);
+      }
+    });
+  }
+</script>
+</body>
+</html>

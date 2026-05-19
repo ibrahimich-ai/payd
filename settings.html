@@ -300,6 +300,19 @@
       </div>
     </div>
 
+    <!-- ===================== INBOX CHANNELS (V4) ===================== -->
+    <div class="card" data-sec="integrations" id="channels">
+      <div class="card-hd">
+        <h3>Каналы общения · Inbox</h3>
+        <span class="h-sub">WhatsApp через Green API + Telegram Bot · подключённые каналы используются в inbox.html</span>
+      </div>
+      <div id="ch-list" style="display:flex;flex-direction:column;gap:8px"></div>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <button class="btn primary" id="ch-add-wa">+ Подключить WhatsApp (Green API)</button>
+        <button class="btn primary" id="ch-add-tg">+ Подключить Telegram-бот</button>
+      </div>
+    </div>
+
     <!-- ===================== SCORING & SB ===================== -->
     <div class="card" data-sec="scoring">
       <div class="card-hd">
@@ -1610,6 +1623,167 @@
     const saved = (() => { try { return localStorage.getItem('payd.settings.section'); } catch (_) { return null; } })();
     const valid = saved && document.querySelector(`.sn-item[data-sec="${saved}"]`);
     showSection(valid ? saved : 'general');
+  })();
+</script>
+
+<script>
+  // ============================================================
+  //  CHANNELS — управление подключёнными каналами Inbox (V4)
+  //  WhatsApp через Green API + Telegram Bot API
+  // ============================================================
+  (function() {
+    if (!window.PaydDB) return;
+    const $ = s => document.querySelector(s);
+
+    function webhookSecret() {
+      // 24 байт энтропии — base64url
+      const arr = new Uint8Array(24);
+      crypto.getRandomValues(arr);
+      return btoa(String.fromCharCode(...arr)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    function webhookUrl(secret, provider) {
+      const projectUrl = (window.PAYD_SUPABASE_URL || localStorage.getItem('payd.supabase.url') || '').replace(/\/+$/, '');
+      if (!projectUrl) return `https://<ваш-проект>.supabase.co/functions/v1/inbox-webhook?provider=${provider}&secret=${encodeURIComponent(secret)}`;
+      return `${projectUrl}/functions/v1/inbox-webhook?provider=${provider}&secret=${encodeURIComponent(secret)}`;
+    }
+
+    async function loadChannels() {
+      const all = await PaydDB.list('channels');
+      const arr = Array.isArray(all) ? all : Object.values(all || {});
+      const host = $('#ch-list');
+      if (!host) return;
+      if (arr.length === 0) {
+        host.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-3);font-size:13px;border:1px dashed var(--border);border-radius:8px">Каналы не подключены</div>';
+        return;
+      }
+      host.innerHTML = arr.map(ch => `
+        <div class="integration-card" data-id="${ch.id}">
+          <div class="int-logo" style="background:${ch.provider === 'green_api' ? 'linear-gradient(135deg, #d1fae5, #a7f3d0)' : 'linear-gradient(135deg, #dbeafe, #bfdbfe)'}">
+            ${ch.provider === 'green_api' ? '💚' : '✈️'}
+          </div>
+          <div class="info">
+            <div class="name">${ch.name || '—'}</div>
+            <div class="desc">${ch.provider === 'green_api' ? 'WhatsApp · Green API' : 'Telegram Bot API'}</div>
+          </div>
+          <span class="badge ${ch.is_active ? 'success dot' : 'gray'}">${ch.is_active ? 'Активен' : 'Выключен'}</span>
+          <button class="btn sm" data-act="config">Настроить</button>
+          <button class="btn sm" data-act="webhook">Webhook URL</button>
+          <button class="btn sm" data-act="test">Тест</button>
+        </div>
+      `).join('');
+
+      host.querySelectorAll('.integration-card').forEach(card => {
+        const id = card.dataset.id;
+        const ch = arr.find(x => x.id === id);
+        card.querySelector('[data-act="config"]').onclick = () => editChannel(ch);
+        card.querySelector('[data-act="webhook"]').onclick = () => {
+          const url = webhookUrl(ch.webhook_secret, ch.provider);
+          navigator.clipboard?.writeText(url);
+          alert('Webhook URL скопирован в буфер:\n\n' + url + '\n\n' + (ch.provider === 'green_api'
+            ? 'Вставьте в Green API → Настройки инстанса → URL для отправки уведомлений (Webhooks)'
+            : 'Зарегистрируйте через POST https://api.telegram.org/bot<TOKEN>/setWebhook'));
+        };
+        card.querySelector('[data-act="test"]').onclick = () => testChannel(ch);
+      });
+    }
+
+    async function editChannel(ch) {
+      const isWa = ch.provider === 'green_api';
+      const cfg = ch.provider_config || {};
+      const name = prompt('Название канала:', ch.name) ?? ch.name;
+      if (name === null) return;
+
+      let newCfg;
+      if (isWa) {
+        const idInstance = prompt('idInstance (Green API):', cfg.idInstance || '');
+        if (idInstance === null) return;
+        const apiTokenInstance = prompt('apiTokenInstance (Green API):', cfg.apiTokenInstance || '');
+        if (apiTokenInstance === null) return;
+        const apiUrl = prompt('API URL (обычно https://api.green-api.com или https://7103.api.greenapi.com):', cfg.apiUrl || 'https://api.green-api.com');
+        newCfg = { idInstance, apiTokenInstance, apiUrl: apiUrl || 'https://api.green-api.com' };
+      } else {
+        const botToken = prompt('Bot Token (от @BotFather):', cfg.botToken || '');
+        if (botToken === null) return;
+        newCfg = { botToken };
+      }
+
+      await PaydDB.upsert('channels', {
+        ...ch,
+        name,
+        provider_config: newCfg,
+        updated_at: new Date().toISOString()
+      });
+      await loadChannels();
+    }
+
+    async function addChannel(provider) {
+      const name = prompt(provider === 'green_api' ? 'Название WhatsApp-канала:' : 'Название Telegram-бота:',
+                          provider === 'green_api' ? 'Основной WhatsApp' : 'TG-бот продаж');
+      if (!name) return;
+
+      let cfg;
+      if (provider === 'green_api') {
+        const idInstance = prompt('idInstance из ЛК Green API:');
+        if (!idInstance) return;
+        const apiTokenInstance = prompt('apiTokenInstance из ЛК Green API:');
+        if (!apiTokenInstance) return;
+        cfg = { idInstance, apiTokenInstance, apiUrl: 'https://api.green-api.com' };
+      } else {
+        const botToken = prompt('Bot Token (от @BotFather):');
+        if (!botToken) return;
+        cfg = { botToken };
+      }
+
+      const ch = {
+        id: PaydDB.utils.uuid(),
+        name,
+        provider,
+        provider_config: cfg,
+        webhook_secret: webhookSecret(),
+        is_active: true,
+        display_color: provider === 'green_api' ? '#25D366' : '#229ED9',
+        created_at: new Date().toISOString()
+      };
+      await PaydDB.upsert('channels', ch);
+      const url = webhookUrl(ch.webhook_secret, provider);
+      alert('Канал создан.\n\nВаш webhook URL (скопирован в буфер):\n' + url + '\n\nСохраните и пропишите его в ' +
+            (provider === 'green_api' ? 'Green API ЛК → Настройки → Webhooks' : 'Telegram через setWebhook'));
+      navigator.clipboard?.writeText(url);
+      await loadChannels();
+    }
+
+    async function testChannel(ch) {
+      try {
+        if (ch.provider === 'green_api') {
+          const cfg = ch.provider_config || {};
+          const r = await fetch(`${cfg.apiUrl || 'https://api.green-api.com'}/waInstance${cfg.idInstance}/getStateInstance/${cfg.apiTokenInstance}`);
+          const j = await r.json();
+          alert('Green API state: ' + (j.stateInstance || JSON.stringify(j)));
+        } else {
+          const token = ch.provider_config?.botToken;
+          const r = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+          const j = await r.json();
+          alert(j.ok ? 'Бот: @' + j.result.username + ' (id ' + j.result.id + ')' : 'Ошибка: ' + (j.description || 'неизвестно'));
+        }
+      } catch (e) {
+        alert('Ошибка: ' + e.message);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      $('#ch-add-wa')?.addEventListener('click', () => addChannel('green_api'));
+      $('#ch-add-tg')?.addEventListener('click', () => addChannel('telegram_bot'));
+      loadChannels();
+      PaydDB.subscribe?.('channels', loadChannels);
+
+      // авто-открыть секцию если URL хеш #channels
+      if (location.hash === '#channels') {
+        const nav = document.querySelector('.sn-item[data-sec="integrations"]');
+        nav?.click();
+        setTimeout(() => document.getElementById('channels')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+      }
+    });
   })();
 </script>
 </body>

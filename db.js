@@ -48,7 +48,13 @@
     contracts:       { table: 'contracts',             ls: 'payd.contracts.v1',          type: 'list', pk: 'id' },
     promo_campaigns: { table: 'promo_campaigns',       ls: 'payd.promo.v1',              type: 'list', pk: 'id' },
     payments:        { table: 'payments',              ls: 'payd.payments.v1',           type: 'list', pk: 'id' },
-    kanban:          { table: null,                    ls: 'payd.kanban.v1',             type: 'map',  pk: 'leadId' } // local-only
+    kanban:          { table: null,                    ls: 'payd.kanban.v1',             type: 'map',  pk: 'leadId' }, // local-only
+    // Inbox (Migration V4) — омниканальный чат + канбан диалогов
+    channels:           { table: 'channels',            ls: 'payd.inbox.channels.v1',     type: 'list', pk: 'id' },
+    lead_columns:       { table: 'lead_columns',        ls: 'payd.inbox.columns.v1',      type: 'list', pk: 'id' },
+    conversations:      { table: 'conversations',       ls: 'payd.inbox.conversations.v1', type: 'list', pk: 'id' },
+    messages:           { table: 'messages',            ls: 'payd.inbox.messages.v1',     type: 'list', pk: 'id' },
+    conversation_notes: { table: 'conversation_notes',  ls: 'payd.inbox.notes.v1',        type: 'list', pk: 'id' }
   };
 
   // ============================================================
@@ -121,6 +127,20 @@
       const r = Math.random() * 16 | 0;
       return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
     });
+  }
+
+  // Нормализация телефона к виду +7XXXXXXXXXX (для поиска клиента
+  // по контакту из WhatsApp/Telegram). Поддерживает 8XXX, 7XXX,
+  // +7 (XXX) XXX-XX-XX, whatsapp chatId формата 7XXXXXXXXXX@c.us.
+  function phoneNormalize(raw) {
+    if (raw == null) return null;
+    let s = String(raw).replace(/@[a-z.]+$/i, '');       // strip @c.us / @s.whatsapp.net
+    s = s.replace(/[^\d]/g, '');                          // только цифры
+    if (!s) return null;
+    if (s.length === 11 && s[0] === '8') s = '7' + s.slice(1);
+    if (s.length === 10) s = '7' + s;
+    if (s.length !== 11 || s[0] !== '7') return null;
+    return '+' + s;
   }
 
   // ============================================================
@@ -571,7 +591,13 @@
     products:          ['id','name','category_id','field_values','price','purchase_price','status','is_active','stock','sku'],
     contracts:         ['id','number','app_id','type','signed_at','signed_by','status','terminated_at','termination_reason'],
     promo_campaigns:   ['id','name','code','description','type','value','start_at','end_at','partner_id','is_active'],
-    payments:          ['id','app_id','num','amount','method','cash_id','cashier_id','partner_id','due_date','status','paid_at','kind']
+    payments:          ['id','app_id','num','amount','method','cash_id','cashier_id','partner_id','due_date','status','paid_at','kind'],
+    // V4: inbox / каналы
+    channels:          ['id','name','provider','provider_config','webhook_secret','is_active','display_color','created_at','updated_at'],
+    lead_columns:      ['id','name','position','color','is_default','is_final','created_at'],
+    conversations:     ['id','channel_id','contact_external_id','contact_phone','contact_name','contact_avatar','client_id','status_id','assigned_to','tags','starred','unread_count','last_message_at','last_message_preview','last_message_direction','created_at','updated_at'],
+    messages:          ['id','conversation_id','direction','body','attachments','sender_name','sender_user_id','provider_msg_id','status','status_error','sent_at','delivered_at','read_at','created_at'],
+    conversation_notes:['id','conversation_id','user_id','user_name','body','created_at']
   };
 
   function normalizeForCloud(coll, item) {
@@ -991,6 +1017,202 @@
     } catch (_) {
       return null;
     }
+  }
+
+  // ============================================================
+  //  INBOX — омниканальный чат (Green API / Telegram)
+  //  conversations / messages / lead_columns / channels
+  // ============================================================
+
+  // Найти conversation по (channel_id, contact_external_id) или создать.
+  // Авто-привязывает client_id если телефон контакта найден в clients.
+  async function inboxUpsertConversation({ channelId, externalId, phone, name, avatar }) {
+    if (!channelId || !externalId) throw new Error('inboxUpsertConversation: channelId + externalId required');
+    const all = await list('conversations');
+    const arr = Array.isArray(all) ? all : Object.values(all || {});
+    let conv = arr.find(c => c.channel_id === channelId && String(c.contact_external_id) === String(externalId));
+
+    const normPhone = phoneNormalize(phone);
+
+    if (!conv) {
+      // подбираем client_id по телефону
+      let clientId = null;
+      if (normPhone) {
+        const clients = await list('clients');
+        const carr = Array.isArray(clients) ? clients : Object.values(clients || {});
+        const found = carr.find(c => phoneNormalize(c.phone) === normPhone);
+        if (found) clientId = found.id;
+      }
+      // дефолтная колонка канбана
+      const cols = await list('lead_columns');
+      const carr = Array.isArray(cols) ? cols : Object.values(cols || {});
+      const defCol = carr.find(c => c.is_default) || carr[0];
+
+      conv = {
+        id: utilsUuid(),
+        channel_id: channelId,
+        contact_external_id: String(externalId),
+        contact_phone: normPhone,
+        contact_name: name || null,
+        contact_avatar: avatar || null,
+        client_id: clientId,
+        status_id: defCol?.id || null,
+        tags: [],
+        starred: false,
+        unread_count: 0,
+        last_message_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      await upsert('conversations', conv);
+    } else if (normPhone && !conv.contact_phone) {
+      // подтянуть телефон если узнали позже
+      conv = { ...conv, contact_phone: normPhone, updated_at: new Date().toISOString() };
+      await upsert('conversations', conv);
+    }
+    return conv;
+  }
+
+  // Добавить входящее сообщение в локальное хранилище.
+  // (Серверный поток приходит через Edge Function → БД → Realtime.)
+  async function inboxAppendIncoming({ conversationId, body, attachments, providerMsgId, senderName, sentAt }) {
+    if (!conversationId) throw new Error('inboxAppendIncoming: conversationId required');
+    const msg = {
+      id: utilsUuid(),
+      conversation_id: conversationId,
+      direction: 'in',
+      body: body || null,
+      attachments: attachments || [],
+      sender_name: senderName || null,
+      provider_msg_id: providerMsgId || null,
+      status: 'received',
+      sent_at: sentAt || new Date().toISOString(),
+      created_at: new Date().toISOString()
+    };
+    await upsert('messages', msg);
+    // обновим last_message_* локально (триггер в БД сделает то же при синке)
+    const conv = await get('conversations', conversationId);
+    if (conv) {
+      await upsert('conversations', {
+        ...conv,
+        last_message_at: msg.sent_at,
+        last_message_preview: (msg.body || '[вложение]').slice(0, 200),
+        last_message_direction: 'in',
+        unread_count: (conv.unread_count || 0) + 1,
+        updated_at: new Date().toISOString()
+      });
+    }
+    return msg;
+  }
+
+  // Отправить исходящее сообщение через Edge Function `inbox-send`.
+  // Локально сохраняем сразу со status='sent' для optimistic UI;
+  // Edge Function вернёт provider_msg_id и обновит статус.
+  async function inboxSendMessage({ conversationId, body, attachments }) {
+    if (!conversationId) throw new Error('inboxSendMessage: conversationId required');
+    const conv = await get('conversations', conversationId);
+    if (!conv) throw new Error('conversation not found: ' + conversationId);
+
+    const user = cloudUser();
+    const msg = {
+      id: utilsUuid(),
+      conversation_id: conversationId,
+      direction: 'out',
+      body: body || null,
+      attachments: attachments || [],
+      sender_name: user?.user_metadata?.full_name || user?.email || 'Оператор',
+      sender_user_id: user?.id || null,
+      status: 'sent',
+      sent_at: new Date().toISOString(),
+      created_at: new Date().toISOString()
+    };
+    await upsert('messages', msg);
+
+    // вызов Edge Function для реальной доставки в канал
+    if (_isOnline && _sb) {
+      try {
+        const { data, error } = await _sb.functions.invoke('inbox-send', {
+          body: {
+            conversation_id: conversationId,
+            channel_id: conv.channel_id,
+            external_id: conv.contact_external_id,
+            body: msg.body,
+            attachments: msg.attachments,
+            message_id: msg.id
+          }
+        });
+        if (error) throw error;
+        if (data?.provider_msg_id) {
+          await upsert('messages', { ...msg, provider_msg_id: data.provider_msg_id });
+        }
+      } catch (e) {
+        console.warn('[PaydDB] inbox-send failed', e?.message || e);
+        await upsert('messages', { ...msg, status: 'failed', status_error: String(e?.message || e) });
+        throw e;
+      }
+    }
+
+    // обновим last_message_* в conversation локально
+    await upsert('conversations', {
+      ...conv,
+      last_message_at: msg.sent_at,
+      last_message_preview: (msg.body || '[вложение]').slice(0, 200),
+      last_message_direction: 'out',
+      updated_at: new Date().toISOString()
+    });
+    return msg;
+  }
+
+  // Сбросить счётчик непрочитанных при открытии диалога оператором.
+  async function inboxMarkRead(conversationId) {
+    if (!conversationId) return;
+    const conv = await get('conversations', conversationId);
+    if (!conv || (conv.unread_count || 0) === 0) return;
+    await upsert('conversations', { ...conv, unread_count: 0, updated_at: new Date().toISOString() });
+  }
+
+  // Перенос диалога в другую колонку канбана (drag-and-drop).
+  async function inboxMoveColumn(conversationId, newStatusId) {
+    if (!conversationId || !newStatusId) return;
+    const conv = await get('conversations', conversationId);
+    if (!conv) return;
+    await upsert('conversations', { ...conv, status_id: newStatusId, updated_at: new Date().toISOString() });
+    await auditLog(null, 'conversation.moved', {
+      conversation_id: conversationId,
+      from_status: conv.status_id,
+      to_status: newStatusId
+    });
+  }
+
+  // Привязать диалог к существующему/новому клиенту.
+  async function inboxLinkClient(conversationId, clientId) {
+    if (!conversationId) return;
+    const conv = await get('conversations', conversationId);
+    if (!conv) return;
+    await upsert('conversations', { ...conv, client_id: clientId || null, updated_at: new Date().toISOString() });
+  }
+
+  // Создать заявку из диалога — клиент и канал прокинутся в applications.
+  async function inboxCreateApplicationFromConversation(conversationId, applicationDraft = {}) {
+    const conv = await get('conversations', conversationId);
+    if (!conv) throw new Error('conversation not found');
+    const app = {
+      ...applicationDraft,
+      conversation_id: conversationId,
+      client_id: conv.client_id || applicationDraft.client_id || null,
+      client_name: applicationDraft.client_name || conv.contact_name || null,
+      client_phone: applicationDraft.client_phone || conv.contact_phone || null,
+      source: 'inbox'
+    };
+    const created = await applicationsCreate(app);
+    // переводим диалог в финальную колонку «Заявка создана»
+    const cols = await list('lead_columns');
+    const carr = Array.isArray(cols) ? cols : Object.values(cols || {});
+    const finalCol = carr.find(c => /заявк/i.test(c.name) && c.is_final) || carr.find(c => c.is_final);
+    if (finalCol) {
+      await upsert('conversations', { ...conv, status_id: finalCol.id, updated_at: new Date().toISOString() });
+    }
+    return created;
   }
 
   // ============================================================
@@ -1423,7 +1645,16 @@
       create: applicationsCreate,
       delete: applicationsDelete
     },
-    utils: { uuid: utilsUuid },
+    utils: { uuid: utilsUuid, phoneNormalize },
+    inbox: {
+      upsertConversation: inboxUpsertConversation,
+      appendIncoming: inboxAppendIncoming,
+      sendMessage: inboxSendMessage,
+      markRead: inboxMarkRead,
+      moveColumn: inboxMoveColumn,
+      linkClient: inboxLinkClient,
+      createApplicationFromConversation: inboxCreateApplicationFromConversation
+    },
     /**
      * tariffs.getActive(partnerId?) — единая точка выбора активного тарифа.
      * @param {string} [partnerId] — id или name партнёра. Если у него есть
