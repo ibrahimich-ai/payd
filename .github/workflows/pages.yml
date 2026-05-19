@@ -27,6 +27,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v4
+        with:
+          # Авто-создаёт Pages site если он ещё не активирован в репо.
+          # Нужно при первом деплое, когда Source=GitHub Actions выбран,
+          # но сам Pages site GitHub'ом ещё не провижнен.
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           # Публикуем весь корень репо — он состоит из готовых HTML/JS/CSS.
