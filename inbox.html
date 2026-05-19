@@ -47,8 +47,29 @@
 
   /* ─── список + чат (двухпанельный режим) ──────────────────────── */
   .inbox-grid { display: grid; grid-template-columns: 340px 1fr 300px; gap: 0; height: calc(100vh - 200px); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-  @media (max-width: 1100px) { .inbox-grid { grid-template-columns: 300px 1fr; } .inbox-grid .client-panel { display: none; } }
-  @media (max-width: 700px)  { .inbox-grid { grid-template-columns: 1fr; } .inbox-grid .chat-panel, .inbox-grid .client-panel { display: none; } }
+  @media (max-width: 1100px) {
+    .inbox-grid { grid-template-columns: 320px 1fr; }
+    .inbox-grid .client-panel { position: fixed; right: 0; top: 0; bottom: 0; width: 300px; z-index: 50; background: var(--surface); transform: translateX(100%); transition: transform .2s; display: block; box-shadow: -8px 0 24px rgba(0,0,0,.1); }
+    .inbox-grid .client-panel.open { transform: translateX(0); }
+  }
+  @media (max-width: 700px) {
+    .inbox-grid { grid-template-columns: 1fr; height: calc(100vh - 140px); }
+    .inbox-grid .conv-list { display: block; }
+    .inbox-grid .chat-panel { display: none; }
+    .inbox-grid.mobile-chat-open .conv-list { display: none; }
+    .inbox-grid.mobile-chat-open .chat-panel { display: flex; }
+    .inbox-grid .client-panel { width: 100%; max-width: 100vw; }
+    .kb-board { grid-auto-columns: 85vw; }
+    .chat-head { padding: 10px 12px; }
+    .page-head h1 { font-size: 18px; }
+    .inbox-toolbar { gap: 6px; }
+    .inbox-toolbar select { font-size: 12px; padding: 4px 8px; }
+    .inbox-toolbar input.search { font-size: 13px; min-width: 0; }
+    .modal-box { width: 100%; height: 100%; max-height: 100vh; border-radius: 0; }
+    #calc-iframe { height: calc(100vh - 130px) !important; }
+  }
+  .mobile-back { display: none; }
+  @media (max-width: 700px) { .mobile-back { display: inline-flex; } }
 
   .conv-list { border-right: 1px solid var(--border); overflow-y: auto; }
   .conv-list .item { padding: 10px 12px; border-bottom: 1px solid var(--border); cursor: pointer; }
@@ -371,6 +392,7 @@
     state.activeConvId = id;
     state.view = 'list';
     $('#ix-view-seg').querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.view === 'list'));
+    $('#ix-view-list').classList.add('mobile-chat-open');
     await PaydDB.inbox.markRead(id);
     await loadConvMessages(id);
     await loadConvNotes(id);
@@ -403,6 +425,7 @@
 
     $('#ix-chat').innerHTML = `
       <div class="chat-head">
+        <button class="btn sm mobile-back" id="btn-back-list" title="К списку" style="padding:6px 10px">←</button>
         <div class="avatar">${esc(initials)}</div>
         <div class="who">
           <div class="nm">${esc(conv.contact_name || conv.contact_phone || conv.contact_external_id)}</div>
@@ -411,6 +434,7 @@
         <div class="actions">
           <button class="btn sm" id="btn-calc">📊 Расчёт</button>
           <button class="btn sm primary" id="btn-create-app">📋 Создать заявку</button>
+          <button class="btn sm" id="btn-toggle-client" title="Карточка клиента">ℹ</button>
         </div>
       </div>
       <div class="chat-stream" id="chat-stream">
@@ -432,8 +456,19 @@
     });
     $('#btn-calc').addEventListener('click', openCalcModal);
     $('#btn-create-app').addEventListener('click', createApplicationFromChat);
+    $('#btn-back-list')?.addEventListener('click', closeMobileChat);
+    $('#btn-toggle-client')?.addEventListener('click', () => {
+      $('#ix-client').classList.toggle('open');
+    });
 
     renderClientPanel(conv);
+  }
+
+  function closeMobileChat() {
+    state.activeConvId = null;
+    $('#ix-view-list').classList.remove('mobile-chat-open');
+    $('#ix-client').classList.remove('open');
+    render();
   }
 
   function renderMsg(m) {

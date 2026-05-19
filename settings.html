@@ -1643,9 +1643,10 @@
     }
 
     function webhookUrl(secret, provider) {
-      const projectUrl = (window.PAYD_SUPABASE_URL || localStorage.getItem('payd.supabase.url') || '').replace(/\/+$/, '');
-      if (!projectUrl) return `https://<ваш-проект>.supabase.co/functions/v1/inbox-webhook?provider=${provider}&secret=${encodeURIComponent(secret)}`;
-      return `${projectUrl}/functions/v1/inbox-webhook?provider=${provider}&secret=${encodeURIComponent(secret)}`;
+      // PAYD_SUPABASE_URL выставляется в db.js (захардкожен на проект)
+      const projectUrl = (window.PAYD_SUPABASE_URL || '').replace(/\/+$/, '');
+      const base = projectUrl ? `${projectUrl}/functions/v1/inbox-webhook` : 'https://<supabase-project>.supabase.co/functions/v1/inbox-webhook';
+      return `${base}?provider=${provider}&secret=${encodeURIComponent(secret)}`;
     }
 
     async function loadChannels() {

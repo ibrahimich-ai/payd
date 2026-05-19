@@ -1,0 +1,38 @@
+name: Deploy to GitHub Pages
+
+# Публикует статические HTML/JS/CSS файлы как сайт на GitHub Pages.
+# После пуша в main или ручного запуска — сайт доступен по адресу
+# https://<owner>.github.io/<repo>/
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v4
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          # Публикуем весь корень репо — он состоит из готовых HTML/JS/CSS.
+          # Папки supabase/ и .github/ Pages игнорирует автоматически по
+          # имени (точки и подпапки без index.html), но для надёжности
+          # ничего из них не открывается напрямую.
+          path: '.'
+      - id: deployment
+        uses: actions/deploy-pages@v4

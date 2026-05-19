@@ -29,6 +29,8 @@
   // ============================================================
   const SUPABASE_URL = 'https://ehxfjvcyqvpjtahkmncf.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_iRVhvmhCqwezAXL80vEpAg_yweB0VU6';
+  // Глобально доступный URL — для генерации webhook-эндпоинтов в settings.html
+  if (typeof window !== 'undefined') window.PAYD_SUPABASE_URL = SUPABASE_URL;
 
   // Логические коллекции → таблицы Supabase + ключи localStorage
   const COLLECTIONS = {
