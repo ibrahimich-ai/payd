@@ -161,10 +161,22 @@
     }
     function savePartner(data, oldName = null) {
       const all = loadAll();
-      if (oldName && oldName !== data.name) delete all[oldName];
+      const isRename = oldName && oldName.trim() && oldName !== data.name;
+      if (isRename) delete all[oldName];
       all[data.name] = data;
       saveAll(all);
       localStorage.setItem(ACTIVE_KEY, data.name);
+      // При переименовании — append-only запись alias (URL ?partner=OldName продолжит
+      // резолвиться). insertOnly: true гарантирует, что существующий alias другого
+      // партнёра не будет затёрт ни локально, ни в БД (ON CONFLICT DO NOTHING).
+      // Fire-and-forget — UI не блокируем.
+      if (isRename && window.PaydDB?.upsert) {
+        window.PaydDB.upsert('partner_aliases', {
+          old_name: oldName,
+          new_name: data.name,
+          created_at: new Date().toISOString()
+        }, { insertOnly: true }).catch(e => console.warn('[partner_aliases] upsert failed:', e?.message));
+      }
     }
     function removePartner(name) {
       const all = loadAll();

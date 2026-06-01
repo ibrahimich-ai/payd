@@ -382,6 +382,126 @@ PaydDB.calc.deal({ price, term, downPayment, product, tariff })
 
 ---
 
+### Партнёрские тарифы — Commit 2 (UI селект тарифа в карточке партнёра)
+
+**Контекст.** Commit 1 (db.js + partners.html + SQL миграция от 2026-05-10) добавил:
+- колонку `partners.tariff_id text REFERENCES tariffs(id) ON DELETE SET NULL`
+  (у всех существующих NULL = «использовать глобальный дефолт», по умолчанию проекта);
+- таблицу `partner_aliases (old_name PK, new_name, created_at)` для сохранения
+  работоспособности URL/ссылок при переименовании партнёра;
+- helper `partnersResolveByName` в db.js — chain через aliases (max depth 5);
+- запись alias в `savePartner` ([partners.html:160](partners.html#L160)) при rename
+  через `PaydDB.upsert(..., { insertOnly: true })` — атомарно ON CONFLICT DO NOTHING;
+- расширение `PaydDB.upsert` третьим параметром `opts.insertOnly`;
+- fix `handleRealtimeChange` для type='map' — fallback по DB id, корректный rename
+  и DELETE без `REPLICA IDENTITY FULL`.
+
+**Что осталось (Commit 2):**
+1. UI селект тарифа в карточке партнёра ([partners.html](partners.html), `partnerForm`):
+   `<select>` со списком из `payd.tariffs.v1` + опция «— использовать глобальный дефолт —» (= NULL).
+2. Чтение `partner.tariff_id` в `tariffsGetActive` ([db.js:142](db.js#L142)) — ветка между
+   legacy `partner.tariff` JSON и `is_default`:
+   ```
+   if (p?.tariff_id) {
+     const t = all.find(x => x.id === p.tariff_id);
+     if (t) return { ...t, _source: 'partner_id', _partnerName: p.name };
+   }
+   ```
+3. Калькуляторы и mini-calc ([calculator.html](calculator.html), [zayavka.html](zayavka.html))
+   уже идут через `tariffsGetActive(partnerId)`, отдельные правки не требуются.
+
+---
+
+### Backfill partner_aliases для исторических переименований (отложено)
+
+**Контекст.** Commit 1 не делает backfill алиасов для партнёров, переименованных
+ДО появления `partner_aliases`. По SQL #2 на 2026-05-10 у 7 партнёров имена
+выглядят как изначальные (с городами в скобках), признаков переименований нет.
+В худшем случае какая-то очень старая ссылка не сработает — это и было раньше,
+регресса нет.
+
+**Когда понадобится:** если поступит жалоба «не открывается старая ссылка на
+партнёра», или при подготовке миграции на uuid-based URL.
+
+**Что делать:**
+1. Найти источник истории переименований — `audit_log` / `application_history`
+   (если writes name старого партнёра остались), либо логи Supabase.
+2. Скрипт-утилита: для каждой пары `(old_name, current_name)` —
+   `INSERT INTO partner_aliases ... ON CONFLICT DO NOTHING` (важно: не overwrite).
+3. Документация: какие переименования восстановлены, какие — нет.
+
+**Зависимости:** Commit 1 (структура `partner_aliases` уже создана).
+
+---
+
+### Edge-cases партнёрских алиасов (мониторить)
+
+**Race на коллизию old_name — закрыт в Commit 1.** `PaydDB.upsert('partner_aliases',
+..., { insertOnly: true })` транслируется в Supabase upsert с `ignoreDuplicates: true`,
+что в Postgres = `ON CONFLICT (old_name) DO NOTHING`. При одновременном rename на
+двух устройствах с одинаковым `old_name` первый победит, второй no-op-нет — без
+потери чужой истории.
+
+**REPLICA IDENTITY FULL для `partners` / `clients`.** Не включали — fallback по
+`id` в `handleRealtimeChange` делает то же без удвоения WAL-трафика. Если в
+будущем realtime начнёт пропускать UPDATE по другим причинам (например, после
+смены схемы), повторно рассмотреть `ALTER TABLE partners REPLICA IDENTITY FULL`.
+
+---
+
+### Чеклист миграции домена (когда подключаем payd.ru или иной)
+
+**Контекст.** На 2026-05-10 кодовая база domain-agnostic — все ссылки
+относительные, внешних интеграций (analytics/SMS/Telegram) нет, Vercel-config
+не используется, PWA не реализован. Аудит по 6 категориям не нашёл ни одной
+кодовой правки. Этот чеклист — для ручных шагов, которые потребуются при
+подключении нового домена (или замене старого).
+
+**Шаг 1. Vercel — admin (без изменений в коде).**
+- Project → Settings → Domains → Add Domain → ввести новый домен.
+- Vercel выдаст DNS-инструкции (CNAME / A-запись) — настроить у регистратора.
+- TLS-сертификат Vercel выпустит автоматически.
+- Старый домен можно оставить активным — оба будут работать параллельно.
+
+**Шаг 2. Supabase — admin (Studio, без изменений в коде).**
+- Authentication → URL Configuration:
+  - **Site URL** — основной домен (если планируем делать его primary).
+  - **Additional Redirect URLs** — добавить новый домен сюда тоже.
+  - Это станет актуально при добавлении magic link / password reset / OAuth.
+    Сейчас auth идёт через signInWithPassword без redirect — пока некритично.
+- API → CORS:
+  - Если включён whitelist — добавить новый origin. По умолчанию открыт всем.
+
+**Шаг 3. Внешние сервисы (когда будут подключены).**
+- **smsc.ru** (когда SMS-шлюз станет реальным, [settings.html:258](settings.html#L258)):
+  обновить callback URL в кабинете smsc.ru.
+- **Telegram-бот** (когда будет): обновить webhook через Bot API.
+- **Я.Метрика / GA** (когда будут): ДОБАВИТЬ новый домен в счётчик, не
+  заменять — иначе старая статистика разорвётся.
+
+**Шаг 4. Пользователи (UX).**
+- localStorage привязан к origin — при первом заходе на новый домен у
+  пользователя пустое локальное хранилище. `cloudConnect → backgroundPull`
+  автоматически перетянет всё из Supabase. Это by design, не баг.
+- Опционально: показать одноразовый info-toast «Платформа переехала, данные
+  загружаются заново» при первом cloudConnect на новом origin.
+
+**Шаг 5. Что НЕ нужно менять в коде:**
+- `db.js:30-31` — `SUPABASE_URL`/`SUPABASE_KEY` это URL Supabase, не наш.
+- `location.href` присвоения — все относительные, доменно-нейтральные.
+- Внешние CDN (Google Fonts, jsdelivr) — независимы от нашего домена.
+- `<a href="https://supabase.com/...">` в [settings.html:669](settings.html#L669)
+  — внешняя ссылка на Studio.
+
+**Шаг 6. Smoke-тест после миграции.**
+- Открыть новый домен → войти под кассиром → создать тестовую заявку.
+- Проверить, что заявка появилась в `partner.html` (другая роль, тот же origin) —
+  это тест realtime + RLS на новом домене.
+- Проверить, что [calculator.html](calculator.html) тариф подгрузился (тест tariffsGetActive).
+- Проверить, что `?partner=OldName` URL резолвится (тест partner_aliases).
+
+---
+
 ## Этап 3 — финансовая логика и отчётность
 
 (планируется после Этапа 2)

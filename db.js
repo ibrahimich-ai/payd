@@ -48,6 +48,7 @@
     contracts:       { table: 'contracts',             ls: 'payd.contracts.v1',          type: 'list', pk: 'id' },
     promo_campaigns: { table: 'promo_campaigns',       ls: 'payd.promo.v1',              type: 'list', pk: 'id' },
     payments:        { table: 'payments',              ls: 'payd.payments.v1',           type: 'list', pk: 'id' },
+    partner_aliases: { table: 'partner_aliases',       ls: 'payd.partner.aliases.v1',    type: 'map',  pk: 'old_name' },
     kanban:          { table: null,                    ls: 'payd.kanban.v1',             type: 'map',  pk: 'leadId' } // local-only
   };
 
@@ -124,6 +125,26 @@
   }
 
   // ============================================================
+  //  PARTNERS — резолв имени через цепочку алиасов.
+  //  Если партнёр был переименован, в payd.partner.aliases.v1 лежит запись
+  //  { old_name → { new_name, created_at } }. Резолвим chain (max depth 5,
+  //  защита от циклов — UNIQUE на old_name их предотвращает в БД, но fallback
+  //  на случай повреждённых локальных данных).
+  //  uuid-вход возвращается как есть — это lookup по id, не по имени.
+  // ============================================================
+  const _UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  function partnersResolveByName(name, depth = 0) {
+    if (!name || depth > 5) return name;
+    if (_UUID_RE.test(String(name))) return name;
+    try {
+      const aliases = JSON.parse(localStorage.getItem('payd.partner.aliases.v1') || '{}');
+      const next = aliases[name]?.new_name;
+      if (next && next !== name) return partnersResolveByName(next, depth + 1);
+    } catch (_) {}
+    return name;
+  }
+
+  // ============================================================
   //  TARIFFS — выбор активного тарифа.
   //  Приоритет:
   //    1) custom тариф у партнёра (partner.tariff — объект с types/terms);
@@ -143,9 +164,16 @@
       try {
         const partnersRaw = JSON.parse(localStorage.getItem('payd.partners.v1') || '{}');
         const partnersList = Array.isArray(partnersRaw) ? partnersRaw : Object.values(partnersRaw);
-        const p = partnersList.find(x => String(x?.id || x?.name) === String(partnerId));
+        // partnerId может быть старым именем после rename — резолвим через alias-цепочку
+        const resolvedId = partnersResolveByName(partnerId);
+        const p = partnersList.find(x => String(x?.id || x?.name) === String(resolvedId));
         if (p && p.tariff && typeof p.tariff === 'object'
             && (p.tariff.types?.length || p.tariff.terms?.length)) {
+          // Legacy: partner.tariff как JSON-объект. После migration tariff_id
+          // у всех NULL — эта ветка не должна срабатывать в проде. Если сработала,
+          // кто-то записал JSON вручную через Supabase Studio. Видим в логах
+          // и мигрируем на partner.tariff_id (Commit 2).
+          console.warn('[PaydDB] tariffsGetActive: legacy partner.tariff JSON branch hit for', p.name, '— migrate to tariff_id');
           return { ...p.tariff, _source: 'partner', _partnerName: p.name };
         }
       } catch (_) {}
@@ -280,7 +308,12 @@
     return raw[pkValue] || null;
   }
 
-  async function upsert(coll, item) {
+  // opts.insertOnly: true — если запись с таким PK уже есть (локально ИЛИ в БД),
+  // не перезаписывать. В облаке транслируется в ON CONFLICT DO NOTHING через
+  // ignoreDuplicates: true. Нужно для append-only коллекций (partner_aliases —
+  // история переименований, перезапись = подмена истории чужого партнёра).
+  async function upsert(coll, item, opts) {
+    opts = opts || {};
     const def = COLLECTIONS[coll];
     // Контракт snake_case для workflows — нормализуем любую входящую форму.
     if (coll === 'workflows') item = workflowToSnake(item);
@@ -289,9 +322,14 @@
     if (pkVal == null) throw new Error('upsert: missing pk "' + def.pk + '"');
     if (def.type === 'list') {
       const idx = raw.findIndex(x => x[def.pk] === pkVal);
-      if (idx >= 0) raw[idx] = { ...raw[idx], ...item };
-      else raw.unshift(item);
+      if (idx >= 0) {
+        if (opts.insertOnly) return raw[idx]; // existing wins
+        raw[idx] = { ...raw[idx], ...item };
+      } else {
+        raw.unshift(item);
+      }
     } else {
+      if (raw[pkVal] && opts.insertOnly) return raw[pkVal]; // existing wins
       // Для workflows — сначала чистим прежние camelCase ключи у существующей записи.
       const prev = raw[pkVal] ? (coll === 'workflows' ? workflowToSnake(raw[pkVal]) : raw[pkVal]) : {};
       raw[pkVal] = { ...prev, ...item };
@@ -301,7 +339,10 @@
     if (_isOnline && def.table) {
       try {
         const clean = normalizeForCloud(coll, item);
-        if (clean) await getSb().from(def.table).upsert(clean, { onConflict: def.pk });
+        if (clean) await getSb().from(def.table).upsert(clean, {
+          onConflict: def.pk,
+          ignoreDuplicates: !!opts.insertOnly
+        });
       } catch (e) { console.warn('[PaydDB] cloud upsert', coll, e.message); }
     }
     return item;
@@ -461,9 +502,28 @@
       _origSetItem.call(localStorage, def.ls, JSON.stringify(arr));
     } else {
       const map = raw && typeof raw === 'object' ? { ...raw } : {};
-      if (payload.eventType === 'DELETE' && oldRow) {
-        delete map[oldRow[def.pk]];
+      // Fallback по DB id: для type='map' локальный def.pk может отличаться от
+      // PK таблицы в БД (partners: name vs id, clients: phone vs id). Без
+      // REPLICA IDENTITY FULL Postgres шлёт в payload.old только PK таблицы (id) —
+      // искать по def.pk бесполезно. Поэтому ищем запись с этим id среди value'ов.
+      // Для коллекций где def.pk === 'id' (products) — find по id найдёт ту же
+      // запись, что и map[id]; fallback избыточен, но не вредит.
+      if (payload.eventType === 'DELETE') {
+        const targetId = oldRow?.id;
+        const prev = targetId != null ? Object.values(map).find(x => x && x.id === targetId) : null;
+        if (prev && prev[def.pk] != null) delete map[prev[def.pk]];
+        else if (oldRow && oldRow[def.pk] != null) delete map[oldRow[def.pk]];
       } else if (newRow) {
+        // Rename-detection: если в map уже есть запись с тем же DB id, но другим
+        // ключом (def.pk изменился — partner переименован, у client сменился phone) —
+        // удаляем старый ключ перед записью нового, иначе фантом до следующего pull.
+        const targetId = newRow.id;
+        if (targetId != null) {
+          const prev = Object.values(map).find(x => x && x.id === targetId);
+          if (prev && prev[def.pk] !== newRow[def.pk] && prev[def.pk] != null) {
+            delete map[prev[def.pk]];
+          }
+        }
         map[newRow[def.pk]] = newRow;
       }
       _origSetItem.call(localStorage, def.ls, JSON.stringify(map));
@@ -571,7 +631,8 @@
     products:          ['id','name','category_id','field_values','price','purchase_price','status','is_active','stock','sku'],
     contracts:         ['id','number','app_id','type','signed_at','signed_by','status','terminated_at','termination_reason'],
     promo_campaigns:   ['id','name','code','description','type','value','start_at','end_at','partner_id','is_active'],
-    payments:          ['id','app_id','num','amount','method','cash_id','cashier_id','partner_id','due_date','status','paid_at','kind']
+    payments:          ['id','app_id','num','amount','method','cash_id','cashier_id','partner_id','due_date','status','paid_at','kind'],
+    partner_aliases:   ['old_name','new_name','created_at']
   };
 
   function normalizeForCloud(coll, item) {
