@@ -105,6 +105,30 @@
     }
   }
 
+  // Одноразовая миграция clients в localStorage: если запись пришла из БД
+  // в формате { full_name, phone, ... } без name (был баг denormalizeFromCloud
+  // не обрабатывал clients), достроим name = full_name. Идемпотентно.
+  function migrateClientsNameOnce() {
+    try {
+      const def = COLLECTIONS.clients;
+      const raw = JSON.parse(localStorage.getItem(def.ls) || '{}');
+      if (!raw || typeof raw !== 'object') return;
+      let mutated = false;
+      for (const key of Object.keys(raw)) {
+        const v = raw[key];
+        if (!v || typeof v !== 'object') continue;
+        if (v.full_name && !v.name) {
+          v.name = v.full_name;
+          mutated = true;
+        }
+      }
+      if (mutated) {
+        localStorage.setItem(def.ls, JSON.stringify(raw));
+        console.log('[PaydDB] clients: back-filled name from full_name');
+      }
+    } catch (_) {}
+  }
+
   // ============================================================
   //  UTILS — общие хелперы (доступны через PaydDB.utils.*)
   // ============================================================
@@ -873,6 +897,7 @@
   //  One-time migration: workflows camelCase → snake_case в localStorage
   // ============================================================
   try { migrateWorkflowsLocalOnce(); } catch (e) { console.warn('[PaydDB] workflow migration', e.message); }
+  try { migrateClientsNameOnce(); } catch (e) { console.warn('[PaydDB] clients name migration', e.message); }
 
   // ============================================================
   //  Auto-connect on page load (если есть сессия)
