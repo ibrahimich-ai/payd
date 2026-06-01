@@ -16,7 +16,9 @@
       "Bash(open \"/Users/ibra/Desktop/Payd/employees.html\")",
       "Bash(open \"/Users/ibra/Desktop/Payd/calculator.html\")",
       "Bash(grep -n \"</body>\\\\|</script>\\\\|recalc\\(\\);$\" /Users/ibra/Desktop/Payd/calculator.html)",
-      "Bash(open \"/Users/ibra/Desktop/Payd/settings.html\")"
+      "Bash(open \"/Users/ibra/Desktop/Payd/settings.html\")",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   }
 }

@@ -96,15 +96,16 @@ ON CONFLICT (id) DO NOTHING;
 -- SECTION C. CASHES (2 кассы)
 --   c_main — Грозный (центральный офис)
 --   c_argun — Аргун (филиал)
---   Используем WHERE NOT EXISTS т.к. cashes.id — uuid (нет unique на name).
+--   ВАЖНО: cashes.id в прод-БД без default — передаём явно
+--   gen_random_uuid()::text (работает и для uuid-, и для text-колонки).
 -- ============================================================
 
-INSERT INTO cashes (name, address, kkt, fn, responsible, balance, status)
-SELECT 'Касса Грозный (центр)', 'Грозный, пр. Путина, 17', 'ККТ-001', 'ФН-001', 'Старший кассир', 0, 'active'
+INSERT INTO cashes (id, name, address, kkt, fn, responsible, balance, status)
+SELECT gen_random_uuid()::text, 'Касса Грозный (центр)', 'Грозный, пр. Путина, 17', 'ККТ-001', 'ФН-001', 'Старший кассир', 0, 'active'
 WHERE NOT EXISTS (SELECT 1 FROM cashes WHERE name = 'Касса Грозный (центр)');
 
-INSERT INTO cashes (name, address, kkt, fn, responsible, balance, status)
-SELECT 'Касса Аргун', 'Аргун, ул. Кадырова, 31', 'ККТ-002', 'ФН-002', 'Кассир филиала', 0, 'active'
+INSERT INTO cashes (id, name, address, kkt, fn, responsible, balance, status)
+SELECT gen_random_uuid()::text, 'Касса Аргун', 'Аргун, ул. Кадырова, 31', 'ККТ-002', 'ФН-002', 'Кассир филиала', 0, 'active'
 WHERE NOT EXISTS (SELECT 1 FROM cashes WHERE name = 'Касса Аргун');
 
 
