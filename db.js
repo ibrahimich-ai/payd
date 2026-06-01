@@ -806,6 +806,11 @@
     if (coll === 'cash_articles') {
       out.group = item.group_name;
     }
+    if (coll === 'clients') {
+      // В БД ФИО в full_name (snake_case). UI (clients.html, client.html)
+      // читает c.name. Прокидываем оба варианта для совместимости.
+      out.name = item.full_name || item.name;
+    }
     return out;
   }
 
