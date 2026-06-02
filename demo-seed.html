@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demo Seed — Payd</title>
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icon.svg">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh; padding: 40px 20px; color: #1a2332;
+  }
+  .card {
+    max-width: 720px; margin: 0 auto;
+    background: white; border-radius: 16px; padding: 36px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.18);
+  }
+  h1 { font-size: 26px; font-weight: 800; margin-bottom: 8px; }
+  .sub { color: #6b7591; font-size: 14px; margin-bottom: 24px; }
+  .info {
+    background: #eff4ff; border: 1px solid #c7d8ff; padding: 14px 16px;
+    border-radius: 10px; font-size: 13px; line-height: 1.6; color: #1a3a6e;
+    margin-bottom: 20px;
+  }
+  .info b { color: #1d4ed8; }
+  button {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: white; border: none; padding: 14px 28px;
+    border-radius: 10px; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: transform .1s, box-shadow .2s;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, .35);
+  }
+  button:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(37, 99, 235, .45); }
+  button:active { transform: translateY(0); }
+  button.danger { background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 4px 14px rgba(239, 68, 68, .35); }
+  button.gray { background: #6b7591; box-shadow: 0 4px 14px rgba(107, 117, 145, .25); }
+  .buttons { display: flex; gap: 12px; margin: 20px 0; flex-wrap: wrap; }
+  .log {
+    background: #1a2332; color: #a7f3d0; padding: 16px;
+    border-radius: 10px; font-family: 'SF Mono', Monaco, monospace;
+    font-size: 12px; line-height: 1.6; min-height: 100px; max-height: 280px;
+    overflow-y: auto; white-space: pre-wrap;
+  }
+  .log:empty::before { content: 'Лог появится здесь после нажатия кнопки.'; color: #6b7591; }
+  .links {
+    margin-top: 24px; padding-top: 24px; border-top: 1px solid #e5e9f2;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px;
+  }
+  .links a {
+    display: block; padding: 10px 14px; background: #f4f6fb;
+    border: 1px solid #e5e9f2; border-radius: 8px;
+    color: #1a2332; text-decoration: none; font-size: 13px; font-weight: 600;
+    transition: all .15s;
+  }
+  .links a:hover { background: #2563eb; color: white; border-color: #2563eb; }
+  .stats {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 16px 0;
+  }
+  .stats div {
+    background: #f4f6fb; padding: 10px; border-radius: 8px; text-align: center;
+  }
+  .stats .n { font-size: 18px; font-weight: 800; color: #2563eb; }
+  .stats .l { font-size: 10px; color: #6b7591; text-transform: uppercase; letter-spacing: .04em; margin-top: 2px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>🌱 Demo Seed — Payd Platform</h1>
+  <div class="sub">Заполнение <code>localStorage</code> демо-данными для работы платформы без Supabase</div>
+
+  <div class="info">
+    <b>Что произойдёт:</b> заполню локальное хранилище реальными взаимосвязанными данными
+    (45 клиентов, 10 партнёров, 30 заявок на разных этапах, договоры, платежи, кассовые операции).
+    Платформа будет работать в offline-режиме — все разделы (Дашборд, Журнал, Касса, СБ, Инкассатор,
+    Выплаты) увидят данные без необходимости логиниться в облако.
+    <br><br>
+    <b>Безопасно:</b> старые данные в localStorage будут заменены. Облако (Supabase) не трогается.
+  </div>
+
+  <div class="buttons">
+    <button id="btn-seed">🌱 Заполнить демо-данными</button>
+    <button id="btn-clear" class="danger">🗑 Очистить всё</button>
+    <button id="btn-stats" class="gray">📊 Что сейчас лежит</button>
+  </div>
+
+  <div class="stats" id="stats">
+    <div><div class="n" id="s-clients">—</div><div class="l">Клиенты</div></div>
+    <div><div class="n" id="s-partners">—</div><div class="l">Партнёры</div></div>
+    <div><div class="n" id="s-apps">—</div><div class="l">Заявки</div></div>
+    <div><div class="n" id="s-contracts">—</div><div class="l">Договоры</div></div>
+  </div>
+
+  <div class="log" id="log"></div>
+
+  <div class="links">
+    <a href="dashboard.html">📊 Дашборд</a>
+    <a href="zhurnal.html">📋 Журнал заявок</a>
+    <a href="manager.html">👤 Менеджер · CRM</a>
+    <a href="kassir.html">💰 Касса</a>
+    <a href="kassa.html">🏦 Касса/проводки</a>
+    <a href="warehouse.html">📦 Выдача товара</a>
+    <a href="partner.html">🏪 Рабочее место партнёра</a>
+    <a href="partners.html">🏬 Партнёры (admin)</a>
+    <a href="sb.html">🛡 Служба безопасности</a>
+    <a href="collector.html">📞 Взыскание</a>
+    <a href="inkassator.html">🚚 Инкассатор</a>
+    <a href="clients.html">👥 Клиенты</a>
+    <a href="client.html">📇 Карточка клиента</a>
+    <a href="products.html">🛒 Товары</a>
+    <a href="contracts.html">📄 Договоры</a>
+    <a href="finance.html">💵 Финансы · ДДС</a>
+    <a href="reports.html">📈 Отчёты</a>
+    <a href="settings.html">⚙️ Настройки</a>
+  </div>
+</div>
+
+<script>
+const log = (msg, color) => {
+  const el = document.getElementById('log');
+  const c = color || '#a7f3d0';
+  el.innerHTML += `<span style="color:${c}">${new Date().toLocaleTimeString()} — ${msg}</span>\n`;
+  el.scrollTop = el.scrollHeight;
+};
+
+const uuid = () => {
+  if (window.crypto?.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+};
+
+// ============================================================
+// REFERENCE DATA
+// ============================================================
+const TARIFFS = [
+  { id: 't_basic', name: 'Базовый', description: 'Стандартная рассрочка / Мурабаха',
+    types: ['standard','murabaha'], terms: [3,6,9,12], min_dp: 10, max_amount: 1500000,
+    murabaha_rates: {'3':5,'6':10,'9':13,'12':17}, ijara_rates: null,
+    murabahaRates: {'3':5,'6':10,'9':13,'12':17}, ijaraRates: null,
+    minDp: 10, maxAmount: 1500000, is_default: true, created_at: '2026-06-01T00:00:00Z' },
+  { id: 't_promo', name: 'Промо', description: 'Короткая рассрочка для мелкой техники',
+    types: ['standard'], terms: [3,6], min_dp: 15, max_amount: 200000,
+    murabaha_rates: {'3':3,'6':7}, ijara_rates: null,
+    murabahaRates: {'3':3,'6':7}, ijaraRates: null,
+    minDp: 15, maxAmount: 200000, is_default: false, created_at: '2026-06-01T00:00:01Z' },
+  { id: 't_ijara', name: 'Иджара (исламский)', description: 'Шариатская аренда',
+    types: ['ijara'], terms: [6,12,18,24], min_dp: 20, max_amount: 1500000,
+    murabaha_rates: null, ijara_rates: {'6':15,'12':20,'18':24,'24':28},
+    murabahaRates: null, ijaraRates: {'6':15,'12':20,'18':24,'24':28},
+    minDp: 20, maxAmount: 1500000, is_default: false, created_at: '2026-06-01T00:00:02Z' }
+];
+
+const CASHES = [
+  { id: 'c_main',  name: 'Касса Грозный (центр)', address: 'Грозный, пр. Путина, 17', kkt: 'ККТ-001', fn: 'ФН-001', responsible: 'Старший кассир', balance: 487300, status: 'active' },
+  { id: 'c_argun', name: 'Касса Аргун',           address: 'Аргун, ул. Кадырова, 31', kkt: 'ККТ-002', fn: 'ФН-002', responsible: 'Кассир филиала', balance: 156800, status: 'active' }
+];
+
+const CASH_ARTICLES = [
+  { id: 'a_first_pay',    name: 'Первоначальный взнос',         dir: 'in',  color: 'success', group_name: 'Платежи рассрочки', group: 'Платежи рассрочки' },
+  { id: 'a_installment',  name: 'Платёж по графику',            dir: 'in',  color: 'success', group_name: 'Платежи рассрочки', group: 'Платежи рассрочки' },
+  { id: 'a_late_pay',     name: 'Платёж с просрочкой',          dir: 'in',  color: 'warning', group_name: 'Платежи рассрочки', group: 'Платежи рассрочки' },
+  { id: 'a_partner_pay',  name: 'Закупка у партнёра',           dir: 'out', color: 'danger',  group_name: 'Закупка',           group: 'Закупка' },
+  { id: 'a_partner_comm', name: 'Комиссия партнёру',            dir: 'out', color: 'warning', group_name: 'Партнёры',          group: 'Партнёры' },
+  { id: 'a_cash_in',      name: 'Внесение наличных в кассу',    dir: 'in',  color: 'info',    group_name: 'Корректировка',     group: 'Корректировка' },
+  { id: 'a_cash_out',     name: 'Снятие наличных из кассы',     dir: 'out', color: 'info',    group_name: 'Корректировка',     group: 'Корректировка' },
+  { id: 'a_refund_out',   name: 'Возврат клиенту',              dir: 'out', color: 'danger',  group_name: 'Возвраты',          group: 'Возвраты' },
+  { id: 'a_inkass_out',   name: 'Передача инкассатору',         dir: 'out', color: 'info',    group_name: 'Инкассация',        group: 'Инкассация' },
+  { id: 'a_correct',      name: 'Корректировка остатка',        dir: 'in',  color: 'gray',    group_name: 'Корректировка',     group: 'Корректировка' }
+];
+
+const CATEGORIES = [
+  { id: 'cat_phones',     name: 'Телефоны и планшеты',     position: 1, is_active: true, fields: [{label:'Цвет',example:'Чёрный'},{label:'Память',example:'256GB'}] },
+  { id: 'cat_laptops',    name: 'Ноутбуки и компьютеры',   position: 2, is_active: true, fields: [{label:'Цвет',example:'Серебристый'},{label:'Конфигурация',example:'M3/16/512'}] },
+  { id: 'cat_appliances', name: 'Бытовая техника',         position: 3, is_active: true, fields: [{label:'Цвет',example:'Белый'},{label:'Модель',example:'WD-8512'}] },
+  { id: 'cat_furniture',  name: 'Мебель',                  position: 4, is_active: true, fields: [{label:'Цвет/ткань',example:'Бежевый'},{label:'Размер',example:'3.2x1.8м'}] },
+  { id: 'cat_auto',       name: 'Автомобили',              position: 5, is_active: true, fields: [{label:'Цвет',example:'Белый'},{label:'Год',example:'2024'}] },
+  { id: 'cat_cafe',       name: 'Оборудование для кафе',   position: 6, is_active: true, fields: [{label:'Производитель',example:'Jura'}] }
+];
+
+const PRODUCTS = [
+  { id: 'p_iphone15pro',  name: 'iPhone 15 Pro 256GB Natural Titanium', category_id: 'cat_phones', category: 'cat_phones', field_values: {'Цвет':'Natural Titanium','Память':'256GB'}, fieldValues: {'Цвет':'Natural Titanium','Память':'256GB'}, price: 130000, purchase_price: 115000, purchase: 115000, status: 'instock', is_active: true, stock: 8 },
+  { id: 'p_iphone15',     name: 'iPhone 15 128GB Чёрный',               category_id: 'cat_phones', category: 'cat_phones', field_values: {'Цвет':'Чёрный','Память':'128GB'}, fieldValues: {'Цвет':'Чёрный','Память':'128GB'}, price: 80000, purchase_price: 70000, purchase: 70000, status: 'instock', is_active: true, stock: 15 },
+  { id: 'p_samsung_s24',  name: 'Samsung Galaxy S24 256GB',             category_id: 'cat_phones', category: 'cat_phones', field_values: {'Цвет':'Серебристый','Память':'256GB'}, fieldValues: {'Цвет':'Серебристый','Память':'256GB'}, price: 75000, purchase_price: 65000, purchase: 65000, status: 'instock', is_active: true, stock: 12 },
+  { id: 'p_mba_m3',       name: 'MacBook Air M3 13" 512GB',             category_id: 'cat_laptops', category: 'cat_laptops', field_values: {'Цвет':'Серебристый','Конфигурация':'M3/16/512'}, fieldValues: {'Цвет':'Серебристый','Конфигурация':'M3/16/512'}, price: 145000, purchase_price: 130000, purchase: 130000, status: 'instock', is_active: true, stock: 6 },
+  { id: 'p_mbp_m4',       name: 'MacBook Pro M4 14" 1TB',               category_id: 'cat_laptops', category: 'cat_laptops', field_values: {'Цвет':'Космос','Конфигурация':'M4/16/1TB'}, fieldValues: {'Цвет':'Космос','Конфигурация':'M4/16/1TB'}, price: 220000, purchase_price: 200000, purchase: 200000, status: 'instock', is_active: true, stock: 3 },
+  { id: 'p_lenovo',       name: 'Lenovo IdeaPad 3 15.6"',               category_id: 'cat_laptops', category: 'cat_laptops', field_values: {'Цвет':'Серый','Конфигурация':'Ryzen5/8/512'}, fieldValues: {'Цвет':'Серый','Конфигурация':'Ryzen5/8/512'}, price: 55000, purchase_price: 47000, purchase: 47000, status: 'instock', is_active: true, stock: 10 },
+  { id: 'p_lg_wash',      name: 'Стиральная машина LG 7кг',             category_id: 'cat_appliances', category: 'cat_appliances', field_values: {'Цвет':'Белый','Модель':'F2J5HS6W'}, fieldValues: {'Цвет':'Белый','Модель':'F2J5HS6W'}, price: 45000, purchase_price: 38000, purchase: 38000, status: 'instock', is_active: true, stock: 12 },
+  { id: 'p_atlant',       name: 'Холодильник Atlant ХМ 4524',           category_id: 'cat_appliances', category: 'cat_appliances', field_values: {'Цвет':'Белый','Модель':'ХМ-4524'}, fieldValues: {'Цвет':'Белый','Модель':'ХМ-4524'}, price: 38000, purchase_price: 32000, purchase: 32000, status: 'instock', is_active: true, stock: 8 },
+  { id: 'p_bosch_oven',   name: 'Духовой шкаф Bosch HBJ558',            category_id: 'cat_appliances', category: 'cat_appliances', field_values: {'Цвет':'Нержавейка','Модель':'HBJ558YS0Q'}, fieldValues: {'Цвет':'Нержавейка','Модель':'HBJ558YS0Q'}, price: 32000, purchase_price: 27000, purchase: 27000, status: 'instock', is_active: true, stock: 5 },
+  { id: 'p_sofa_praga',   name: 'Диван угловой Прага',                  category_id: 'cat_furniture', category: 'cat_furniture', field_values: {'Цвет/ткань':'Бежевый велюр','Размер':'3.2x1.8м'}, fieldValues: {'Цвет/ткань':'Бежевый велюр','Размер':'3.2x1.8м'}, price: 65000, purchase_price: 52000, purchase: 52000, status: 'instock', is_active: true, stock: 4 },
+  { id: 'p_bedroom_milan',name: 'Спальный гарнитур Милан',              category_id: 'cat_furniture', category: 'cat_furniture', field_values: {'Цвет/ткань':'Молочный дуб','Размер':'5 предметов'}, fieldValues: {'Цвет/ткань':'Молочный дуб','Размер':'5 предметов'}, price: 120000, purchase_price: 95000, purchase: 95000, status: 'instock', is_active: true, stock: 2 },
+  { id: 'p_lada_vesta',   name: 'Lada Vesta SW 1.6 2024',               category_id: 'cat_auto', category: 'cat_auto', field_values: {'Цвет':'Белый','Год':'2024'}, fieldValues: {'Цвет':'Белый','Год':'2024'}, price: 1450000, purchase_price: 1350000, purchase: 1350000, status: 'instock', is_active: true, stock: 3 },
+  { id: 'p_haval_jolion', name: 'Haval Jolion 1.5T 2024',               category_id: 'cat_auto', category: 'cat_auto', field_values: {'Цвет':'Серебристый','Год':'2024'}, fieldValues: {'Цвет':'Серебристый','Год':'2024'}, price: 2200000, purchase_price: 2050000, purchase: 2050000, status: 'instock', is_active: true, stock: 2 },
+  { id: 'p_jura_e8',      name: 'Кофемашина Jura E8 Chrome',            category_id: 'cat_cafe', category: 'cat_cafe', field_values: {'Производитель':'Jura','Модель':'E8 Chrome'}, fieldValues: {'Производитель':'Jura','Модель':'E8 Chrome'}, price: 180000, purchase_price: 155000, purchase: 155000, status: 'instock', is_active: true, stock: 3 },
+  { id: 'p_polair',       name: 'Витрина холодильная Polair',           category_id: 'cat_cafe', category: 'cat_cafe', field_values: {'Производитель':'Polair','Модель':'DC92SD'}, fieldValues: {'Производитель':'Polair','Модель':'DC92SD'}, price: 95000, purchase_price: 78000, purchase: 78000, status: 'instock', is_active: true, stock: 2 }
+];
+
+// 10 партнёров с UUID — нужны для FK в заявках
+const PARTNER_DATA = [
+  { name: 'Радуга',            id: uuid(), legal: 'ООО «Радуга»',          inn: '2014000010',  contact: 'Магомедов А.С.', address: 'Грозный, пр. Путина, 17',     phone: '+7 (8712) 22-11-10', email: 'info@raduga-grz.ru',     category: 'shop',  color: 'indigo', commission: 5.0, status: 'active', deals: 28, turnover: '3 240 000 ₽' },
+  { name: 'ТехноМир',          id: uuid(), legal: 'ИП Дудаев Р.М.',         inn: '201400001011',contact: 'Дудаев Р.М.',    address: 'Грозный, ул. Маяковского, 42', phone: '+7 (8712) 22-11-22', email: 'sales@technomir.ru',     category: 'phone', color: 'blue',   commission: 4.5, status: 'active', deals: 42, turnover: '4 850 000 ₽' },
+  { name: 'Магнолия',          id: uuid(), legal: 'ООО «Магнолия Мебель»', inn: '2014000012',  contact: 'Висаитова Л.А.', address: 'Грозный, ул. Идрисова, 8',     phone: '+7 (8712) 22-11-33', email: 'order@magnolia-mbl.ru',  category: 'sofa',  color: 'violet', commission: 6.0, status: 'active', deals: 15, turnover: '1 920 000 ₽' },
+  { name: 'Кавказ-Авто',       id: uuid(), legal: 'ООО «Кавказ-Авто»',     inn: '2014000013',  contact: 'Тагаев Ш.И.',    address: 'Грозный, пр. Кадырова, 54',    phone: '+7 (8712) 22-44-55', email: 'sales@kavkaz-auto.ru',   category: 'shop',  color: 'teal',   commission: 3.0, status: 'active', deals: 8,  turnover: '12 400 000 ₽' },
+  { name: 'BAYT',              id: uuid(), legal: 'ИП Бекмурзаев А.Х.',     inn: '201400001415',contact: 'Бекмурзаев А.Х.',address: 'Грозный, ул. Анисимова, 15',   phone: '+7 (8712) 22-77-88', email: 'info@bayt.ru',           category: 'home',  color: 'green',  commission: 5.5, status: 'active', deals: 19, turnover: '2 180 000 ₽' },
+  { name: 'Кавказ-Электро',    id: uuid(), legal: 'ООО «Кавказ-Электро»',   inn: '2015000001',  contact: 'Эльдиев И.М.',   address: 'Гудермес, ул. Кадырова, 12',   phone: '+7 (8715) 22-33-44', email: 'info@kavkaz-electro.ru', category: 'tv',    color: 'yellow', commission: 4.0, status: 'active', deals: 22, turnover: '2 740 000 ₽' },
+  { name: 'Стиль-Плюс',        id: uuid(), legal: 'ООО «Стиль-Плюс»',       inn: '2016000001',  contact: 'Тагиров М.М.',   address: 'Шали, ул. Шейха Мансура, 8',   phone: '+7 (8714) 22-11-11', email: 'sales@stil-plus.ru',     category: 'sofa',  color: 'orange', commission: 5.5, status: 'active', deals: 11, turnover: '1 580 000 ₽' },
+  { name: 'АвтоВыбор',         id: uuid(), legal: 'ИП Хатуев Х.Л.',         inn: '201700000118',contact: 'Хатуев Х.Л.',    address: 'Аргун, ул. Бачаева, 19',       phone: '+7 (8714) 33-22-11', email: 'info@avtovybor.ru',      category: 'shop',  color: 'red',    commission: 3.5, status: 'active', deals: 6,  turnover: '9 200 000 ₽' },
+  { name: 'Comfort House',     id: uuid(), legal: 'ООО «Комфорт Хаус»',     inn: '2018000001',  contact: 'Дашаева М.Р.',   address: 'Урус-Мартан, ул. Хамзатова, 22',phone:'+7 (8714) 44-55-66',  email: 'order@comfort-house.ru', category: 'sofa',  color: 'pink',   commission: 5.0, status: 'active', deals: 9,  turnover: '1 240 000 ₽' },
+  { name: 'Smart City Маркет', id: uuid(), legal: 'ИП Юсупов М.С.',         inn: '201900000120',contact: 'Юсупов М.С.',    address: 'Курчалой, ул. Кадырова, 6',    phone: '+7 (8714) 55-66-77', email: 'info@smartcity-mkt.ru',  category: 'shop',  color: 'gray',   commission: 4.5, status: 'active', deals: 14, turnover: '1 870 000 ₽' }
+];
+
+// 45 клиентов
+const CLIENT_DATA = [
+  ['Дудаев Магомед Русланович',      '+7 (928) 100-01-01', 'Грозный, ул. Маяковского, 42'],
+  ['Ахмадов Хусейн Висаитович',       '+7 (928) 100-01-02', 'Грозный, ул. Идрисова, 8'],
+  ['Кадыров Адам Сулиманович',        '+7 (928) 100-01-03', 'Грозный, пр. Путина, 17'],
+  ['Висаитов Магомед Ахмедович',      '+7 (928) 100-01-04', 'Грозный, ул. Анисимова, 15'],
+  ['Эльдиев Ислам Магомедович',       '+7 (928) 100-01-05', 'Грозный, пр. Кадырова, 54'],
+  ['Бекмурзаев Адам Хасанович',       '+7 (928) 100-01-06', 'Грозный, ул. Висаитова, 23'],
+  ['Дашаев Тимур Русланович',         '+7 (928) 100-01-07', 'Грозный, ул. Лорсанова, 9'],
+  ['Тагаев Шамиль Ибрагимович',       '+7 (928) 100-01-08', 'Грозный, ул. Маяковского, 67'],
+  ['Магомадов Ахмед Висханович',      '+7 (928) 100-01-09', 'Грозный, ул. Идрисова, 14'],
+  ['Алиев Аслан Магомедович',         '+7 (928) 100-01-10', 'Грозный, ул. Анисимова, 31'],
+  ['Гадаев Беслан Сулиманович',       '+7 (928) 100-01-11', 'Грозный, ул. Висаитова, 8'],
+  ['Битиев Ислам Ахмедович',          '+7 (928) 100-01-12', 'Грозный, пр. Кадырова, 22'],
+  ['Ярагиев Хусейн Лом-Алиевич',      '+7 (928) 100-01-13', 'Грозный, ул. Лорсанова, 41'],
+  ['Закаев Лом-Али Зелимович',        '+7 (928) 100-01-14', 'Грозный, пр. Путина, 89'],
+  ['Эльбиев Турпал Шамилевич',        '+7 (928) 100-01-15', 'Грозный, ул. Анисимова, 7'],
+  ['Сатуев Зелим Висханович',         '+7 (928) 100-01-16', 'Грозный, ул. Маяковского, 18'],
+  ['Минцаев Анзор Бесланович',        '+7 (928) 100-01-17', 'Грозный, ул. Идрисова, 56'],
+  ['Музаев Юсуп Идрисович',           '+7 (928) 100-01-18', 'Грозный, ул. Висаитова, 12'],
+  ['Юсупов Магомед Сатуевич',         '+7 (928) 100-01-19', 'Курчалой, ул. Кадырова, 6'],
+  ['Идрисов Ахмед Хасанович',         '+7 (928) 100-01-20', 'Грозный, пр. Путина, 42'],
+  ['Юнусов Рамзан Магомедович',       '+7 (928) 100-01-21', 'Гудермес, ул. Кадырова, 12'],
+  ['Махмадов Шамиль Юнусович',        '+7 (928) 100-01-22', 'Гудермес, ул. Шейха Мансура, 7'],
+  ['Хасанов Ислам Турпалович',        '+7 (928) 100-01-23', 'Гудермес, ул. Кадырова, 28'],
+  ['Назаров Анзор Хусейнович',        '+7 (928) 100-01-24', 'Гудермес, ул. Шейха Мансура, 19'],
+  ['Бакаев Тимур Асланович',          '+7 (928) 100-01-25', 'Гудермес, ул. Кадырова, 44'],
+  ['Юсаев Висхан Рамзанович',         '+7 (928) 100-01-26', 'Аргун, ул. Кадырова, 31'],
+  ['Истамулов Ибрагим Магомедович',   '+7 (928) 100-01-27', 'Аргун, ул. Бачаева, 19'],
+  ['Чимаев Хамзат Алимович',          '+7 (928) 100-01-28', 'Аргун, ул. Кадырова, 8'],
+  ['Кантаев Аслан Магомадович',       '+7 (928) 100-01-29', 'Аргун, ул. Бачаева, 47'],
+  ['Темирсултанов Адам Идрисович',    '+7 (928) 100-01-30', 'Шали, ул. Кадырова, 14'],
+  ['Цокаев Магомед Тимурович',        '+7 (928) 100-01-31', 'Шали, ул. Шейха Мансура, 8'],
+  ['Магомаев Беслан Адамович',        '+7 (928) 100-01-32', 'Шали, ул. Кадырова, 33'],
+  ['Эпиев Ибрагим Сулиманович',       '+7 (928) 100-01-33', 'Шали, ул. Шейха Мансура, 21'],
+  ['Темирханов Хусейн Лом-Алиевич',   '+7 (928) 100-01-34', 'Урус-Мартан, ул. Хамзатова, 22'],
+  ['Дудаева Малика Руслановна',       '+7 (928) 100-01-35', 'Урус-Мартан, ул. Хамзатова, 11'],
+  ['Ахмадова Хеда Висаитовна',        '+7 (928) 100-01-36', 'Урус-Мартан, ул. Хамзатова, 56'],
+  ['Кадырова Раяна Сулимановна',      '+7 (928) 100-01-37', 'Грозный, пр. Кадырова, 78'],
+  ['Висаитова Аиша Ахмедовна',        '+7 (928) 100-01-38', 'Грозный, ул. Маяковского, 91'],
+  ['Эльдиева Залина Магомедовна',     '+7 (928) 100-01-39', 'Грозный, ул. Идрисова, 27'],
+  ['Бекмурзаева Луиза Хасановна',     '+7 (928) 100-01-40', 'Грозный, ул. Висаитова, 33'],
+  ['Дашаева Мадина Руслановна',       '+7 (928) 100-01-41', 'Грозный, ул. Лорсанова, 18'],
+  ['Тагаева Лиза Ибрагимовна',        '+7 (928) 100-01-42', 'Грозный, пр. Путина, 64'],
+  ['Магомадова Хава Висхановна',      '+7 (928) 100-01-43', 'Грозный, ул. Анисимова, 55'],
+  ['Хатуева Тамила Магомедовна',      '+7 (928) 100-01-44', 'Аргун, ул. Кадырова, 67'],
+  ['Истамулова Хадижа Магомедовна',   '+7 (928) 100-01-45', 'Курчалой, ул. Кадырова, 18']
+];
+
+// Шаблоны заявок: [индекс клиента, индекс партнёра, ключ товара, type, шаг workflow, статус, days_ago]
+// type: 'Товар со склада' | 'Товар от партнёра' | 'Под заказ' | 'Услуга'
+// шаги: 1=новая, 2=СБ, 3=договор, 4=первый взнос, 5=выдача/завершено
+const APP_TEMPLATES = [
+  // Этап 1: новые (в СБ) — 4 шт
+  [0,  1, 'p_iphone15pro',   'Товар со склада',      2, 'pending',  3],
+  [1,  0, 'p_lg_wash',       'Товар со склада',      2, 'pending',  2],
+  [2,  3, 'p_lada_vesta',    'Товар от партнёра',    2, 'pending',  1],
+  [3,  2, 'p_sofa_praga',    'Товар от партнёра',    2, 'pending',  4],
+
+  // Этап 2: на договоре после СБ — 5 шт
+  [4,  1, 'p_iphone15',      'Товар со склада',      3, 'pending',  5],
+  [5,  0, 'p_samsung_s24',   'Товар со склада',      3, 'pending',  6],
+  [6,  4, 'p_atlant',        'Товар со склада',      3, 'pending',  4],
+  [7,  5, 'p_mba_m3',        'Товар со склада',      3, 'pending',  7],
+  [8,  7, 'p_haval_jolion',  'Товар от партнёра',    3, 'pending',  8],
+
+  // Этап 3: первый взнос принят — 4 шт
+  [9,  1, 'p_iphone15pro',   'Товар со склада',      4, 'in_progress', 9],
+  [10, 2, 'p_bedroom_milan', 'Товар от партнёра',    4, 'in_progress', 10],
+  [11, 4, 'p_bosch_oven',    'Товар со склада',      4, 'in_progress', 7],
+  [12, 9, 'p_jura_e8',       'Товар от партнёра',    4, 'in_progress', 11],
+
+  // Этап 4: выданы (active) — 10 шт
+  [13, 1, 'p_iphone15',      'Товар со склада',      5, 'active', 30],
+  [14, 0, 'p_lenovo',        'Товар со склада',      5, 'active', 45],
+  [15, 5, 'p_mbp_m4',        'Товар со склада',      5, 'active', 60],
+  [16, 6, 'p_sofa_praga',    'Товар от партнёра',    5, 'active', 22],
+  [17, 8, 'p_bedroom_milan', 'Товар от партнёра',    5, 'active', 75],
+  [18, 1, 'p_samsung_s24',   'Товар со склада',      5, 'active', 18],
+  [19, 4, 'p_lg_wash',       'Товар со склада',      5, 'active', 90],
+  [20, 4, 'p_atlant',        'Товар со склада',      5, 'active', 50],
+  [21, 3, 'p_lada_vesta',    'Товар от партнёра',    5, 'active', 120],
+  [22, 7, 'p_haval_jolion',  'Товар от партнёра',    5, 'active', 100],
+
+  // Этап 5: завершены — 4 шт
+  [23, 0, 'p_iphone15',      'Товар со склада',      5, 'closed', 200],
+  [24, 1, 'p_lenovo',        'Товар со склада',      5, 'closed', 250],
+  [25, 9, 'p_polair',        'Товар от партнёра',    5, 'closed', 180],
+  [26, 5, 'p_mba_m3',        'Товар со склада',      5, 'closed', 220],
+
+  // Этап 6: отказы — 2 шт
+  [27, 3, 'p_lada_vesta',    'Товар от партнёра',    2, 'rejected', 12],
+  [28, 7, 'p_haval_jolion',  'Товар от партнёра',    2, 'rejected', 15],
+
+  // Этап 7: с просрочкой (overdue) — 4 шт (для collector.html)
+  [29, 1, 'p_iphone15pro',   'Товар со склада',      5, 'overdue', 35], // 5 дней просрочки
+  [30, 6, 'p_sofa_praga',    'Товар от партнёра',    5, 'overdue', 80], // 30 дней
+  [31, 4, 'p_lg_wash',       'Товар со склада',      5, 'overdue', 130],// 90 дней критика
+  [32, 0, 'p_samsung_s24',   'Товар со склада',      5, 'overdue', 28]  // 15 дней
+];
+
+// ============================================================
+// BUILDERS
+// ============================================================
+function daysAgo(d) {
+  const dt = new Date();
+  dt.setDate(dt.getDate() - d);
+  return dt;
+}
+
+function fmtDate(dt) {
+  const pad = n => String(n).padStart(2, '0');
+  return `${pad(dt.getDate())}.${pad(dt.getMonth()+1)}.${dt.getFullYear()}`;
+}
+
+function buildAll() {
+  // 1. Tariffs / Cashes / Articles / Categories / Products — простые refs
+  const tariffs = TARIFFS;
+  const cashes = CASHES;
+  const cashArticles = CASH_ARTICLES;
+  const categories = CATEGORIES;
+
+  // 2. Partners map (key by name)
+  const partnersMap = {};
+  PARTNER_DATA.forEach(p => {
+    partnersMap[p.name] = { ...p, created_at: new Date('2026-04-01').toISOString(), updated_at: new Date().toISOString() };
+  });
+
+  // 3. Clients map (key by phone)
+  const clientsMap = {};
+  CLIENT_DATA.forEach((c, idx) => {
+    const [name, phone, address] = c;
+    clientsMap[phone] = {
+      id: uuid(), name, full_name: name, phone, address,
+      passport: '', dob: null, email: null, note: null, is_blacklisted: false,
+      created_at: daysAgo(60 + idx).toISOString(), updated_at: new Date().toISOString()
+    };
+  });
+
+  // 4. Products map (key by id)
+  const productsMap = {};
+  PRODUCTS.forEach(p => { productsMap[p.id] = p; });
+
+  // 5. Applications + Workflows + Contracts + Payments + Cash_ops + Reservations + Payouts
+  const applications = [];
+  const workflows = {};
+  const contracts = [];
+  const payments = [];
+  const cashOps = [];
+  const reservations = {};
+  const payouts = [];
+
+  let appNumCounter = 142;
+  let cashOpCounter = 1001;
+  let payoutCounter = 1;
+
+  APP_TEMPLATES.forEach((tpl, idx) => {
+    const [clientIdx, partnerIdx, productKey, type, step, status, daysAgoCount] = tpl;
+    const client = clientsMap[CLIENT_DATA[clientIdx][1]];
+    const partner = PARTNER_DATA[partnerIdx];
+    const product = PRODUCTS.find(p => p.id === productKey);
+    const createdAt = daysAgo(daysAgoCount);
+
+    const appId = uuid();
+    const number = String(appNumCounter++).padStart(10, '0');
+    const amount = product.price;
+    const dpPct = (type === 'Товар от партнёра' && amount > 700000) ? 30 : (amount > 200000 ? 25 : 20);
+    const dpAmount = Math.round(amount * dpPct / 100);
+    const body = amount - dpAmount;
+    const term = product.category_id === 'cat_auto' ? 24 : (amount > 100000 ? 12 : 6);
+    const rate = product.category_id === 'cat_auto' ? 24 : (term === 12 ? 17 : 10);
+    const markup = Math.round(body * rate / 100 * (term / 12));
+    const total = body + markup;
+    const monthly = Math.round(total / term);
+
+    // APPLICATION
+    const app = {
+      id: appId,
+      number,
+      client_name: client.name,
+      client_phone: client.phone,
+      client_address: client.address,
+      client_passport: '',
+      partner_id: partner.id,
+      partner: partner.name,
+      client_id: client.id,
+      product_id: productKey,
+      product: product.name,
+      product_color: (product.field_values || {})['Цвет'] || '',
+      type,
+      typeLabel: type === 'Товар от партнёра' || (product.category_id === 'cat_auto') ? 'Иджара' : 'Мурабаха',
+      amount, down_payment: dpAmount, term, monthly,
+      markup_pct: rate, markup_amount: markup, base_price: amount,
+      tariff_id: product.category_id === 'cat_auto' || amount > 500000 ? 't_ijara' : 't_basic',
+      manager_id: null,
+      source: 'manual',
+      status,
+      client: { name: client.name, phone: client.phone, address: client.address, id: client.id },
+      calc: { price: amount, dpAmount, dpPercent: dpPct, term, monthly, type, typeLabel: type, product: product.name, total, markup, rate },
+      ts: createdAt.toISOString(),
+      created_at: createdAt.toISOString(),
+      updated_at: createdAt.toISOString()
+    };
+    applications.push(app);
+
+    // WORKFLOW
+    const wf = {
+      app_id: appId,
+      step,
+      sb_passed: step >= 3,
+      sb_score: step >= 2 ? (status === 'rejected' ? 45 : Math.floor(70 + Math.random() * 28)) : null,
+      rejected: status === 'rejected',
+      completed: status === 'closed',
+      type,
+      updated_at: createdAt.toISOString()
+    };
+    workflows[appId] = wf;
+
+    // CONTRACT (если прошли СБ)
+    if (step >= 3 && status !== 'rejected') {
+      const contractDate = new Date(createdAt);
+      contractDate.setDate(contractDate.getDate() + 1);
+      contracts.push({
+        id: uuid(),
+        number: `ДР-${number.slice(-4)}/2026`,
+        app_id: appId,
+        appId,
+        type: app.typeLabel === 'Иджара' ? 'ijara' : 'murabaha',
+        signed_at: step >= 4 ? contractDate.toISOString() : null,
+        signed_by: step >= 4 ? 'sms' : null,
+        status: step >= 4 ? 'signed' : 'draft',
+        created_at: contractDate.toISOString(),
+        updated_at: contractDate.toISOString()
+      });
+    }
+
+    // FIRST PAYMENT (если этап >= 4)
+    if (step >= 4) {
+      const fpDate = new Date(createdAt);
+      fpDate.setDate(fpDate.getDate() + 2);
+      payments.push({
+        id: uuid(), app_id: appId, num: 0, amount: dpAmount, method: 'cash',
+        cash_id: 'c_main', cashier_id: null, partner_id: null,
+        due_date: fpDate.toISOString().slice(0,10),
+        status: 'paid', paid_at: fpDate.toISOString(),
+        kind: 'down_payment', ts: fpDate.toISOString(), created_at: fpDate.toISOString()
+      });
+      cashOps.push({
+        id: uuid(), num: `PD-${cashOpCounter++}`, date: fpDate.toISOString(),
+        article_id: 'a_first_pay', articleId: 'a_first_pay',
+        article_name: 'Первоначальный взнос', articleName: 'Первоначальный взнос',
+        dir: 'in', cash_id: 'c_main', cashId: 'c_main',
+        amount: dpAmount, party: client.name,
+        note: `Первый взнос по заявке #${number.slice(-4)}`,
+        app_id: appId, created_at: fpDate.toISOString()
+      });
+
+      // RESERVATION (если "от партнёра")
+      if (type === 'Товар от партнёра') {
+        reservations[appId] = {
+          id: uuid(), app_id: appId, appId,
+          partner_id: partner.id, partnerId: partner.id,
+          product: product.name,
+          purchase_amt: product.purchase_price, purchaseAmt: product.purchase_price,
+          sale_amt: amount, saleAmt: amount,
+          stage: step >= 5 ? 'delivered' : 'reserved',
+          ts: fpDate.toISOString(), updated_at: fpDate.toISOString()
+        };
+      }
+    }
+
+    // SCHEDULED INSTALLMENTS (если выдано)
+    if (step >= 5 && status !== 'rejected') {
+      const paidCount = status === 'closed' ? term : (status === 'overdue' ? Math.max(1, Math.floor(term * 0.4)) : Math.floor(term * 0.5));
+      const overdueExtra = status === 'overdue' ? Math.min(3, term - paidCount) : 0;
+      for (let i = 1; i <= term; i++) {
+        const dueDate = new Date(createdAt);
+        dueDate.setDate(dueDate.getDate() + 30 * i);
+        const paid = i <= paidCount;
+        const overdue = !paid && i <= paidCount + overdueExtra;
+        const paymentStatus = paid ? 'paid' : (overdue ? 'overdue' : 'pending');
+        const paidAt = paid ? new Date(dueDate.getTime() - Math.random() * 5 * 86400000).toISOString() : null;
+        payments.push({
+          id: uuid(), app_id: appId, num: i, amount: monthly,
+          method: paid ? (Math.random() > 0.5 ? 'cash' : 'card') : null,
+          cash_id: paid ? 'c_main' : null,
+          cashier_id: null, partner_id: null,
+          due_date: dueDate.toISOString().slice(0,10),
+          status: paymentStatus, paid_at: paidAt,
+          kind: 'installment', ts: (paidAt || dueDate).toISOString(),
+          created_at: createdAt.toISOString()
+        });
+        if (paid) {
+          cashOps.push({
+            id: uuid(), num: `PD-${cashOpCounter++}`, date: paidAt,
+            article_id: overdue ? 'a_late_pay' : 'a_installment',
+            articleId: overdue ? 'a_late_pay' : 'a_installment',
+            article_name: overdue ? 'Платёж с просрочкой' : 'Платёж по графику',
+            articleName: overdue ? 'Платёж с просрочкой' : 'Платёж по графику',
+            dir: 'in', cash_id: 'c_main', cashId: 'c_main',
+            amount: monthly, party: client.name,
+            note: `Платёж ${i}/${term} по заявке #${number.slice(-4)}`,
+            app_id: appId, created_at: paidAt
+          });
+        }
+      }
+
+      // PARTNER PAYOUT (если "от партнёра" и выдано)
+      if (type === 'Товар от партнёра') {
+        const payoutDate = new Date(createdAt);
+        payoutDate.setDate(payoutDate.getDate() + 3);
+        const payoutStatus = step >= 5 && status !== 'overdue' ? 'confirmed' : 'pending';
+        payouts.push({
+          id: uuid(),
+          partner_id: partner.id,
+          partnerId: partner.id,
+          amount: product.purchase_price,
+          description: `Закупка ${product.name} (заявка #${number.slice(-4)})`,
+          inkassator_id: null, recipient: partner.contact, sign: null, note: null,
+          delivered_at: payoutStatus === 'confirmed' ? payoutDate.toISOString() : null,
+          deliveredAt: payoutStatus === 'confirmed' ? payoutDate.toISOString() : null,
+          confirmed_at: payoutStatus === 'confirmed' ? payoutDate.toISOString() : null,
+          confirmedAt: payoutStatus === 'confirmed' ? payoutDate.toISOString() : null,
+          status: payoutStatus,
+          dispute_reason: null, disputeReason: null,
+          created_at: payoutDate.toISOString()
+        });
+      }
+    }
+  });
+
+  return {
+    'payd.tariffs.v1': tariffs,
+    'payd.tariffs.active': 't_basic',
+    'payd.cashes.v1': cashes,
+    'payd.cash.articles.v1': cashArticles,
+    'payd.cash.ops.v1': cashOps,
+    'payd.products.categories.v1': categories,
+    'payd.products.v1': productsMap,
+    'payd.partners.v1': partnersMap,
+    'payd.partners.active': 'Радуга',
+    'payd.clients.v1': clientsMap,
+    'payd.calc.applications': applications,
+    'payd.zayavka.wf.v1': workflows,
+    'payd.contracts.v1': contracts,
+    'payd.payments.v1': payments,
+    'payd.partner.reserv.stages.v1': reservations,
+    'payd.partner.payouts.v1': payouts
+  };
+}
+
+// ============================================================
+// ACTIONS
+// ============================================================
+function refreshStats() {
+  try {
+    const c = JSON.parse(localStorage.getItem('payd.clients.v1') || '{}');
+    const p = JSON.parse(localStorage.getItem('payd.partners.v1') || '{}');
+    const a = JSON.parse(localStorage.getItem('payd.calc.applications') || '[]');
+    const ct = JSON.parse(localStorage.getItem('payd.contracts.v1') || '[]');
+    document.getElementById('s-clients').textContent = Object.keys(c).length;
+    document.getElementById('s-partners').textContent = Object.keys(p).length;
+    document.getElementById('s-apps').textContent = Array.isArray(a) ? a.length : Object.keys(a).length;
+    document.getElementById('s-contracts').textContent = Array.isArray(ct) ? ct.length : Object.keys(ct).length;
+  } catch (_) {}
+}
+
+document.getElementById('btn-seed').addEventListener('click', () => {
+  log('Генерирую данные…', '#fbbf24');
+  try {
+    const all = buildAll();
+    let total = 0;
+    Object.entries(all).forEach(([key, val]) => {
+      localStorage.setItem(key, JSON.stringify(val));
+      const n = Array.isArray(val) ? val.length : (typeof val === 'object' ? Object.keys(val).length : 1);
+      total += n;
+      log(`  ✓ ${key}: ${n} записей`);
+    });
+    log(`Готово. Всего записей: ${total}.`, '#34d399');
+    log('Открой Дашборд / Журнал / Кассу из списка справа ниже.', '#fbbf24');
+    refreshStats();
+  } catch (e) {
+    log(`ОШИБКА: ${e.message}`, '#f87171');
+    console.error(e);
+  }
+});
+
+document.getElementById('btn-clear').addEventListener('click', () => {
+  if (!confirm('Удалить ВСЕ payd.* ключи из localStorage?')) return;
+  let removed = 0;
+  Object.keys(localStorage).filter(k => k.startsWith('payd.')).forEach(k => {
+    localStorage.removeItem(k); removed++;
+  });
+  log(`Очищено ${removed} ключей.`, '#fbbf24');
+  refreshStats();
+});
+
+document.getElementById('btn-stats').addEventListener('click', () => {
+  const keys = Object.keys(localStorage).filter(k => k.startsWith('payd.'));
+  log(`Найдено ${keys.length} payd.* ключей:`);
+  keys.forEach(k => {
+    try {
+      const v = JSON.parse(localStorage.getItem(k));
+      const n = Array.isArray(v) ? v.length : (typeof v === 'object' && v ? Object.keys(v).length : 1);
+      log(`  ${k}: ${n} записей`);
+    } catch (_) {
+      log(`  ${k}: (не JSON)`);
+    }
+  });
+  refreshStats();
+});
+
+refreshStats();
+</script>
+</body>
+</html>
