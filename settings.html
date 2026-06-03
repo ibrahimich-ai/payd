@@ -1192,7 +1192,7 @@
     document.getElementById('btn-add-tariff').addEventListener('click', () => {
       const all = loadAll();
       const newT = {
-        id: 't_' + Date.now(),
+        id: PaydDB.utils.uuid(),
         name: 'Новый тариф',
         desc: '',
         types: ['standard', 'murabaha'],

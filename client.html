@@ -254,6 +254,7 @@
     // Merge data: manual record takes precedence for personal info
     const firstApp = myApps[0] || {};
     const client = {
+      id: manualMatch.id,
       name: manualMatch.name || name || firstApp.client_name || firstApp.client?.name || '—',
       phone: manualMatch.phone || phone || firstApp.client_phone || firstApp.client?.phone || '',
       passport: manualMatch.passport || firstApp.client_passport || '',
@@ -409,18 +410,15 @@
       created_at: currentClient?.created_at || new Date().toISOString()
     };
 
-    // Save to manual clients map (key by phone, fallback to name)
-    let map = {};
-    try { map = JSON.parse(localStorage.getItem('payd.clients.v1') || '{}'); } catch (_) {}
-
-    // If old key existed, remove it (in case phone changed)
+    // Сохраняем клиента через PaydDB (ключ — phone). При создании генерим uuid,
+    // при редактировании сохраняем существующий id.
+    updated.id = currentClient?.id || PaydDB.utils.uuid();
     const oldPhone = currentClient?.phone;
     const oldName = currentClient?.name;
-    if (oldPhone && map[oldPhone]) delete map[oldPhone];
-    else if (oldName && map[oldName]) delete map[oldName];
-
-    map[phone || name] = updated;
-    localStorage.setItem('payd.clients.v1', JSON.stringify(map));
+    // Если ключ (phone/name) изменился — удаляем старую запись
+    if (oldPhone && oldPhone !== phone) await PaydDB.remove('clients', oldPhone);
+    else if (oldName && oldName !== phone) await PaydDB.remove('clients', oldName);
+    await PaydDB.upsert('clients', updated);
     PaydApp.toast('Изменения сохранены', 'success');
     closeEdit();
 
@@ -437,14 +435,11 @@
       title: 'Удалить клиента?',
       message: 'Запись клиента будет удалена. Связанные заявки останутся в системе.',
       okText: 'Удалить',
-      onOk: () => {
-        let map = {};
-        try { map = JSON.parse(localStorage.getItem('payd.clients.v1') || '{}'); } catch (_) {}
+      onOk: async () => {
         const oldPhone = currentClient?.phone;
         const oldName = currentClient?.name;
-        if (oldPhone) delete map[oldPhone];
-        if (oldName) delete map[oldName];
-        localStorage.setItem('payd.clients.v1', JSON.stringify(map));
+        if (oldPhone) await PaydDB.remove('clients', oldPhone);
+        if (oldName && oldName !== oldPhone) await PaydDB.remove('clients', oldName);
         PaydApp.toast('Клиент удалён', 'success');
         setTimeout(() => location.href = 'clients.html', 600);
       }

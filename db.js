@@ -923,7 +923,7 @@
     if (!sb) throw new Error('Supabase SDK недоступен');
     const ext = (file.name || 'file').split('.').pop();
     const safeName = (file.name || 'file').replace(/[^a-zA-Z0-9_.-]/g, '_');
-    const path = `${entityType}/${entityId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`;
+    const path = `${entityType}/${entityId}/${utilsUuid()}-${safeName}`;
     const { error: upErr } = await sb.storage.from('payd-docs').upload(path, file);
     if (upErr) throw upErr;
     const { data, error } = await sb.from('documents').insert({

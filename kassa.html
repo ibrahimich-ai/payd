@@ -482,7 +482,7 @@
 
   function openCashEdit(id) {
     const isNew = !id;
-    const c = isNew ? { id: 'c_' + Date.now(), name: '', address: '', kkt: '', fn: '', responsible: '', balance: 0, status: 'active' } : cashes.find(x => x.id === id);
+    const c = isNew ? { id: PaydDB.utils.uuid(), name: '', address: '', kkt: '', fn: '', responsible: '', balance: 0, status: 'active' } : cashes.find(x => x.id === id);
     if (!c) return;
     const m = openModal({
       title: isNew ? 'Новая касса' : 'Касса',
@@ -640,7 +640,7 @@
   function openOpEdit(id) {
     const isNew = !id;
     const o = isNew
-      ? { id: 'op_' + Date.now(), num: 'PD-' + (1000 + ops.length + 1), date: new Date().toISOString(), articleId: '', cashId: cashes[0]?.id, amount: 0, party: '', note: '', dir: 'in' }
+      ? { id: PaydDB.utils.uuid(), num: 'PD-' + (1000 + ops.length + 1), date: new Date().toISOString(), articleId: '', cashId: cashes[0]?.id, amount: 0, party: '', note: '', dir: 'in' }
       : ops.find(x => x.id === id);
     if (!o) return;
     const dt = new Date(o.date);
@@ -849,7 +849,7 @@
 
   function openArticleEdit(id) {
     const isNew = !id;
-    const a = isNew ? { id: 'a_' + Date.now(), name: '', dir: 'in', color: '#10b981', group: 'Прочее' } : articles.find(x => x.id === id);
+    const a = isNew ? { id: PaydDB.utils.uuid(), name: '', dir: 'in', color: '#10b981', group: 'Прочее' } : articles.find(x => x.id === id);
     if (!a) return;
     const m = openModal({
       title: isNew ? 'Новая статья' : 'Статья',

@@ -2144,7 +2144,7 @@
     const close = () => back.remove();
     back.addEventListener('click', e => { if (e.target === back) close(); });
     back.querySelector('[data-act="cancel"]').onclick = close;
-    back.querySelector('[data-act="ok"]').onclick = () => {
+    back.querySelector('[data-act="ok"]').onclick = async () => {
       const amt = parseInt(String(back.querySelector('#bb-amt').value).replace(/\D/g, ''), 10) || 0;
       if (!amt) { if (window.PaydApp?.toast) PaydApp.toast('Укажите сумму выкупа', 'warning'); return; }
       const reason = back.querySelector('#bb-reason').value;
@@ -2154,10 +2154,9 @@
 
       // Create cash expense operation
       try {
-        const ops = JSON.parse(localStorage.getItem('payd.cash.ops.v1') || '[]');
-        ops.unshift({
-          id: 'op_' + Date.now(),
-          num: 'PD-' + (1000 + ops.length + 1),
+        await PaydDB.upsert('cash_ops', {
+          id: PaydDB.utils.uuid(),
+          num: 'PD-' + Date.now(),
           date: new Date().toISOString(),
           articleId: 'a_refund',
           articleName: 'Возврат клиенту (выкуп)',
@@ -2167,7 +2166,6 @@
           party: _app.clientName,
           note: `Выкуп по заявке №${_app.number}: ${reason} · ${cond}${note ? ' · ' + note : ''}`
         });
-        localStorage.setItem('payd.cash.ops.v1', JSON.stringify(ops));
       } catch (_) {}
 
       // Mark deal as bought back
@@ -2232,7 +2230,7 @@
     };
   }
 
-  function doAcceptDownpay() {
+  async function doAcceptDownpay() {
     if (!confirm(`Принять первоначальный взнос ${_app.termsDown} от клиента ${_app.clientName}?\nПлатёж будет проведён через кассу.`)) return;
     const f = flowFor(wf.type);
     // Взнос принят — двигаем дальше (на «Заказ» / «Выдача» / «Активация» в зависимости от типа)
@@ -2242,12 +2240,11 @@
     if (window.PaydApp?.toast) PaydApp.toast(`Взнос ${_app.termsDown} принят`, { type: 'success', subtitle: 'Чек напечатан · переход к выдаче товара' });
     // Save to cash ops if storage exists
     try {
-      const ops = JSON.parse(localStorage.getItem('payd.cash.ops.v1') || '[]');
       const num = parseInt(String(_app.termsDown).replace(/\D/g, ''), 10) || 0;
       if (num) {
-        ops.unshift({
-          id: 'op_' + Date.now(),
-          num: 'PD-' + (1000 + ops.length + 1),
+        await PaydDB.upsert('cash_ops', {
+          id: PaydDB.utils.uuid(),
+          num: 'PD-' + Date.now(),
           date: new Date().toISOString(),
           articleId: 'a_dp_client',
           articleName: 'Первоначальный взнос',
@@ -2257,7 +2254,6 @@
           party: _app.clientName,
           note: `Заявка №${_app.number}`
         });
-        localStorage.setItem('payd.cash.ops.v1', JSON.stringify(ops));
       }
     } catch (_) {}
   }
@@ -2352,19 +2348,18 @@
         if (name && !dlByEl.value) dlByEl.value = name;
       }).catch(() => {});
     }
-    back.querySelector('[data-act="ok"]').onclick = () => {
+    back.querySelector('[data-act="ok"]').onclick = async () => {
       const by = back.querySelector('#dl-by')?.value.trim() || 'Менеджер';
       close();
 
       // Side-effect: actual cash expense operation when purchasing from partner
       if (isPurchase) {
         try {
-          const ops = JSON.parse(localStorage.getItem('payd.cash.ops.v1') || '[]');
           const num = parseInt(String(_app.termsPurchase).replace(/\D/g, ''), 10) || 0;
           if (num) {
-            ops.unshift({
-              id: 'op_' + Date.now(),
-              num: 'PD-' + (1000 + ops.length + 1),
+            await PaydDB.upsert('cash_ops', {
+              id: PaydDB.utils.uuid(),
+              num: 'PD-' + Date.now(),
               date: new Date().toISOString(),
               articleId: 'a_partner_out',
               articleName: 'Закупка товара у партнёра',
@@ -2374,7 +2369,6 @@
               party: partnerName,
               note: `Заявка №${_app.number} · ${_app.productName}`
             });
-            localStorage.setItem('payd.cash.ops.v1', JSON.stringify(ops));
           }
         } catch (_) {}
       }

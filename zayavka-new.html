@@ -449,7 +449,7 @@
     let k = null;
     try { k = localStorage.getItem(IDEM_KEY); } catch (_) {}
     if (!k) {
-      k = 'idem_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+      k = 'idem_' + PaydDB.utils.uuid();
       try { localStorage.setItem(IDEM_KEY, k); } catch (_) {}
     }
     return k;
@@ -1043,15 +1043,14 @@
       // 1. Клиент → справочник
       try {
         if (form.client.name && form.client.phone) {
-          let map = {};
-          try { map = JSON.parse(localStorage.getItem('payd.clients.v1') || '{}'); } catch (_) {}
-          if (!map[form.client.phone]) {
-            map[form.client.phone] = {
+          const clients = (await PaydDB.list('clients')) || [];
+          if (!clients.some(c => c.phone === form.client.phone)) {
+            await PaydDB.upsert('clients', {
+              id: PaydDB.utils.uuid(),
               name: form.client.name, phone: form.client.phone,
               passport: form.client.passport || '', address: form.client.address || '',
               created_at: new Date().toISOString()
-            };
-            localStorage.setItem('payd.clients.v1', JSON.stringify(map));
+            });
           }
         }
       } catch (_) {}
@@ -1263,11 +1262,8 @@
       created_at: new Date().toISOString()
     };
 
-    // Save to localStorage clients map (key by phone)
-    let map = {};
-    try { map = JSON.parse(localStorage.getItem('payd.clients.v1') || '{}'); } catch (_) {}
-    map[phone] = newClient;
-    localStorage.setItem('payd.clients.v1', JSON.stringify(map));
+    // Сохраняем клиента через PaydDB (ключ — phone)
+    await PaydDB.upsert('clients', { id: PaydDB.utils.uuid(), ...newClient });
 
     PaydApp.toast('Клиент создан', { type: 'success', subtitle: name });
     clientModal.classList.remove('open');

@@ -332,7 +332,7 @@
       }
       // Migrate from old flat string array
       if (raw.length && typeof raw[0] === 'string') {
-        return raw.map(name => ({ id: 'cat_' + Math.random().toString(36).slice(2, 8), name, parent: null, fields: [] }));
+        return raw.map(name => ({ id: PaydDB.utils.uuid(), name, parent: null, fields: [] }));
       }
       return raw;
     } catch (_) { return []; }
@@ -356,7 +356,7 @@
   function saveCats(arr) {
     localStorage.setItem(CATEGORIES_KEY, JSON.stringify(arr));
   }
-  function newCatId() { return 'cat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6); }
+  function newCatId() { return PaydDB.utils.uuid(); }
   function getCatById(cats, id) { return cats.find(c => c.id === id); }
   function getCatByName(cats, name) { return cats.find(c => c.name === name && c.parent == null); }
   function getDescendants(cats, parentId) {
@@ -648,7 +648,7 @@
     if (!price) { PaydApp.toast('Укажите цену', 'error'); return; }
 
     const products = loadProducts();
-    const id = editingId || ('p_' + Date.now());
+    const id = editingId || PaydDB.utils.uuid();
     const prev = products[id] || {};
     products[id] = {
       id,

@@ -1653,18 +1653,17 @@ function openMiniCalc(opts = {}) {
       if (!d.startsWith('7') && d.length) d = '7' + d;
       e.target.value = d.length ? '+' + d.slice(0,1) + (d.slice(1,4) ? ' ' + d.slice(1,4) : '') + (d.slice(4,7) ? ' ' + d.slice(4,7) : '') + (d.slice(7,9) ? '-' + d.slice(7,9) : '') + (d.slice(9,11) ? '-' + d.slice(9,11) : '') : '';
     });
-    content.querySelector('#pmc-form').addEventListener('submit', e => {
+    content.querySelector('#pmc-form').addEventListener('submit', async e => {
       e.preventDefault();
       const name = content.querySelector('#pmc-name').value.trim();
       const phone = content.querySelector('#pmc-phone').value.trim();
       if (!name || !phone) return;
 
-      // Save to same store as full calculator
-      let list = [];
-      try { list = JSON.parse(localStorage.getItem('payd.calc.applications') || '[]'); } catch (_) {}
+      // Save through PaydDB (cloud + local cache)
+      const list = (await PaydDB.list('applications')) || [];
       const num = String(200 + list.length + 1).padStart(10, '0');
       const app = {
-        id: (window.PaydDB?.utils?.uuid?.() || ('A' + Date.now())),
+        id: PaydDB.utils.uuid(),
         number: num,
         ts: new Date().toISOString(),
         partner: opts.partner || null,
@@ -1683,8 +1682,7 @@ function openMiniCalc(opts = {}) {
           monthly: Math.round(monthly)
         }
       };
-      list.unshift(app);
-      localStorage.setItem('payd.calc.applications', JSON.stringify(list));
+      await PaydDB.upsert('applications', app);
 
       content.innerHTML = `
         <div class="pmc-success">
