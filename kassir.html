@@ -131,14 +131,24 @@
     allApps = apps.filter(a => !a.rejected);
     allCashes = cashes.filter(c => c.status !== 'archived');
 
-    // Подтянуть очередь pending платежей
+    // Подтянуть очередь pending платежей: Supabase если онлайн, иначе локальный fallback
     const sb = window.PaydDB?.cloud?.sb?.();
+    const today = new Date().toISOString().slice(0, 10);
     if (sb) {
-      const today = new Date().toISOString().slice(0, 10);
-      const { data } = await sb.from('payments').select('*').eq('status', 'pending').lte('due_date', today).order('due_date');
-      pendingPayments = data || [];
+      try {
+        const { data } = await sb.from('payments').select('*').eq('status', 'pending').lte('due_date', today).order('due_date');
+        pendingPayments = data || [];
+      } catch (_) { pendingPayments = []; }
     } else {
       pendingPayments = [];
+    }
+    if (!pendingPayments.length) {
+      try {
+        const all = JSON.parse(localStorage.getItem('payd.payments.v1') || '[]');
+        pendingPayments = all
+          .filter(p => p.status === 'pending' && (!p.due_date || p.due_date <= today))
+          .sort((a, b) => String(a.due_date || '').localeCompare(String(b.due_date || '')));
+      } catch (_) {}
     }
 
     const sel = document.getElementById('kk-cash');

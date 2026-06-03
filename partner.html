@@ -252,13 +252,22 @@
     const reservList = Array.isArray(reservs) ? reservs : Object.values(reservs);
     allReservs = reservList.filter(r => allApps.some(a => a.id === r.app_id));
 
-    // Выплаты — только если у партнёра uuid id
+    // Выплаты — Supabase если онлайн, иначе из локального payd.partner.payouts.v1
     const partnerId = (activePartner.id && /^[0-9a-f-]{36}$/i.test(activePartner.id)) ? activePartner.id : null;
-    if (partnerId) {
-      const { data } = await sb.from('partner_payouts').select('*').eq('partner_id', partnerId).order('created_at', { ascending: false });
-      allPayouts = data || [];
-    } else {
-      allPayouts = [];
+    allPayouts = [];
+    if (partnerId && sb) {
+      try {
+        const { data } = await sb.from('partner_payouts').select('*').eq('partner_id', partnerId).order('created_at', { ascending: false });
+        allPayouts = data || [];
+      } catch (_) {}
+    }
+    if (!allPayouts.length) {
+      try {
+        const all = JSON.parse(localStorage.getItem('payd.partner.payouts.v1') || '[]');
+        allPayouts = all
+          .filter(p => !partnerId || p.partner_id === partnerId || p.partnerId === partnerId)
+          .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+      } catch (_) {}
     }
 
     render();

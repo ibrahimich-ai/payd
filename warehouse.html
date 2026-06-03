@@ -83,17 +83,23 @@
 
   async function load() {
     const sb = PaydDB.cloud.sb();
-    if (!sb) return;
     const today = new Date(new Date().setHours(0,0,0,0)).toISOString();
-    const [apps, wfs, { data: hist }] = await Promise.all([
+    const [apps, wfs] = await Promise.all([
       PaydDB.list('applications').catch(() => []),
-      PaydDB.list('workflows').catch(() => []),
-      sb.from('application_history').select('*').gte('ts', today).eq('action', 'product.delivered')
+      PaydDB.list('workflows').catch(() => [])
     ]);
     allApps = apps;
     workflows = {};
     (Array.isArray(wfs) ? wfs : Object.values(wfs)).forEach(w => { if (w.app_id) workflows[w.app_id] = w; });
-    history = hist || [];
+    // application_history только из Supabase (нет локального аналога) — пустой массив offline.
+    if (sb) {
+      try {
+        const { data: hist } = await sb.from('application_history').select('*').gte('ts', today).eq('action', 'product.delivered');
+        history = hist || [];
+      } catch (_) { history = []; }
+    } else {
+      history = [];
+    }
     render();
   }
 

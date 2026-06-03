@@ -149,15 +149,77 @@
   let allPartners = [];
   const today = new Date().toISOString().slice(0, 10);
 
+  // Fallback: генерируем точки маршрута из локальных данных
+  // (партнёрские выплаты pending + резервы), когда Supabase недоступен.
+  function loadFromLocal() {
+    let partners = [], payouts = [], reservations = {};
+    try { partners = Object.values(JSON.parse(localStorage.getItem('payd.partners.v1') || '{}')); } catch (_) {}
+    try { payouts = JSON.parse(localStorage.getItem('payd.partner.payouts.v1') || '[]'); } catch (_) {}
+    try { reservations = JSON.parse(localStorage.getItem('payd.partner.reserv.stages.v1') || '{}'); } catch (_) {}
+
+    const stops = [];
+    let counter = 1;
+    const baseHour = 9; // маршрут с 9:00
+
+    // Pending payouts → deliver (отвезти наличные партнёру за товар)
+    payouts.filter(p => p.status === 'pending').slice(0, 5).forEach(p => {
+      const partner = partners.find(x => x.id === p.partner_id || x.id === p.partnerId);
+      const hour = baseHour + counter;
+      stops.push({
+        id: 'demo-payout-' + p.id,
+        shift_date: today,
+        partner_id: p.partner_id || p.partnerId,
+        dir: 'deliver',
+        amount: p.amount,
+        planned_at: String(hour).padStart(2,'0') + ':00',
+        status: 'pending',
+        recipient: p.recipient || partner?.name || '—',
+        note: p.description || ('Выплата ' + (partner?.name || ''))
+      });
+      counter++;
+    });
+
+    // Активные партнёры с резервами → pickup (забрать наличку приходов)
+    Object.values(reservations).filter(r => r.stage === 'reserved' || r.stage === 'delivered').slice(0, 3).forEach(r => {
+      const partner = partners.find(x => x.id === r.partner_id || x.id === r.partnerId);
+      const hour = baseHour + counter;
+      stops.push({
+        id: 'demo-reserv-' + r.id,
+        shift_date: today,
+        partner_id: r.partner_id || r.partnerId,
+        dir: 'pickup',
+        amount: Math.round(r.sale_amt * 0.1) || 50000,
+        planned_at: String(hour).padStart(2,'0') + ':00',
+        status: 'pending',
+        recipient: partner?.name || r.recipient || '—',
+        note: 'Забрать выручку · ' + (partner?.name || '')
+      });
+      counter++;
+    });
+
+    return { stops, partners };
+  }
+
   async function load() {
     const sb = PaydDB.cloud.sb();
-    if (!sb) return;
-    const [{ data: stops }, partners] = await Promise.all([
-      sb.from('inkassator_stops').select('*').eq('shift_date', today).order('planned_at'),
-      PaydDB.list('partners').catch(() => [])
-    ]);
-    allStops = stops || [];
-    allPartners = partners.filter(p => p.status !== 'danger');
+    if (sb) {
+      try {
+        const [{ data: stops }, partners] = await Promise.all([
+          sb.from('inkassator_stops').select('*').eq('shift_date', today).order('planned_at'),
+          PaydDB.list('partners').catch(() => [])
+        ]);
+        if ((stops && stops.length) || (Array.isArray(partners) && partners.length)) {
+          allStops = stops || [];
+          allPartners = (partners || []).filter(p => p.status !== 'danger');
+          render();
+          return;
+        }
+      } catch (_) {}
+    }
+    // Fallback на локальные данные (demo / оффлайн режим)
+    const fb = loadFromLocal();
+    allStops = fb.stops;
+    allPartners = fb.partners.filter(p => p.status !== 'danger');
     render();
   }
 

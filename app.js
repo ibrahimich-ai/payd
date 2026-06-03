@@ -53,22 +53,22 @@ const SIDEBAR_HTML = `
     <a class="sb-link" data-page="partner" href="partner.html">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg>
       Рабочее место партнёра
-      <span class="badge">3</span>
+      <span class="badge" data-count="partner">0</span>
     </a>
     <a class="sb-link" data-page="sb" href="sb.html">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       Служба безопасности
-      <span class="badge">5</span>
+      <span class="badge" data-count="sb">0</span>
     </a>
     <a class="sb-link" data-page="collector" href="collector.html">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       Взыскание
-      <span class="badge">23</span>
+      <span class="badge" data-count="collector">0</span>
     </a>
     <a class="sb-link" data-page="inkassator" href="inkassator.html">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
       Инкассатор
-      <span class="badge">7</span>
+      <span class="badge" data-count="inkassator">0</span>
     </a>
     <div class="sb-section">Документы и финансы</div>
     <a class="sb-link" data-page="contracts" href="contracts.html">
@@ -225,6 +225,66 @@ function mountShell({ active, title, breadcrumbs, actions }) {
   initTopbarCalc();
   initTopbarBack({ active });
   loadSidebarUser();
+  updateSidebarBadges();
+}
+
+// Считаем счётчики в sidebar из localStorage (offline-aware).
+// Перерассчитывается каждые 5 сек, чтобы отражать realtime-изменения.
+function updateSidebarBadges() {
+  function _set(name, n) {
+    const el = document.querySelector(`[data-count="${name}"]`);
+    if (!el) return;
+    el.textContent = String(n || 0);
+    if (n > 0) el.classList.remove('muted');
+  }
+  function _run() {
+    try {
+      const apps = JSON.parse(localStorage.getItem('payd.calc.applications') || '[]');
+      const wfsRaw = JSON.parse(localStorage.getItem('payd.zayavka.wf.v1') || '{}');
+      const wfs = Array.isArray(wfsRaw) ? wfsRaw.reduce((m,w) => (w.app_id && (m[w.app_id]=w), m), {}) : wfsRaw;
+      const pays = JSON.parse(localStorage.getItem('payd.payments.v1') || '[]');
+      const reservs = JSON.parse(localStorage.getItem('payd.partner.reserv.stages.v1') || '{}');
+      const payouts = JSON.parse(localStorage.getItem('payd.partner.payouts.v1') || '[]');
+      const today = new Date().toISOString().slice(0, 10);
+
+      const list = Array.isArray(apps) ? apps : Object.values(apps);
+      const activeApps = list.filter(a => a.status !== 'closed' && a.status !== 'rejected' && !a.closed && !a.rejected);
+
+      // zhurnal — всего заявок
+      _set('zhurnal', list.length);
+
+      // manager — активные сделки
+      _set('manager', activeApps.length);
+
+      // kassir — pending платежи, срок до сегодня
+      _set('kassir', pays.filter(p => p.status === 'pending' && (!p.due_date || p.due_date <= today)).length);
+
+      // warehouse — после СБ + договор подписан + ещё не выдано
+      _set('warehouse', list.filter(a => {
+        const w = wfs[a.id];
+        return w && w.sb_passed && w.step >= 3 && !w.completed && !w.delivered;
+      }).length);
+
+      // partner — резервы у партнёров (открытые)
+      _set('partner', Object.values(reservs).filter(r => r.stage !== 'delivered').length);
+
+      // sb — ждут проверки СБ
+      _set('sb', list.filter(a => {
+        const w = wfs[a.id];
+        return w && w.sb_passed !== true && !w.rejected;
+      }).length);
+
+      // collector — заявки с просрочкой
+      _set('collector', list.filter(a => a.status === 'overdue').length);
+
+      // inkassator — pending выплаты партнёрам
+      _set('inkassator', payouts.filter(p => p.status === 'pending').length);
+    } catch (e) { /* silent */ }
+  }
+  _run();
+  if (!window._paydBadgeInterval) {
+    window._paydBadgeInterval = setInterval(_run, 5000);
+  }
 }
 
 async function loadSidebarUser() {

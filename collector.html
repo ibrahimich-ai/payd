@@ -89,16 +89,28 @@
 
   async function load() {
     const sb = PaydDB.cloud.sb();
-    if (!sb) return;
 
     // Active applications (with contracts but not closed)
     const apps = await PaydDB.list('applications').catch(() => []);
-    const active = apps.filter(a => !a.closed && !a.rejected);
+    const active = apps.filter(a => !a.closed && !a.rejected && a.status !== 'closed' && a.status !== 'rejected');
 
     if (!active.length) { allOverdue = []; render(); return; }
 
-    // Get all payments
-    const { data: payments } = await sb.from('payments').select('*').in('app_id', active.map(a => a.id));
+    // Get payments — Supabase если онлайн, иначе локальный fallback
+    let payments = [];
+    if (sb) {
+      try {
+        const { data } = await sb.from('payments').select('*').in('app_id', active.map(a => a.id));
+        payments = data || [];
+      } catch (_) {}
+    }
+    if (!payments.length) {
+      try {
+        const all = JSON.parse(localStorage.getItem('payd.payments.v1') || '[]');
+        const activeIds = new Set(active.map(a => a.id));
+        payments = all.filter(p => activeIds.has(p.app_id));
+      } catch (_) {}
+    }
     const byApp = {};
     (payments || []).forEach(p => { byApp[p.app_id] = (byApp[p.app_id] || []).concat(p); });
 
