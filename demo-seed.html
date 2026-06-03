@@ -384,7 +384,7 @@ function buildAll() {
     const body = amount - dpAmount;
     const term = product.category_id === 'cat_auto' ? 24 : (amount > 100000 ? 12 : 6);
     const rate = product.category_id === 'cat_auto' ? 24 : (term === 12 ? 17 : 10);
-    const markup = Math.round(body * rate / 100 * (term / 12));
+    const markup = Math.round(amount * rate / 100);   // ПЛОСКАЯ наценка от полной цены (канон)
     const total = body + markup;
     const monthly = Math.round(total / term);
 

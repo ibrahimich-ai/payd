@@ -657,7 +657,12 @@
 
     const rates = tariff?.murabahaRates || tariff?.murabaha_rates || {};
     const markupPct = +rates[term] || 0;
-    const markup = Math.round(base * markupPct / 100);
+    // Наценка — через единую функцию (db.js). dp=0: наценка от взноса не зависит,
+    // первый взнос учитывается ниже в down/remaining/monthly.
+    const m = window.PaydDB?.calc?.murabahaPayment
+      ? PaydDB.calc.murabahaPayment(base, 0, term, markupPct)
+      : { markup: base * markupPct / 100 };   // fallback, если db.js не загрузился
+    const markup = Math.round(m.markup);
     const final = base + markup;
 
     const down = Math.min(+form.deal.down || 0, final);
@@ -673,7 +678,7 @@
     document.getElementById('r-base').textContent = fmt(base);
     document.getElementById('r-markup').textContent = '+ ' + fmt(markup);
     document.getElementById('r-markup-label').textContent = markupPct > 0
-      ? `+ Наценка по тарифу (${markupPct}% × ${term} мес)`
+      ? `+ Наценка по тарифу (${markupPct}%)`
       : '+ Наценка по тарифу';
     document.getElementById('r-final').textContent = fmt(final);
     document.getElementById('r-down').textContent = fmt(down);

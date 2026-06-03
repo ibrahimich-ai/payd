@@ -1151,7 +1151,7 @@
       const m = (window.PaydDB?.calc?.murabahaPayment)
         ? PaydDB.calc.murabahaPayment(state.price, state.dpPct, state.term, annual)
         : (() => {
-            const markup = principal * (annual / 100) * (state.term / 12);
+            const markup = state.price * (annual / 100);
             return { markup, total: principal + markup, monthly: (principal + markup) / state.term };
           })();
       total = m.total;
@@ -1227,7 +1227,7 @@
       ? PaydDB.calc.murabahaPayment(state.price, state.dpPct, state.term, isInstallment ? annual : 0)
       : (() => {
           const _p = state.price * (1 - state.dpPct / 100);
-          const _markup = isInstallment ? _p * (annual / 100) * (state.term / 12) : 0;
+          const _markup = isInstallment ? state.price * (annual / 100) : 0;
           return { body: _p, markup: _markup, total: _p + _markup, monthly: (_p + _markup) / state.term };
         })();
     const principal = m.body;
@@ -1452,7 +1452,7 @@
       ? PaydDB.calc.murabahaPayment(state.price, state.dpPct, state.term, isInstallment ? annual : 0)
       : (() => {
           const _p = state.price * (1 - state.dpPct / 100);
-          const _markup = isInstallment ? _p * (annual / 100) * (state.term / 12) : 0;
+          const _markup = isInstallment ? state.price * (annual / 100) : 0;
           return { dp: state.price * state.dpPct / 100, body: _p, markup: _markup, total: _p + _markup, monthly: (_p + _markup) / state.term };
         })();
     const principal = m.body;
@@ -1534,7 +1534,7 @@
         ? PaydDB.calc.murabahaPayment(state.price, state.dpPct, state.term, isInstallment ? annual : 0)
         : (() => {
             const _p = state.price * (1 - state.dpPct / 100);
-            const _markup = isInstallment ? _p * (annual / 100) * (state.term / 12) : 0;
+            const _markup = isInstallment ? state.price * (annual / 100) : 0;
             return { dp: state.price * state.dpPct / 100, body: _p, markup: _markup, total: _p + _markup, monthly: (_p + _markup) / state.term };
           })();
       const principal = m.body;

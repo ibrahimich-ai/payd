@@ -1559,7 +1559,7 @@ function openMiniCalc(opts = {}) {
       const m = (window.PaydDB?.calc?.murabahaPayment)
         ? PaydDB.calc.murabahaPayment(state.price, state.dpPct, state.term, annual)
         : (() => {
-            const _markup = principal * (annual / 100) * (state.term / 12);
+            const _markup = state.price * (annual / 100);
             return { markup: _markup, total: principal + _markup, monthly: (principal + _markup) / state.term };
           })();
       total = m.total; over = m.markup; monthly = m.monthly;
@@ -1615,7 +1615,7 @@ function openMiniCalc(opts = {}) {
       ? PaydDB.calc.murabahaPayment(state.price, state.dpPct, state.term, state.type === 'murabaha' ? annual : 0)
       : (() => {
           const _p = state.price * (1 - state.dpPct / 100);
-          const _markup = state.type === 'murabaha' ? _p * (annual / 100) * (state.term / 12) : 0;
+          const _markup = state.type === 'murabaha' ? state.price * (annual / 100) : 0;
           return { dp: state.price * state.dpPct / 100, body: _p, markup: _markup, total: _p + _markup, monthly: (_p + _markup) / state.term };
         })();
     const principal = m.body;
