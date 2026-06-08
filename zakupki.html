@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Журнал закупок — Payd</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  /* ===== Раскладка журнала закупок: 3 колонки ===== */
+  .zk-grid { display: grid; grid-template-columns: 280px minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
+  @media (max-width: 1400px) { .zk-grid { grid-template-columns: 250px minmax(0, 1fr); } .zk-basket { grid-column: 1 / -1; } }
+  @media (max-width: 1000px) { .zk-grid { grid-template-columns: 1fr; } .zk-basket { grid-column: auto; } }
+
+  .zk-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+  .zk-panel-head { padding: 12px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .zk-panel-head h3 { font-size: 13px; font-weight: 700; margin: 0; }
+  .zk-panel-body { padding: 12px 14px; }
+
+  /* ===== Левая колонка: номенклатура ===== */
+  .zk-item { display: grid; grid-template-columns: 1fr 56px 24px; gap: 8px; align-items: center; padding: 7px 0; border-bottom: 1px dashed var(--border); }
+  .zk-item:last-child { border-bottom: none; }
+  .zk-item input.zk-model { border: none; background: none; font-size: 13px; font-weight: 600; color: var(--text); width: 100%; outline: none; padding: 2px 0; }
+  .zk-item input.zk-model:focus { border-bottom: 1px solid var(--primary); }
+  .zk-item input.zk-qty { border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 5px 6px; font-size: 12px; text-align: center; width: 100%; outline: none; font-variant-numeric: tabular-nums; }
+  .zk-item input.zk-qty:focus { border-color: var(--primary); }
+  .zk-item .zk-del { background: none; border: none; cursor: pointer; color: var(--text-3); font-size: 14px; opacity: .5; padding: 2px; border-radius: 4px; }
+  .zk-item .zk-del:hover { opacity: 1; color: var(--danger); background: var(--danger-soft); }
+
+  /* ===== Центр: матрица ===== */
+  .zk-matrix-wrap { overflow-x: auto; }
+  table.zk-matrix { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 12px; }
+  table.zk-matrix th, table.zk-matrix td { padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  table.zk-matrix thead th { position: sticky; top: 0; z-index: 3; background: var(--surface-2); font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-2); font-weight: 700; }
+  table.zk-matrix th.zk-sticky, table.zk-matrix td.zk-sticky { position: sticky; left: 0; z-index: 2; background: var(--surface); border-right: 1px solid var(--border); }
+  table.zk-matrix thead th.zk-sticky { z-index: 4; background: var(--surface-2); }
+  table.zk-matrix tbody tr:hover td { background: var(--surface-2); }
+  table.zk-matrix tbody tr:hover td.zk-sticky { background: var(--surface-2); }
+  .zk-cell-model .m { font-weight: 700; font-size: 12.5px; }
+  .zk-cell-model .need { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+  .zk-price { font-variant-numeric: tabular-nums; cursor: pointer; border-radius: 6px; padding: 4px 7px; display: inline-block; min-width: 64px; text-align: right; }
+  .zk-price:hover { outline: 1px dashed var(--border-strong); }
+  .zk-price.best { background: var(--success-soft); color: var(--success); font-weight: 700; }
+  .zk-price.na { color: var(--text-3); font-style: italic; }
+  .zk-price.empty { color: var(--text-3); }
+  .zk-price-edit { width: 80px; border: 1px solid var(--primary); border-radius: 6px; padding: 3px 5px; font-size: 12px; text-align: right; outline: none; font-variant-numeric: tabular-nums; }
+  .zk-short { display: inline-block; font-size: 10px; padding: 1px 5px; border-radius: 6px; background: var(--warning-soft); color: var(--warning); margin-left: 4px; vertical-align: middle; }
+  .zk-sup-th { min-width: 120px; }
+  .zk-sup-th .nm { display: flex; align-items: center; gap: 6px; }
+  .zk-sup-th .nm input { border: none; background: none; font: inherit; font-weight: 700; text-transform: none; letter-spacing: 0; color: var(--text); width: 92px; outline: none; }
+  .zk-sup-th .nm input:focus { border-bottom: 1px solid var(--primary); }
+  .zk-sup-th .sup-del { background: none; border: none; cursor: pointer; color: var(--text-3); font-size: 12px; opacity: .5; }
+  .zk-sup-th .sup-del:hover { opacity: 1; color: var(--danger); }
+  .zk-sup-th .paste { display: block; margin-top: 4px; font-size: 10px; color: var(--primary); cursor: pointer; text-transform: none; letter-spacing: 0; font-weight: 600; }
+
+  /* ===== Правая колонка: корзина ===== */
+  .zk-basket-row { padding: 9px 0; border-bottom: 1px dashed var(--border); }
+  .zk-basket-row:last-child { border-bottom: none; }
+  .zk-basket-row .top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .zk-basket-row .bm { font-weight: 700; font-size: 12.5px; }
+  .zk-basket-row .bt { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 12.5px; white-space: nowrap; }
+  .zk-basket-row .ctrl { display: flex; gap: 6px; margin-top: 5px; align-items: center; }
+  .zk-basket-row select { flex: 1; min-width: 0; padding: 5px 6px; font-size: 11.5px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); outline: none; }
+  .zk-basket-row input.bq { width: 52px; padding: 5px 4px; font-size: 11.5px; text-align: center; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); outline: none; font-variant-numeric: tabular-nums; }
+  .zk-basket-row .unit { font-size: 10.5px; color: var(--text-3); margin-top: 3px; }
+  .zk-basket-empty { padding: 24px 8px; text-align: center; color: var(--text-3); font-size: 12px; }
+
+  .zk-rules { font-size: 11px; color: var(--text-3); line-height: 1.7; }
+  .zk-rules code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; font-family: 'Courier New', monospace; color: var(--text-2); }
+  .zk-modal-back { position: fixed; inset: 0; background: rgba(15,20,30,.55); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .zk-modal { background: var(--surface); border-radius: var(--radius); width: 100%; max-width: 520px; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+  .zk-modal h3 { margin: 0; padding: 16px 18px; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .zk-modal .body { padding: 16px 18px; }
+  .zk-modal textarea { width: 100%; min-height: 180px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 10px; font: 13px/1.5 'Courier New', monospace; resize: vertical; outline: none; }
+  .zk-modal textarea:focus { border-color: var(--primary); }
+  .zk-modal .foot { padding: 12px 18px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+  .zk-hint { font-size: 11px; color: var(--text-3); margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<div id="app-root">
+
+<div class="page-head">
+  <div>
+    <h1>Журнал закупок</h1>
+    <div class="desc" id="zk-desc">Сравнение цен поставщиков по номенклатуре телефонов</div>
+  </div>
+  <div class="page-head-actions">
+    <button class="btn" id="zk-import" data-no-handler="true">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Импорт JSON
+    </button>
+    <button class="btn primary" id="zk-add-sup" data-no-handler="true">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Поставщик
+    </button>
+  </div>
+</div>
+
+<div class="stat-grid cols-4 mb-4">
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label">Позиций</div>
+    <div class="stat-value" style="font-size: 22px;" id="kpi-items">0</div>
+    <div class="stat-sub" id="kpi-units">0 шт нужно</div>
+  </div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label">Поставщиков</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--primary);" id="kpi-sups">0</div>
+    <div class="stat-sub">ответили с ценами</div>
+  </div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label" style="color: var(--success);">Закрыто</div>
+    <div class="stat-value" style="font-size: 22px; color: var(--success);" id="kpi-covered">0</div>
+    <div class="stat-sub" id="kpi-covered-sub">позиций с ценой</div>
+  </div>
+  <div class="stat" style="padding: 14px 16px;">
+    <div class="stat-label" style="color: var(--purple);">Сумма корзины</div>
+    <div class="stat-value" style="font-size: 18px; color: var(--purple);" id="kpi-total">0 ₽</div>
+    <div class="stat-sub" id="kpi-total-sub">по лучшим ценам</div>
+  </div>
+</div>
+
+<div class="zk-grid">
+
+  <!-- ЛЕВО: номенклатура -->
+  <div class="zk-panel">
+    <div class="zk-panel-head">
+      <h3>Номенклатура</h3>
+      <button class="btn sm" id="zk-add-item" data-no-handler="true">+ Модель</button>
+    </div>
+    <div class="zk-panel-body">
+      <div id="zk-items"></div>
+    </div>
+    <div class="zk-panel-head" style="border-top: 1px solid var(--border); border-bottom: none;">
+      <h3 style="font-size:12px;color:var(--text-3);">Как читаются цены</h3>
+    </div>
+    <div class="zk-panel-body zk-rules">
+      <code>100.1</code> → 100 100 ₽<br>
+      <code>100</code> → 100 000 ₽<br>
+      <code>100000</code> → 100 000 ₽<br>
+      <code>100к</code> / <code>100 тыс</code> → 100 000 ₽<br>
+      <code>нет</code> / <code>—</code> / <code>0</code> → нет в наличии<br>
+      <span style="opacity:.8;">Цену можно поправить вручную — клик по ячейке.</span>
+    </div>
+  </div>
+
+  <!-- ЦЕНТР: матрица сравнения -->
+  <div class="zk-panel">
+    <div class="zk-panel-head">
+      <h3>Сравнение цен</h3>
+      <span style="font-size:11px;color:var(--text-3);" id="zk-matrix-hint"></span>
+    </div>
+    <div class="zk-matrix-wrap">
+      <table class="zk-matrix" id="zk-matrix"></table>
+    </div>
+  </div>
+
+  <!-- ПРАВО: корзина -->
+  <div class="zk-panel zk-basket">
+    <div class="zk-panel-head">
+      <h3>Корзина заказа</h3>
+      <button class="btn sm" id="zk-autofill" data-no-handler="true">Авто-выбор</button>
+    </div>
+    <div class="zk-panel-body">
+      <div id="zk-basket"></div>
+    </div>
+    <div class="zk-panel-body" style="border-top:1px solid var(--border);">
+      <button class="btn primary" style="width:100%;" id="zk-make-order" data-no-handler="true">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+        Сформировать заказы
+      </button>
+    </div>
+  </div>
+
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="db.js"></script>
+<script src="app.js"></script>
+<script>
+PaydApp.mountShell({ active: 'zakupki', title: 'Закупки', breadcrumbs: [] });
+
+/* ============================================================
+   Журнал закупок — самостоятельный модуль.
+   Хранение: localStorage namespace payd.zakupki.* (offline-first,
+   как и остальной Payd). Облачный шаринг можно добавить отдельной
+   миграцией БД позже. Демо-данных нет — пустое состояние пустое.
+   ============================================================ */
+
+const LS_KEY = 'payd.zakupki.v1';
+const fmt = v => Math.round(+v || 0).toLocaleString('ru-RU').replace(/,/g, ' ') + ' ₽';
+const fmtN = v => Math.round(+v || 0).toLocaleString('ru-RU').replace(/,/g, ' ');
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+function uid() { return (window.PaydDB?.utils?.uuid?.() || ('id-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8))); }
+
+// ---- Состояние ----
+let state = load();
+
+function load() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+    if (raw && raw.items) return raw;
+  } catch (_) {}
+  return { items: [], suppliers: [], quotes: {}, overrides: {}, basket: {} };
+  // items:      [{ id, model, qty }]
+  // suppliers:  [{ id, name, raw }]
+  // quotes:     { "supId__itemId": { price, qty, na } }  — авто-распознано
+  // overrides:  { "supId__itemId": price|null }          — ручная правка
+  // basket:     { itemId: { supplierId, qty } }
+}
+function save() {
+  localStorage.setItem(LS_KEY, JSON.stringify(state));
+}
+const qk = (s, i) => s + '__' + i;
+
+/* ============================================================
+   РАСШИФРОВКА ЦЕНЫ
+   Правила (см. подсказку в UI):
+     «100.1» / «100,1» → 100 100   (точка/запятая = тысячи)
+     «100.000»         → 100 000   (3 знака после точки = разделитель тысяч)
+     «100»             → 100 000   (целое < 1000 = тысячи)
+     «100000»          → 100 000   (целое ≥ 1000 = как есть)
+     «100к» «100 тыс»  → 100 000
+     «нет» «—» «0»     → нет в наличии (na)
+   Возвращает: число | { na:true } | null (не распознано)
+   ============================================================ */
+const NA_RE = /^(нет|net|n\/?a|отсутств\w*|—|-|–|0)$/i;
+
+function decodePrice(raw) {
+  if (raw == null) return null;
+  let s = String(raw).trim().toLowerCase().replace(/\s+/g, ' ');
+  if (!s) return null;
+  if (NA_RE.test(s)) return { na: true };
+
+  // Суффикс тысяч: к / k / т / тыс / тысяч (в конце токена; \b ненадёжен с кириллицей)
+  let num = s;
+  const sufMatch = num.match(/\s*(к|k|тыс\.?|тысяч?|т)\.?$/i);
+  const suffix = !!sufMatch;
+  if (suffix) num = num.slice(0, sufMatch.index).trim();
+
+  // Объединяем пробельную группировку тысяч: «100 500» → «100500»
+  num = num.replace(/(\d)\s+(?=\d{3}\b)/g, '$1');
+
+  const m = num.match(/^(\d+)(?:[.,](\d+))?$/);
+  if (!m) return null;
+  const intp = m[1];
+  const frac = m[2];
+  let value;
+
+  if (suffix) {
+    // 100к, 100.5к → (100 + .5) * 1000
+    value = parseFloat(intp + (frac ? '.' + frac : '')) * 1000;
+  } else if (frac != null) {
+    if (frac.length === 3) {
+      // «100.000» — точка как разделитель тысяч
+      value = parseInt(intp, 10) * 1000 + parseInt(frac, 10);
+    } else {
+      // «100.5» → 100.5 тыс = 100500 ; «100.05» → 100050
+      value = parseFloat(intp + '.' + frac) * 1000;
+    }
+  } else {
+    const v = parseInt(intp, 10);
+    value = v < 1000 ? v * 1000 : v; // <1000 трактуем как тысячи
+  }
+  if (!isFinite(value) || value <= 0) return null;
+  return Math.round(value);
+}
+
+/* ============================================================
+   НОРМАЛИЗАЦИЯ И МАТЧИНГ МОДЕЛЕЙ
+   ============================================================ */
+const SPECIAL = ['pro', 'max', 'plus', 'mini', 'ultra', 'air', 'note', 'lite', 'neo', 'fold', 'flip', 'se', 'fe'];
+// рус → лат для устойчивого сравнения
+const TRANSLIT = [
+  [/промакс/g, 'pro max'], [/про\s*макс/g, 'pro max'],
+  [/про/g, 'pro'], [/макс/g, 'max'], [/плюс/g, 'plus'],
+  [/мини/g, 'mini'], [/ультра/g, 'ultra'], [/эйр/g, 'air'],
+  [/айфон/g, 'iphone'], [/самсунг/g, 'samsung'], [/ноут/g, 'note'],
+  [/\bтб\b/g, 'tb'], [/\bгб\b/g, 'gb'], [/\bгигов?\b/g, 'gb']
+];
+function norm(s) {
+  let t = String(s || '').toLowerCase().replace(/ё/g, 'е');
+  TRANSLIT.forEach(([re, to]) => { t = t.replace(re, to); });
+  t = t.replace(/\+/g, ' plus ');
+  // разделяем склеенные буквы/цифры: «17про256» → «17 про 256»
+  t = t.replace(/(\d)([a-zа-я])/gi, '$1 $2').replace(/([a-zа-я])(\d)/gi, '$1 $2');
+  t = t.replace(/(\d+)\s*(gb|tb)\b/g, '$1$2');       // «256 gb» → «256gb»
+  t = t.replace(/[^\wа-я]+/gi, ' ').replace(/\s+/g, ' ').trim();
+  return t;
+}
+// Опорные токены модели: числа + ёмкости + спец-слова. Бренд/серия — опциональны.
+function coreTokens(model) {
+  const toks = norm(model).split(' ').filter(Boolean);
+  const out = [];
+  toks.forEach(t => {
+    if (/^\d+(gb|tb)?$/.test(t)) out.push(t);           // 17, 256, 256gb
+    else if (SPECIAL.includes(t)) out.push(t);          // pro, max...
+  });
+  return out.length ? out : toks; // фолбэк: если ничего «опорного» — все токены
+}
+// Все числовые токены модели (чтобы исключить их из кандидатов на цену)
+function modelNumbers(model) {
+  return (norm(model).match(/\d+/g) || []);
+}
+
+/* ============================================================
+   ПАРСИНГ ОТВЕТА ПОСТАВЩИКА
+   Текст разбиваем на строки; для каждой строки ищем самую
+   специфичную модель из номенклатуры (все опорные токены входят).
+   Из строки извлекаем цену и (если есть) остаток.
+   ============================================================ */
+function parseSupplierText(text, items) {
+  const result = {}; // itemId → { price, qty, na }
+  const prepared = items.map(it => ({
+    it,
+    core: coreTokens(it.model),
+    nums: modelNumbers(it.model)
+  }));
+  const lines = String(text || '').split(/[\n;]+/).map(l => l.trim()).filter(Boolean);
+
+  lines.forEach(line => {
+    const nline = norm(line);
+    const lineTokens = nline.split(' ').filter(Boolean);
+    const tokenSet = new Set(lineTokens);
+
+    // кандидаты: все опорные токены модели присутствуют в строке
+    let best = null;
+    prepared.forEach(p => {
+      if (!p.core.length) return;
+      const matched = p.core.every(t => tokenSet.has(t));
+      if (!matched) return;
+      // специфичность = число опорных токенов; берём самую длинную модель
+      if (!best || p.core.length > best.core.length) best = p;
+    });
+    if (!best) return;
+
+    // ----- остаток (qty) -----
+    let qty = null;
+    let qm = line.match(/(?:^|[\s,(])[xх*]\s*(\d{1,4})\b/i)
+          || line.match(/(\d{1,4})\s*(?:шт|pcs|штук)/i)
+          || line.match(/ост(?:аток|\.)?\s*[:=]?\s*(\d{1,4})/i)
+          || line.match(/\((\d{1,4})\)/);
+    if (qm) qty = parseInt(qm[1], 10);
+
+    // ----- цена -----
+    // кандидаты-числа из строки, исключая числа самой модели и распознанный остаток
+    const modelNums = new Set(best.nums);
+    const candidates = [];
+    const numRe = /\d+(?:[.,]\d+)?\s*(?:к|k|тыс\.?|т)?/gi;
+    let mm;
+    let work = line;
+    // защитим qty-фрагмент от попадания в цену
+    if (qm) work = work.replace(qm[0], ' ');
+    while ((mm = numRe.exec(work)) !== null) {
+      const tok = mm[0].trim();
+      const plainInt = tok.replace(/[^\d]/g, '');
+      // пропускаем токены, совпадающие с числами модели (17, 256...)
+      if (modelNums.has(plainInt) && !/[.,к kтыс]/i.test(tok)) continue;
+      const dec = decodePrice(tok);
+      if (typeof dec === 'number') candidates.push(dec);
+    }
+
+    let price = null, na = false;
+    const naWord = lineTokens.some(t => /^(нет|net|n\/?a)$/i.test(t)) || /отсутств/i.test(nline);
+    if (naWord && !candidates.length) {
+      na = true;
+    } else if (candidates.length) {
+      // самая «телефонная» цена — наибольшая из кандидатов (≥ остальных)
+      price = Math.max.apply(null, candidates);
+    }
+
+    if (price != null || na) {
+      const prev = result[best.it.id];
+      // если на одну модель несколько строк — берём минимальную (лучшую) цену
+      if (!prev || (price != null && (prev.price == null || price < prev.price))) {
+        result[best.it.id] = { price, qty, na };
+      }
+    }
+  });
+
+  return result;
+}
+
+/* ============================================================
+   ДОСТУП К ЦЕНЕ ЯЧЕЙКИ (override > авто)
+   ============================================================ */
+function cellPrice(supId, itemId) {
+  const ok = qk(supId, itemId);
+  if (Object.prototype.hasOwnProperty.call(state.overrides, ok)) {
+    const o = state.overrides[ok];
+    return { price: (o === null ? null : o), qty: state.quotes[ok]?.qty ?? null, na: o === 0 || o === null ? (o === null) : false, manual: true };
+  }
+  const q = state.quotes[ok];
+  if (!q) return { price: null, qty: null, na: false };
+  return { price: q.price, qty: q.qty, na: q.na, manual: false };
+}
+
+function bestSupplierFor(itemId) {
+  let best = null;
+  state.suppliers.forEach(s => {
+    const c = cellPrice(s.id, itemId);
+    if (c.price != null && c.price > 0) {
+      if (!best || c.price < best.price) best = { supplierId: s.id, price: c.price, qty: c.qty };
+    }
+  });
+  return best;
+}
+
+/* ============================================================
+   РЕНДЕР
+   ============================================================ */
+function renderItems() {
+  const box = document.getElementById('zk-items');
+  if (!state.items.length) {
+    box.innerHTML = '<div style="color:var(--text-3);font-size:12px;padding:8px 0;">Добавьте модели или импортируйте JSON</div>';
+    return;
+  }
+  box.innerHTML = state.items.map(it => `
+    <div class="zk-item" data-id="${esc(it.id)}">
+      <input class="zk-model" value="${esc(it.model)}" placeholder="Модель" />
+      <input class="zk-qty" type="number" min="0" value="${esc(it.qty)}" title="Нужно, шт" />
+      <button class="zk-del" title="Удалить">✕</button>
+    </div>
+  `).join('');
+  box.querySelectorAll('.zk-item').forEach(row => {
+    const id = row.dataset.id;
+    row.querySelector('.zk-model').addEventListener('change', e => {
+      const it = state.items.find(x => x.id === id); if (it) { it.model = e.target.value.trim(); save(); reparseAll(); renderAll(); }
+    });
+    row.querySelector('.zk-qty').addEventListener('change', e => {
+      const it = state.items.find(x => x.id === id); if (it) { it.qty = Math.max(0, parseInt(e.target.value, 10) || 0); save(); renderMatrix(); renderBasket(); renderKpi(); }
+    });
+    row.querySelector('.zk-del').addEventListener('click', () => {
+      state.items = state.items.filter(x => x.id !== id);
+      delete state.basket[id];
+      save(); renderAll();
+    });
+  });
+}
+
+function renderMatrix() {
+  const t = document.getElementById('zk-matrix');
+  const sups = state.suppliers;
+  document.getElementById('zk-matrix-hint').textContent =
+    sups.length ? sups.length + ' поставщиков · клик по ячейке — правка' : '';
+
+  if (!state.items.length) {
+    t.innerHTML = '<tbody><tr><td style="padding:40px;text-align:center;color:var(--text-3);">Нет номенклатуры — добавьте модели слева</td></tr></tbody>';
+    return;
+  }
+
+  const head = `<thead><tr>
+    <th class="zk-sticky">Модель</th>
+    ${sups.map(s => `<th class="zk-sup-th" data-sup="${esc(s.id)}">
+        <div class="nm">
+          <input value="${esc(s.name)}" placeholder="Поставщик" />
+          <button class="sup-del" title="Удалить">✕</button>
+        </div>
+        <span class="paste" data-act="paste">📋 вставить прайс</span>
+      </th>`).join('')}
+    ${sups.length === 0 ? '<th style="color:var(--text-3);font-weight:600;text-transform:none;">← добавьте поставщика, чтобы вставить прайс</th>' : ''}
+  </tr></thead>`;
+
+  const body = '<tbody>' + state.items.map(it => {
+    const best = bestSupplierFor(it.id);
+    return `<tr data-item="${esc(it.id)}">
+      <td class="zk-sticky zk-cell-model">
+        <div class="m">${esc(it.model || '—')}</div>
+        <div class="need">нужно ${fmtN(it.qty)} шт</div>
+      </td>
+      ${sups.map(s => {
+        const c = cellPrice(s.id, it.id);
+        let cls = 'zk-price', txt;
+        if (c.na) { cls += ' na'; txt = 'нет'; }
+        else if (c.price == null) { cls += ' empty'; txt = '—'; }
+        else {
+          txt = fmtN(c.price);
+          if (best && best.supplierId === s.id) cls += ' best';
+        }
+        let short = '';
+        if (c.price != null && c.qty != null && it.qty && c.qty < it.qty) {
+          short = `<span class="zk-short" title="Поставщик даёт ${c.qty} из ${it.qty}">ост ${c.qty}</span>`;
+        }
+        return `<td><span class="${cls}" data-sup="${esc(s.id)}" data-item="${esc(it.id)}">${txt}</span>${short}</td>`;
+      }).join('')}
+      ${sups.length === 0 ? '<td></td>' : ''}
+    </tr>`;
+  }).join('') + '</tbody>';
+
+  t.innerHTML = head + body;
+
+  // имя поставщика
+  t.querySelectorAll('.zk-sup-th').forEach(th => {
+    const sid = th.dataset.sup;
+    th.querySelector('input').addEventListener('change', e => {
+      const s = state.suppliers.find(x => x.id === sid); if (s) { s.name = e.target.value.trim(); save(); }
+    });
+    th.querySelector('.sup-del').addEventListener('click', () => {
+      state.suppliers = state.suppliers.filter(x => x.id !== sid);
+      // чистим связанные данные
+      Object.keys(state.quotes).forEach(k => { if (k.startsWith(sid + '__')) delete state.quotes[k]; });
+      Object.keys(state.overrides).forEach(k => { if (k.startsWith(sid + '__')) delete state.overrides[k]; });
+      Object.keys(state.basket).forEach(iid => { if (state.basket[iid]?.supplierId === sid) delete state.basket[iid]; });
+      save(); renderAll();
+    });
+    th.querySelector('[data-act="paste"]').addEventListener('click', () => openPasteModal(sid));
+  });
+
+  // правка цены ячейки
+  t.querySelectorAll('.zk-price').forEach(span => {
+    span.addEventListener('click', () => editCell(span));
+  });
+}
+
+function editCell(span) {
+  const sid = span.dataset.sup, iid = span.dataset.item;
+  const cur = cellPrice(sid, iid);
+  const td = span.parentElement;
+  const input = document.createElement('input');
+  input.className = 'zk-price-edit';
+  input.value = cur.price != null ? cur.price : '';
+  input.placeholder = '0 = нет';
+  td.innerHTML = '';
+  td.appendChild(input);
+  input.focus(); input.select();
+  const commit = () => {
+    const v = input.value.trim();
+    const ok = qk(sid, iid);
+    if (v === '') { delete state.overrides[ok]; }            // сброс к авто
+    else {
+      const dec = decodePrice(v);
+      if (dec && dec.na) state.overrides[ok] = null;          // нет в наличии
+      else if (typeof dec === 'number') state.overrides[ok] = dec;
+      else state.overrides[ok] = null;
+    }
+    save(); renderMatrix(); renderBasket(); renderKpi();
+  };
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') { input.value = cur.price != null ? cur.price : ''; renderMatrix(); } });
+}
+
+function renderBasket() {
+  const box = document.getElementById('zk-basket');
+  if (!state.items.length) { box.innerHTML = '<div class="zk-basket-empty">Корзина пуста</div>'; return; }
+
+  box.innerHTML = state.items.map(it => {
+    const quoted = state.suppliers.filter(s => { const c = cellPrice(s.id, it.id); return c.price != null && c.price > 0; });
+    const sel = state.basket[it.id];
+    const supId = sel?.supplierId || (quoted[0]?.id) || '';
+    const c = supId ? cellPrice(supId, it.id) : null;
+    const maxQty = (c && c.qty != null) ? c.qty : it.qty;
+    const qty = sel?.qty != null ? sel.qty : Math.min(it.qty || 0, maxQty || it.qty || 0);
+    const lineTotal = (c && c.price) ? c.price * (qty || 0) : 0;
+
+    if (!quoted.length) {
+      return `<div class="zk-basket-row"><div class="top"><span class="bm">${esc(it.model)}</span><span class="bt" style="color:var(--text-3);font-weight:600;">нет цен</span></div></div>`;
+    }
+    return `<div class="zk-basket-row" data-item="${esc(it.id)}">
+      <div class="top">
+        <span class="bm">${esc(it.model)}</span>
+        <span class="bt">${fmt(lineTotal)}</span>
+      </div>
+      <div class="ctrl">
+        <select class="bsel">
+          ${quoted.map(s => { const cc = cellPrice(s.id, it.id); return `<option value="${esc(s.id)}" ${s.id === supId ? 'selected' : ''}>${esc(s.name || '—')} · ${fmtN(cc.price)}</option>`; }).join('')}
+        </select>
+        <input class="bq" type="number" min="0" value="${esc(qty)}" />
+      </div>
+      <div class="unit">${c && c.price ? fmtN(c.price) + ' ₽/шт' : ''}${c && c.qty != null && it.qty && c.qty < it.qty ? ' · у поставщика ' + c.qty + ' из ' + it.qty : ''}</div>
+    </div>`;
+  }).join('');
+
+  box.querySelectorAll('.zk-basket-row[data-item]').forEach(row => {
+    const iid = row.dataset.item;
+    const selEl = row.querySelector('.bsel');
+    const qEl = row.querySelector('.bq');
+    if (selEl) selEl.addEventListener('change', () => {
+      state.basket[iid] = { supplierId: selEl.value, qty: parseInt(qEl.value, 10) || 0 };
+      save(); renderBasket(); renderKpi();
+    });
+    if (qEl) qEl.addEventListener('change', () => {
+      state.basket[iid] = { supplierId: selEl.value, qty: Math.max(0, parseInt(qEl.value, 10) || 0) };
+      save(); renderBasket(); renderKpi();
+    });
+  });
+}
+
+function renderKpi() {
+  document.getElementById('kpi-items').textContent = state.items.length;
+  const units = state.items.reduce((s, it) => s + (+it.qty || 0), 0);
+  document.getElementById('kpi-units').textContent = fmtN(units) + ' шт нужно';
+  document.getElementById('kpi-sups').textContent = state.suppliers.length;
+
+  const covered = state.items.filter(it => bestSupplierFor(it.id)).length;
+  document.getElementById('kpi-covered').textContent = covered;
+  document.getElementById('kpi-covered-sub').textContent = 'из ' + state.items.length + ' позиций';
+
+  let total = 0;
+  state.items.forEach(it => {
+    const sel = state.basket[it.id];
+    const supId = sel?.supplierId || bestSupplierFor(it.id)?.supplierId;
+    if (!supId) return;
+    const c = cellPrice(supId, it.id);
+    const qty = sel?.qty != null ? sel.qty : (it.qty || 0);
+    if (c.price) total += c.price * qty;
+  });
+  document.getElementById('kpi-total').textContent = fmt(total);
+}
+
+function renderAll() { renderItems(); renderMatrix(); renderBasket(); renderKpi(); }
+
+function reparseAll() {
+  state.suppliers.forEach(s => {
+    if (s.raw == null) return;
+    const parsed = parseSupplierText(s.raw, state.items);
+    state.items.forEach(it => {
+      const ok = qk(s.id, it.id);
+      if (parsed[it.id]) state.quotes[ok] = parsed[it.id];
+      else delete state.quotes[ok];
+    });
+  });
+  save();
+}
+
+/* ============================================================
+   ДЕЙСТВИЯ
+   ============================================================ */
+document.getElementById('zk-add-item').addEventListener('click', () => {
+  state.items.push({ id: uid(), model: '', qty: 0 });
+  save(); renderAll();
+  // фокус на новое поле модели
+  const rows = document.querySelectorAll('#zk-items .zk-item');
+  rows[rows.length - 1]?.querySelector('.zk-model')?.focus();
+});
+
+document.getElementById('zk-add-sup').addEventListener('click', () => {
+  const n = state.suppliers.length + 1;
+  state.suppliers.push({ id: uid(), name: 'Поставщик ' + n, raw: '' });
+  save(); renderMatrix(); renderBasket(); renderKpi();
+});
+
+document.getElementById('zk-autofill').addEventListener('click', () => {
+  state.items.forEach(it => {
+    const best = bestSupplierFor(it.id);
+    if (best) {
+      const maxQty = best.qty != null ? best.qty : it.qty;
+      state.basket[it.id] = { supplierId: best.supplierId, qty: Math.min(it.qty || 0, maxQty || it.qty || 0) };
+    }
+  });
+  save(); renderBasket(); renderKpi();
+  PaydApp.toast('Выбраны лучшие цены', 'success');
+});
+
+document.getElementById('zk-make-order').addEventListener('click', makeOrders);
+
+document.getElementById('zk-import').addEventListener('click', openImportModal);
+
+/* ---- Модалка вставки прайса поставщика ---- */
+function openPasteModal(supId) {
+  const sup = state.suppliers.find(s => s.id === supId);
+  if (!sup) return;
+  const back = document.createElement('div');
+  back.className = 'zk-modal-back';
+  back.innerHTML = `
+    <div class="zk-modal">
+      <h3>Прайс — ${esc(sup.name)}</h3>
+      <div class="body">
+        <textarea id="zk-paste-ta" placeholder="Вставьте ответ поставщика, например:&#10;17 про 256 - 100.5&#10;17 промакс 256 — 130&#10;16 про 128 нет&#10;15 — 78к x10">${esc(sup.raw || '')}</textarea>
+        <div class="zk-hint">Система сама сопоставит строки с номенклатурой и расшифрует цены. Остаток: <code>x10</code>, <code>10шт</code>, <code>(10)</code>.</div>
+      </div>
+      <div class="foot">
+        <button class="btn" data-act="cancel">Отмена</button>
+        <button class="btn primary" data-act="ok">Распознать</button>
+      </div>
+    </div>`;
+  document.body.appendChild(back);
+  const close = () => back.remove();
+  back.addEventListener('click', e => { if (e.target === back) close(); });
+  back.querySelector('[data-act="cancel"]').addEventListener('click', close);
+  back.querySelector('[data-act="ok"]').addEventListener('click', () => {
+    const text = back.querySelector('#zk-paste-ta').value;
+    sup.raw = text;
+    const parsed = parseSupplierText(text, state.items);
+    let hit = 0;
+    state.items.forEach(it => {
+      const ok = qk(supId, it.id);
+      // ручные правки сбрасываем — пришёл свежий прайс
+      delete state.overrides[ok];
+      if (parsed[it.id]) { state.quotes[ok] = parsed[it.id]; hit++; }
+      else delete state.quotes[ok];
+    });
+    save(); renderAll(); close();
+    PaydApp.toast('Распознано позиций: ' + hit + ' из ' + state.items.length, hit ? 'success' : 'error');
+  });
+  back.querySelector('#zk-paste-ta').focus();
+}
+
+/* ---- Модалка импорта номенклатуры (JSON) ---- */
+function openImportModal() {
+  const back = document.createElement('div');
+  back.className = 'zk-modal-back';
+  back.innerHTML = `
+    <div class="zk-modal">
+      <h3>Импорт номенклатуры (JSON)</h3>
+      <div class="body">
+        <textarea id="zk-imp-ta" placeholder='[&#10;  { "model": "iPhone 17 Pro 256", "qty": 50 },&#10;  { "model": "iPhone 17 Pro Max 256", "qty": 30 }&#10;]'></textarea>
+        <div class="zk-hint">Поддерживаются поля <code>model</code> (или <code>name</code>) и <code>qty</code> (или <code>qty_needed</code>, <code>count</code>). Импорт <b>заменит</b> текущий список.</div>
+      </div>
+      <div class="foot">
+        <button class="btn" data-act="cancel">Отмена</button>
+        <button class="btn primary" data-act="ok">Импортировать</button>
+      </div>
+    </div>`;
+  document.body.appendChild(back);
+  const close = () => back.remove();
+  back.addEventListener('click', e => { if (e.target === back) close(); });
+  back.querySelector('[data-act="cancel"]').addEventListener('click', close);
+  back.querySelector('[data-act="ok"]').addEventListener('click', () => {
+    let data;
+    try { data = JSON.parse(back.querySelector('#zk-imp-ta').value); }
+    catch (e) { PaydApp.toast('Некорректный JSON', 'error'); return; }
+    if (!Array.isArray(data)) { PaydApp.toast('Ожидается массив позиций', 'error'); return; }
+    const items = data.map(r => ({
+      id: uid(),
+      model: String(r.model || r.name || r.title || '').trim(),
+      qty: Math.max(0, parseInt(r.qty ?? r.qty_needed ?? r.count ?? r.quantity ?? 0, 10) || 0)
+    })).filter(r => r.model);
+    if (!items.length) { PaydApp.toast('Не найдено ни одной позиции', 'error'); return; }
+    state.items = items;
+    state.quotes = {}; state.overrides = {}; state.basket = {};
+    reparseAll(); save(); renderAll(); close();
+    PaydApp.toast('Импортировано позиций: ' + items.length, 'success');
+  });
+  back.querySelector('#zk-imp-ta').focus();
+}
+
+/* ---- Сформировать заказы (по поставщикам) ---- */
+function makeOrders() {
+  // группируем корзину по поставщикам
+  const groups = {}; // supId → [{model, qty, price}]
+  state.items.forEach(it => {
+    const sel = state.basket[it.id];
+    const supId = sel?.supplierId || bestSupplierFor(it.id)?.supplierId;
+    if (!supId) return;
+    const c = cellPrice(supId, it.id);
+    if (!c.price) return;
+    const qty = sel?.qty != null ? sel.qty : (it.qty || 0);
+    if (qty <= 0) return;
+    (groups[supId] = groups[supId] || []).push({ model: it.model, qty, price: c.price });
+  });
+
+  const supIds = Object.keys(groups);
+  if (!supIds.length) { PaydApp.toast('Корзина пуста — выберите цены', 'error'); return; }
+
+  let text = '';
+  let grand = 0;
+  supIds.forEach(sid => {
+    const sup = state.suppliers.find(s => s.id === sid);
+    let sum = 0;
+    text += '═══ Заказ для: ' + (sup?.name || '—') + ' ═══\n';
+    groups[sid].forEach(r => {
+      const lt = r.price * r.qty;
+      sum += lt;
+      text += `• ${r.model} — ${fmtN(r.qty)} шт × ${fmtN(r.price)} = ${fmtN(lt)} ₽\n`;
+    });
+    text += `Итого: ${fmtN(sum)} ₽\n\n`;
+    grand += sum;
+  });
+  text += '────────────────────\nВСЕГО ПО ЗАКУПКЕ: ' + fmtN(grand) + ' ₽';
+
+  // модалка с готовым текстом + копирование
+  const back = document.createElement('div');
+  back.className = 'zk-modal-back';
+  back.innerHTML = `
+    <div class="zk-modal">
+      <h3>Заказы поставщикам · ${fmtN(grand)} ₽</h3>
+      <div class="body">
+        <textarea id="zk-order-ta" style="min-height:240px;">${esc(text)}</textarea>
+        <div class="zk-hint">Скопируйте и отправьте поставщикам. Каждый блок — отдельному поставщику.</div>
+      </div>
+      <div class="foot">
+        <button class="btn" data-act="cancel">Закрыть</button>
+        <button class="btn primary" data-act="copy">Скопировать всё</button>
+      </div>
+    </div>`;
+  document.body.appendChild(back);
+  const close = () => back.remove();
+  back.addEventListener('click', e => { if (e.target === back) close(); });
+  back.querySelector('[data-act="cancel"]').addEventListener('click', close);
+  back.querySelector('[data-act="copy"]').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(text); PaydApp.toast('Скопировано', 'success'); }
+    catch (_) { back.querySelector('#zk-order-ta').select(); document.execCommand('copy'); PaydApp.toast('Скопировано', 'success'); }
+  });
+}
+
+// ---- Старт ----
+renderAll();
+</script>
+</body>
+</html>
