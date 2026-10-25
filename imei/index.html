@@ -25,7 +25,7 @@
   --line-strong:rgba(225,232,245,.17);
   --ink:#F2F4F7;
   --ink-2:#A6ADB8;
-  --ink-3:#6E7581;
+  --ink-3:#868D99;
   --ok:#30D158;
   --ok-soft:rgba(48,209,88,.16);
   --warn:#FFD60A;
@@ -92,6 +92,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 /* ---------- start screen ---------- */
 .start{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:16px;padding:20px max(20px,env(safe-area-inset-right,0px)) 20px max(20px,env(safe-area-inset-left,0px));background:radial-gradient(130% 90% at 50% 0%,#171a20 0%,var(--ground) 72%);text-align:center;overflow-y:auto}
 .start>*{flex-shrink:0}
+.start.has-msg .labelart,.start.has-msg>p,.start.has-msg .note{display:none}
 .start>:first-child{margin-top:auto}
 .start>:last-child{margin-bottom:auto}
 .start h1{margin:0;font:700 28px/1.12 var(--sans);letter-spacing:-.015em;text-wrap:balance}
@@ -792,18 +793,54 @@ select{width:100%;height:40px;padding:0 10px;border-radius:10px;border:1px solid
     return { first: aFirst ? a : b, second: aFirst ? b : a, by: byRow ? 'row' : 'column' };
   }
 
-  // Two barcodes on the same label: close together relative to their width.
-  function sameLabel(a, b) {
+  /* Can two IMEI barcodes be IMEI 1 and IMEI 2 of one label?
+     Both are the same Code 128 length, so they must be near-parallel, about equally wide and close:
+     stacked pairs sit ~0.3 widths apart, side-by-side pairs ~1.3 widths. Neighbouring boxes are farther. */
+  function pairable(a, b) {
     const A = axes(a.pos), B = axes(b.pos);
+    if (Math.abs(A.ux * B.ux + A.uy * B.uy) < 0.97) return false; // > ~14 degrees apart
+    const wr = A.width / B.width;
+    if (wr < 0.75 || wr > 1.33) return false;
     const ca = center(a.pos), cb = center(b.pos);
-    return Math.hypot(cb.x - ca.x, cb.y - ca.y) < 2.6 * Math.max(A.width, B.width);
+    return Math.hypot(cb.x - ca.x, cb.y - ca.y) < 1.5 * Math.max(A.width, B.width);
+  }
+  const sameLabel = pairable;
+  function dist(a, b) { const ca = center(a.pos), cb = center(b.pos); return Math.hypot(cb.x - ca.x, cb.y - ca.y); }
+  // For every IMEI detection: its nearest pairable partner in the same frame (or null).
+  function nearestMap(dets) {
+    const m = new Map();
+    for (const a of dets) {
+      let best = null, bd = Infinity;
+      for (const b of dets) {
+        if (b === a || b.text === a.text || !pairable(a, b)) continue;
+        const d = dist(a, b);
+        if (d < bd) { bd = d; best = b; }
+      }
+      m.set(a, best);
+    }
+    return m;
   }
   function near(anchors, d, k) {
     let cx = 0, cy = 0, wmax = 0;
     for (const a of anchors) { const c = center(a.pos); cx += c.x; cy += c.y; wmax = Math.max(wmax, axes(a.pos).width); }
     cx /= anchors.length; cy /= anchors.length;
     const c = center(d.pos);
-    return Math.hypot(c.x - cx, c.y - cy) < (k || 3.4) * wmax;
+    return Math.hypot(c.x - cx, c.y - cy) < (k || 2.4) * wmax;
+  }
+  // Codes that belong to the label of the given IMEI barcodes: within reach, clearly closer to these IMEIs than to
+  // any other IMEI in the frame (a neighbouring box), and only the closest one of each kind.
+  function labelCodes(anchors, cls, recent) {
+    const others = cls.filter(d => d.c.type === 'imei' && !anchors.some(a => a.text === d.text));
+    if (recent) for (const r of recent) if (!anchors.some(a => a.text === r.text) && !others.some(o => o.text === r.text)) others.push(r);
+    const minDist = (d, set) => { let m = Infinity; const c = center(d.pos); for (const a of set) { const q = center(a.pos); m = Math.min(m, Math.hypot(c.x - q.x, c.y - q.y)); } return m; };
+    const best = {};
+    for (const d of cls) {
+      if (d.c.type === 'imei' || d.c.type === 'other' || !near(anchors, d)) continue;
+      const dd = minDist(d, anchors);
+      if (others.length && dd > 0.8 * minDist(d, others)) continue; // ambiguous between two labels: attach to neither
+      if (!best[d.c.type] || dd < best[d.c.type].dd) best[d.c.type] = { d, dd };
+    }
+    return Object.values(best).map(x => x.d);
   }
 
   // ---------- box assembler ----------
@@ -813,11 +850,12 @@ select{width:100%;height:40px;padding:0 10px;border-radius:10px;border:1px solid
      {type:'duplicate', box}         a box already in the list came back into view */
   class Assembler {
     constructor(opts) {
-      this.opts = Object.assign({ holdMs: 380, fullHoldMs: 1500, confirmFrames: 2, goneMs: 1500, mode: 'imei' }, opts || {});
+      this.opts = Object.assign({ holdMs: 1000, holdAfterSingleMs: 2500, fullHoldMs: 1500, confirmFrames: 2, goneMs: 1500, mode: 'imei' }, opts || {});
       this.boxes = [];
       this.byImei = new Map();
       this.inView = new Map();   // box -> last time one of its IMEIs was seen
       this.seen = new Map();     // imei -> {count, first, last, det}
+      this.suppress = new Map(); // deleted IMEIs ignored until they leave the view: imei -> last seen
       this.firstSight = 0;
       this.lastDetT = 0;
       this.lastT = 0;
@@ -828,25 +866,41 @@ select{width:100%;height:40px;padding:0 10px;border-radius:10px;border:1px solid
       this.byImei.clear(); this.inView.clear();
       for (const b of this.boxes) for (const i of [b.imei1, b.imei2]) if (i) this.byImei.set(i, b);
     }
+    forget(imeis) {
+      for (const im of imeis) if (im) { this.suppress.set(im, this.lastT); this.seen.delete(im); }
+    }
     remove(id) {
       const i = this.boxes.findIndex(b => b.id === id);
       if (i < 0) return null;
       const [b] = this.boxes.splice(i, 1);
       for (const im of [b.imei1, b.imei2]) if (im && this.byImei.get(im) === b) this.byImei.delete(im);
       this.inView.delete(b);
+      this.forget([b.imei1, b.imei2]);
       return b;
     }
-    clear() { this.boxes = []; this.byImei.clear(); this.inView.clear(); this.seen.clear(); this.firstSight = 0; }
+    clear() {
+      const all = [];
+      for (const b of this.boxes) all.push(b.imei1, b.imei2);
+      this.boxes = []; this.byImei.clear(); this.inView.clear(); this.seen.clear(); this.firstSight = 0;
+      this.forget(all);
+    }
     swap(id) {
       const b = this.boxes.find(x => x.id === id);
       if (b && b.imei2) { const t = b.imei1; b.imei1 = b.imei2; b.imei2 = t; b.order = 'manual'; }
       return b;
     }
+    confirmed(text) { return ((this.seen.get(text) || {}).count || 0) >= this.opts.confirmFrames; }
+    recent(t) { const out = []; for (const s of this.seen.values()) if (t - s.last < 500) out.push(s.det); return out; }
 
     frame(dets, t) {
       const o = this.opts, ev = [];
       t = Math.max(t, this.lastT); this.lastT = t;
-      const cls = dets.map(d => Object.assign({}, d, { c: classify(d.text, d.format) }));
+      let cls = dets.map(d => Object.assign({}, d, { c: classify(d.text, d.format) }));
+      // deleted boxes stay ignored while their label is still in front of the camera
+      if (this.suppress.size) {
+        cls = cls.filter(d => { if (d.c.type === 'imei' && this.suppress.has(d.text)) { this.suppress.set(d.text, t); return false; } return true; });
+        for (const [k, last] of this.suppress) if (t - last > o.goneMs) this.suppress.delete(k);
+      }
       const imeis = cls.filter(d => d.c.type === 'imei');
       if (cls.length) {
         if (!this.firstSight || t - this.lastDetT > 400) this.firstSight = t;
@@ -860,71 +914,75 @@ select{width:100%;height:40px;padding:0 10px;border-radius:10px;border:1px solid
       for (const [k, s] of this.seen) if (t - s.last > 3000) this.seen.delete(k);
       for (const [b, last] of this.inView) if (t - last > o.goneMs) this.inView.delete(b);
 
-      // boxes already in the list
-      const fresh = [];
+      // Pair over a short time window too: the two IMEI barcodes are not always read in the same frame.
+      const pool = imeis.slice();
+      for (const s2 of this.seen.values()) {
+        if (t - s2.last < 450 && !pool.some(d => d.text === s2.det.text) && !this.suppress.has(s2.det.text)) pool.push(s2.det);
+      }
+      const nearest = nearestMap(pool);
+      const mutual = (a) => { const p = nearest.get(a); return p && nearest.get(p) === a ? p : null; };
+      const used = new Set();
+
+      // 1. boxes already in the list: still in view, or shown again
       for (const d of imeis) {
         const b = this.byImei.get(d.text);
-        if (!b) { fresh.push(d); continue; }
-        if (this.inView.has(b)) { this.inView.set(b, t); continue; }
-        if (this.seen.get(d.text).count >= o.confirmFrames) { this.inView.set(b, t); this.firstSight = 0; ev.push({ type: 'duplicate', box: b }); }
-      }
-      // enrich boxes in view: partner IMEI, SN, UPC/EAN, EID seen in this frame
-      for (const b of this.inView.keys()) {
-        const mine = imeis.filter(d => d.text === b.imei1 || d.text === b.imei2);
-        if (!mine.length) continue;
-        const what = this.enrich(b, mine, cls, fresh);
-        if (what) ev.push({ type: 'update', box: b, what });
-      }
-      // new boxes
-      const conf = fresh.filter(d => !this.byImei.has(d.text) && this.seen.get(d.text).count >= o.confirmFrames);
-      const unconf = fresh.filter(d => !this.byImei.has(d.text) && this.seen.get(d.text).count < o.confirmFrames);
-      const full = o.mode === 'box';
-      const used = new Set();
-      const pairs = [];
-      for (let i = 0; i < conf.length; i++)
-        for (let j = i + 1; j < conf.length; j++)
-          if (sameLabel(conf[i], conf[j])) {
-            const ci = center(conf[i].pos), cj = center(conf[j].pos);
-            pairs.push([conf[i], conf[j], Math.hypot(ci.x - cj.x, ci.y - cj.y)]);
-          }
-      pairs.sort((p, q) => p[2] - q[2]);
-      for (const [a, b] of pairs) {
-        if (used.has(a.text) || used.has(b.text)) continue;
-        if (full) {
-          const codes = cls.filter(d => d.c.type !== 'imei' && near([a, b], d));
-          const hasSn = codes.some(d => d.c.type === 'serial'), hasG = codes.some(d => d.c.type === 'gtin');
-          const age = t - Math.min(this.seen.get(a.text).first, this.seen.get(b.text).first);
-          if (!(hasSn && hasG) && age < o.fullHoldMs) { used.add(a.text); used.add(b.text); continue; }
-        }
-        used.add(a.text); used.add(b.text);
-        ev.push({ type: 'box', box: this.commit([a, b], cls, t) });
-      }
-      for (const d of conf) {
-        if (used.has(d.text)) continue;
-        const s = this.seen.get(d.text);
-        const age = t - s.first;
-        const hold = full ? o.fullHoldMs : o.holdMs;
-        const partnerComing = unconf.some(e => sameLabel(d, e));
-        if (age < hold || (partnerComing && age < hold * 2.5)) continue;
+        if (!b) continue;
         used.add(d.text);
-        ev.push({ type: 'box', box: this.commit([d], cls, t) });
+        if (this.inView.has(b)) { this.inView.set(b, t); continue; }
+        if (this.confirmed(d.text)) { this.inView.set(b, t); this.firstSight = 0; ev.push({ type: 'duplicate', box: b }); }
+      }
+      // 2. a box saved with one IMEI gets its partner: the mutual-nearest fresh IMEI on the same label
+      for (const d of imeis) {
+        const b = this.byImei.get(d.text);
+        if (!b || !this.inView.has(b)) continue;
+        let what = null;
+        if (!b.imei2) {
+          const p = mutual(d);
+          if (p && !this.byImei.has(p.text)) {
+            used.add(p.text);
+            if (this.confirmed(p.text)) {
+              const ord = orderPair(d, p);
+              b.imei1 = ord.first.text; b.imei2 = ord.second.text; b.order = ord.by;
+              this.byImei.set(b.imei1, b); this.byImei.set(b.imei2, b);
+              what = 'imei2';
+            }
+          }
+        }
+        const anchors = imeis.filter(x => x.text === b.imei1 || x.text === b.imei2);
+        const w2 = this.attachCodes(b, labelCodes(anchors, cls, this.recent(t)));
+        if (what || w2) ev.push({ type: 'update', box: b, what: what || w2 });
+      }
+      // 3. new boxes
+      const full = o.mode === 'box';
+      const lastBox = this.boxes[this.boxes.length - 1];
+      const singleHold = full ? o.fullHoldMs : (lastBox && !lastBox.imei2 && t - (lastBox.t || 0) < 30000 ? o.holdAfterSingleMs : o.holdMs);
+      const fresh = imeis.filter(d => !used.has(d.text) && !this.byImei.has(d.text)); // anchored in this frame
+      for (const a of fresh) {
+        if (used.has(a.text) || !this.confirmed(a.text)) continue;
+        const p = nearest.get(a);
+        const m = mutual(a);
+        if (m && !this.byImei.has(m.text)) {
+          if (!this.confirmed(m.text)) continue;               // partner still being confirmed
+          if (used.has(m.text)) continue;
+          if (full) {
+            const codes = labelCodes([a, m], cls, this.recent(t));
+            const ready = codes.some(d => d.c.type === 'serial') && codes.some(d => d.c.type === 'gtin');
+            const age = t - Math.min(this.seen.get(a.text).first, this.seen.get(m.text).first);
+            if (!ready && age < o.fullHoldMs) { used.add(a.text); used.add(m.text); continue; }
+          }
+          used.add(a.text); used.add(m.text);
+          ev.push({ type: 'box', box: this.commit([a, m], cls, t) });
+          continue;
+        }
+        if (m && this.byImei.has(m.text)) continue;             // belongs to a known box (handled above)
+        // no partner on this label yet: wait, longer if a pairable IMEI is visible or the previous box is incomplete
+        const age = t - this.seen.get(a.text).first;
+        const waiting = p && !this.confirmed(p.text);
+        if (age < singleHold || (waiting && age < singleHold * 2)) continue;
+        used.add(a.text);
+        ev.push({ type: 'box', box: this.commit([a], cls, t) });
       }
       return ev;
-    }
-
-    enrich(b, mine, cls, fresh) {
-      let what = null;
-      if (!b.imei2) {
-        const partner = fresh.find(e => !this.byImei.has(e.text) && (this.seen.get(e.text) || {}).count >= this.opts.confirmFrames && sameLabel(mine[0], e));
-        if (partner) {
-          const ord = orderPair(mine[0], partner);
-          b.imei1 = ord.first.text; b.imei2 = ord.second.text; b.order = ord.by;
-          this.byImei.set(b.imei1, b); this.byImei.set(b.imei2, b);
-          what = 'imei2';
-        }
-      }
-      const w2 = this.attachCodes(b, cls.filter(d => d.c.type !== 'imei' && near(mine, d)));
-      return what || w2;
     }
 
     attachCodes(b, codes) {
@@ -950,10 +1008,10 @@ select{width:100%;height:40px;padding:0 10px;border-radius:10px;border:1px solid
       const box = Object.assign({
         id: 'b' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
         n: (last ? last.n : 0) + 1,
-        imei1, imei2, order, at: Date.now(),
+        imei1, imei2, order, at: Date.now(), t,
         ms: Math.max(0, Math.round(t - (this.firstSight || t))),
       }, extra || {});
-      this.attachCodes(box, cls.filter(d => d.c.type !== 'imei' && near(imeiDets, d)));
+      this.attachCodes(box, labelCodes(imeiDets, cls, extra && extra.photo ? null : this.recent(t)));
       this.boxes.push(box);
       this.byImei.set(imei1, box); if (imei2) this.byImei.set(imei2, box);
       this.inView.set(box, t);
@@ -966,45 +1024,44 @@ select{width:100%;height:40px;padding:0 10px;border-radius:10px;border:1px solid
       const ev = [];
       const cls = dets.map(d => Object.assign({}, d, { c: classify(d.text, d.format) }));
       const imeis = cls.filter(d => d.c.type === 'imei');
-      const known = imeis.filter(d => this.byImei.has(d.text));
-      let fresh = imeis.filter(d => !this.byImei.has(d.text));
+      for (const d of imeis) this.suppress.delete(d.text); // a photo is a deliberate re-scan
+      const nearest = nearestMap(imeis);
+      const mutual = (a) => { const p = nearest.get(a); return p && nearest.get(p) === a ? p : null; };
+      const used = new Set();
       const reported = new Set();
-      for (const d of known) {
+      for (const d of imeis) {
         const b = this.byImei.get(d.text);
-        if (reported.has(b.id)) continue;
-        reported.add(b.id);
-        // a box saved with one IMEI gets its partner from this photo
+        if (!b) continue;
+        used.add(d.text);
+        let what = null;
         if (!b.imei2) {
-          const partner = fresh.find(e => sameLabel(d, e));
-          if (partner) {
-            const ord = orderPair(d, partner);
+          const p = mutual(d);
+          if (p && !this.byImei.has(p.text) && !used.has(p.text)) {
+            const ord = orderPair(d, p);
             b.imei1 = ord.first.text; b.imei2 = ord.second.text; b.order = ord.by;
             this.byImei.set(b.imei1, b); this.byImei.set(b.imei2, b);
-            fresh = fresh.filter(e => e !== partner);
-            this.attachCodes(b, cls.filter(x => x.c.type !== 'imei' && near([d, partner], x)));
-            ev.push({ type: 'update', box: b, what: 'imei2' });
-            continue;
+            used.add(p.text);
+            what = 'imei2';
           }
         }
-        this.attachCodes(b, cls.filter(x => x.c.type !== 'imei' && near([d], x)));
-        ev.push({ type: 'duplicate', box: b });
+        const anchors = imeis.filter(x => x.text === b.imei1 || x.text === b.imei2);
+        this.attachCodes(b, labelCodes(anchors, cls));
+        if (reported.has(b.id)) continue;
+        reported.add(b.id);
+        ev.push(what ? { type: 'update', box: b, what } : { type: 'duplicate', box: b });
       }
-      const taken = new Set();
-      const pairs = [];
-      for (let i = 0; i < fresh.length; i++)
-        for (let j = i + 1; j < fresh.length; j++)
-          if (sameLabel(fresh[i], fresh[j])) {
-            const ci = center(fresh[i].pos), cj = center(fresh[j].pos);
-            pairs.push([fresh[i], fresh[j], Math.hypot(ci.x - cj.x, ci.y - cj.y)]);
-          }
-      pairs.sort((p, q) => p[2] - q[2]);
-      for (const [a, b] of pairs) {
-        if (taken.has(a.text) || taken.has(b.text)) continue;
-        taken.add(a.text); taken.add(b.text);
+      for (const a of imeis) {
+        if (used.has(a.text)) continue;
+        const m = mutual(a);
         this.firstSight = t;
-        ev.push({ type: 'box', box: this.commit([a, b], cls, t, { photo: true }) });
+        if (m && !used.has(m.text) && !this.byImei.has(m.text)) {
+          used.add(a.text); used.add(m.text);
+          ev.push({ type: 'box', box: this.commit([a, m], cls, t, { photo: true }) });
+        } else {
+          used.add(a.text);
+          ev.push({ type: 'box', box: this.commit([a], cls, t, { photo: true }) });
+        }
       }
-      for (const d of fresh) if (!taken.has(d.text)) { this.firstSight = t; ev.push({ type: 'box', box: this.commit([d], cls, t, { photo: true }) }); }
       return ev;
     }
   }
@@ -1013,7 +1070,7 @@ select{width:100%;height:40px;padding:0 10px;border-radius:10px;border:1px solid
 
   root.IMEICore = {
     rgbaToLum, downscale, estimateOrientation, rectify, bindZXing, decodeLum, optionSets, scanFrame, scanPhoto,
-    luhnOk, isImei, gtinOk, classify, orderPair, sameLabel, near, center, axes, Assembler, fmtImei,
+    luhnOk, isImei, gtinOk, classify, orderPair, pairable, sameLabel, near, labelCodes, center, axes, Assembler, fmtImei,
   };
 })(typeof self !== 'undefined' ? self : globalThis);
 
@@ -1253,7 +1310,7 @@ UHnI4pCfU/hQA71xz+NJ34oJHGcH60N+fPJoATqM5HHelxk9c4P+cUdew6dRSHn69RQAuDu4Hajg5Gef
   function beep(kind) {
     if (!settings.sound || !audio.ctx) return;
     try {
-      if (audio.ctx.state === 'suspended') audio.ctx.resume();
+      if (audio.ctx.state !== 'running') audio.ctx.resume().catch(() => {});
       if (kind === 'ok') tone(2093, 0.11, 0, 0.75);
       else if (kind === 'tick') tone(1568, 0.04, 0, 0.3);
       else if (kind === 'dup') { tone(784, 0.09, 0, 0.6); tone(784, 0.09, 0.15, 0.6); }
@@ -1266,7 +1323,7 @@ UHnI4pCfU/hQA71xz+NJ34oJHGcH60N+fPJoATqM5HHelxk9c4P+cUdew6dRSHn69RQAuDu4Hajg5Gef
   }
 
   // ---------- engine (decode workers) ----------
-  const engine = { workers: [], ready: false, initPromise: null, capture: 'bitmap', wasm: null, error: null };
+  const engine = { workers: [], ready: false, initPromise: null, capture: 'bitmap', wasm: null, error: null, gen: 0, url: null, rr: 0, bitmapFails: 0 };
   function wasmBytes() {
     if (engine.wasm) return engine.wasm;
     const b64 = $('wasm-b64').textContent.replace(/\s+/g, '');
@@ -1276,35 +1333,38 @@ UHnI4pCfU/hQA71xz+NJ34oJHGcH60N+fPJoATqM5HHelxk9c4P+cUdew6dRSHn69RQAuDu4Hajg5Gef
     engine.wasm = u8;
     return u8;
   }
+  function workerUrl() {
+    if (!engine.url) {
+      const src = $('zx-src').textContent + '\n;\n' + $('core-src').textContent + '\n;\n' + $('worker-src').textContent;
+      engine.url = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
+    }
+    return engine.url;
+  }
   function initEngine() {
     if (engine.initPromise) return engine.initPromise;
-    engine.initPromise = (async () => {
-      const src = $('zx-src').textContent + '\n;\n' + $('core-src').textContent + '\n;\n' + $('worker-src').textContent;
-      const url = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
+    const gen = ++engine.gen;
+    const p = (async () => {
       const n = settings.workers === 1 ? 1 : 2;
-      const bytes = wasmBytes();
-      try {
-        const ws = await Promise.all(Array.from({ length: n }, (_, i) => spawnWorker(url, bytes.slice().buffer, i)));
-        engine.workers = ws;
-        engine.capture = ws.every((w) => w.offscreen) && typeof createImageBitmap === 'function' ? 'bitmap' : 'canvas';
-        engine.ready = true;
-        engine.error = null;
-      } catch (err) {
-        engine.error = err;
-        engine.initPromise = null;
-        throw err;
-      } finally {
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-      }
+      const results = await Promise.allSettled(Array.from({ length: n }, (_, i) => spawnWorker(i)));
+      const ok = results.filter((r) => r.status === 'fulfilled').map((r) => r.value);
+      if (gen !== engine.gen) { ok.forEach(killWorker); const e = new Error('superseded'); e.superseded = true; throw e; }
+      if (!ok.length) { const why = results.find((r) => r.status === 'rejected').reason; engine.error = why; throw why; }
+      engine.workers = ok;
+      engine.capture = ok.every((w) => w.offscreen) && typeof createImageBitmap === 'function' ? 'bitmap' : 'canvas';
+      engine.bitmapFails = 0;
+      engine.ready = true;
+      engine.error = null;
       renderAbout();
     })();
-    return engine.initPromise;
+    engine.initPromise = p;
+    p.catch(() => { if (engine.initPromise === p) engine.initPromise = null; });
+    return p;
   }
-  function spawnWorker(url, wasmBuf, idx) {
+  function spawnWorker(idx) {
     return new Promise((resolve, reject) => {
       let w;
-      try { w = new Worker(url); } catch (e) { reject(new Error('не удалось запустить поток распознавания (' + (e && e.message) + ')')); return; }
-      const rec = { worker: w, idx, busy: false, job: null, offscreen: false };
+      try { w = new Worker(workerUrl()); } catch (e) { reject(new Error('не удалось запустить поток распознавания (' + (e && e.message) + ')')); return; }
+      const rec = { worker: w, idx, busy: false, job: null, offscreen: false, fails: 0, timer: 0, dead: false };
       const timer = setTimeout(() => { w.terminate(); reject(new Error('поток распознавания не ответил')); }, 20000);
       w.onmessage = (e) => {
         const m = e.data || {};
@@ -1312,19 +1372,61 @@ UHnI4pCfU/hQA71xz+NJ34oJHGcH60N+fPJoATqM5HHelxk9c4P+cUdew6dRSHn69RQAuDu4Hajg5Gef
           clearTimeout(timer);
           rec.offscreen = !!m.offscreen;
           w.onmessage = (ev) => onWorkerMessage(rec, ev.data || {});
+          w.onerror = () => { failJob(rec, 'ошибка потока распознавания'); respawn(rec); };
           resolve(rec);
         } else if (m.type === 'error') {
           clearTimeout(timer); w.terminate();
           reject(new Error(m.message || 'ошибка движка'));
         }
       };
-      w.onerror = (e) => { clearTimeout(timer); reject(new Error((e && e.message) || 'ошибка потока распознавания')); };
-      w.postMessage({ type: 'init', wasm: wasmBuf }, [wasmBuf]);
+      w.onerror = (e) => { clearTimeout(timer); w.terminate(); reject(new Error((e && e.message) || 'ошибка потока распознавания')); };
+      const bytes = wasmBytes().slice().buffer;
+      w.postMessage({ type: 'init', wasm: bytes }, [bytes]);
     });
   }
+  function killWorker(rec) {
+    rec.dead = true;
+    clearTimeout(rec.timer);
+    try { rec.worker.terminate(); } catch (e) { /* ignore */ }
+    const job = rec.job; rec.job = null; rec.busy = false;
+    if (job && job.resolve) job.resolve({ type: 'fail', message: 'поток распознавания перезапущен' });
+  }
   function resetEngine() {
-    for (const w of engine.workers) { try { w.worker.terminate(); } catch (e) { /* ignore */ } }
+    engine.gen++;
+    for (const w of engine.workers) killWorker(w);
     engine.workers = []; engine.ready = false; engine.initPromise = null;
+  }
+  // A worker that keeps failing (WASM abort, out of memory) or hangs is replaced by a fresh one.
+  function respawn(rec) {
+    if (rec.dead) return;
+    const gen = engine.gen;
+    killWorker(rec);
+    spawnWorker(rec.idx).then((nw) => {
+      const i = engine.workers.indexOf(rec);
+      if (gen !== engine.gen || i < 0) { killWorker(nw); return; }
+      engine.workers[i] = nw;
+      trySend();
+    }, (err) => { stats.lastFail = 'поток не перезапустился: ' + err.message; stats.lastFailAt = performance.now(); });
+  }
+  function pickWorker() {
+    const ws = engine.workers, n = ws.length;
+    for (let k = 0; k < n; k++) {
+      const w = ws[(engine.rr + k) % n];
+      if (!w.busy && !w.dead) { engine.rr = (engine.rr + k + 1) % n; return w; }
+    }
+    return null;
+  }
+  function postJob(rec, job, msg, transfer) {
+    rec.busy = true; rec.job = job;
+    clearTimeout(rec.timer);
+    rec.timer = setTimeout(() => { if (rec.job === job) { failJob(rec, 'поток распознавания завис'); respawn(rec); } }, job.resolve ? 30000 : 4000);
+    rec.worker.postMessage(msg, transfer || []);
+  }
+  function failJob(rec, message) {
+    rec.fails++;
+    stats.fails++; stats.lastFail = message; stats.lastFailAt = performance.now();
+    const job = rec.job; rec.job = null; rec.busy = false; clearTimeout(rec.timer);
+    if (job && job.resolve) job.resolve({ type: 'fail', message });
   }
   function engineErrorText(err) {
     const m = String((err && err.message) || err || '');
@@ -1334,18 +1436,34 @@ UHnI4pCfU/hQA71xz+NJ34oJHGcH60N+fPJoATqM5HHelxk9c4P+cUdew6dRSHn69RQAuDu4Hajg5Gef
   function onWorkerMessage(rec, m) {
     if (m.type !== 'result' && m.type !== 'fail') return;
     const job = rec.job;
+    if (!job || m.id !== job.id) return; // late answer for a job that already timed out
+    clearTimeout(rec.timer);
     rec.busy = false; rec.job = null;
-    if (job && job.resolve) { job.resolve(m); return; }
-    if (m.type === 'fail') { stats.fails++; stats.lastFail = m.message; trySend(); return; }
-    if (job && !photoMode && pump.on) handleLive(job, m);
+    if (m.type === 'fail') {
+      rec.fails++; stats.fails++; stats.lastFail = m.message; stats.lastFailAt = performance.now();
+      if (job.resolve) job.resolve(m);
+      if (rec.fails >= 3) respawn(rec);
+      trySend();
+      return;
+    }
+    rec.fails = 0;
+    if (job.resolve) { job.resolve(m); return; }
+    if (!photoMode && pump.on) handleLive(job, m);
     trySend();
   }
 
   // ---------- camera ----------
-  const cam = { stream: null, track: null, caps: {}, devices: [], running: false, zoom: 1, torch: false, label: '', deviceId: '', restarting: false };
+  const cam = { stream: null, track: null, caps: {}, devices: [], running: false, zoom: 1, torch: false, label: '', deviceId: '', muteTimer: 0 };
   const RES = { '4k': [3840, 2160], '1080p': [1920, 1080], '720p': [1280, 720] };
   function cameraError(name, msg) { const e = new Error(msg || name); e.name = name; return e; }
-  async function startCamera() {
+  // Camera starts run one after another, so quick setting changes never leave two streams or the wrong resolution.
+  let camChain = Promise.resolve();
+  function startCamera() {
+    const run = camChain.then(() => openCamera());
+    camChain = run.catch(() => {});
+    return run;
+  }
+  async function openCamera() {
     if (!window.isSecureContext) throw cameraError('InsecureContext');
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw cameraError('NotSupportedError');
     stopCamera();
@@ -1361,8 +1479,9 @@ UHnI4pCfU/hQA71xz+NJ34oJHGcH60N+fPJoATqM5HHelxk9c4P+cUdew6dRSHn69RQAuDu4Hajg5Gef
       catch (e) { err = e; if (e && (e.name === 'NotAllowedError' || e.name === 'SecurityError')) break; }
     }
     if (!stream) throw err || cameraError('NotFoundError');
+    const track = stream.getVideoTracks()[0];
     cam.stream = stream;
-    cam.track = stream.getVideoTracks()[0];
+    cam.track = track;
     E.video.srcObject = stream;
     await new Promise((res) => {
       if (E.video.readyState >= 1 && E.video.videoWidth) return res();
@@ -1371,14 +1490,19 @@ UHnI4pCfU/hQA71xz+NJ34oJHGcH60N+fPJoATqM5HHelxk9c4P+cUdew6dRSHn69RQAuDu4Hajg5Gef
       setTimeout(done, 4000);
     });
     try { await E.video.play(); } catch (e) { /* autoplay is muted; ignore */ }
-    cam.caps = (cam.track.getCapabilities && cam.track.getCapabilities()) || {};
-    const st = (cam.track.getSettings && cam.track.getSettings()) || {};
+    cam.caps = (track.getCapabilities && track.getCapabilities()) || {};
+    const st = (track.getSettings && track.getSettings()) || {};
     cam.deviceId = st.deviceId || '';
-    cam.label = cam.track.label || '';
+    cam.label = track.label || '';
     cam.running = true;
     cam.torch = false;
-    cam.track.addEventListener('ended', () => { if (cam.running) restartSoon(); });
-    cam.track.addEventListener('mute', () => { setTimeout(() => { if (cam.track && cam.track.muted && cam.running && !document.hidden) restartSoon(); }, 1500); });
+    track.addEventListener('ended', () => { if (cam.track === track && cam.running) restartSoon(); });
+    // iOS mutes the camera for Control Center, calls or the system camera and unmutes it by itself; reopen only after a long mute
+    track.addEventListener('mute', () => {
+      clearTimeout(cam.muteTimer);
+      cam.muteTimer = setTimeout(() => { if (cam.track === track && track.muted && cam.running && !document.hidden) restartSoon(); }, 5000);
+    });
+    track.addEventListener('unmute', () => clearTimeout(cam.muteTimer));
     await applyZoom(settings.zoom, true);
     renderTorch();
     renderZoom();
@@ -1386,6 +1510,7 @@ UHnI4pCfU/hQA71xz+NJ34oJHGcH60N+fPJoATqM5HHelxk9c4P+cUdew6dRSHn69RQAuDu4Hajg5Gef
   }
   function stopCamera() {
     cam.running = false;
+    clearTimeout(cam.muteTimer);
     if (cam.stream) for (const t of cam.stream.getTracks()) { try { t.stop(); } catch (e) { /* ignore */ } }
     cam.stream = null; cam.track = null;
     E.video.srcObject = null;
@@ -1397,7 +1522,7 @@ UHnI4pCfU/hQA71xz+NJ34oJHGcH60N+fPJoATqM5HHelxk9c4P+cUdew6dRSHn69RQAuDu4Hajg5Gef
       if (document.hidden) return;
       stopPump();
       try { await startCamera(); if (!photoMode) startPump(); setDot('live'); }
-      catch (err) { setDot('err'); showLastError('Камера отключилась: ' + cameraErrorText(err)); }
+      catch (err) { setDot('err'); showStart(`<b>Камера отключилась</b>${esc(cameraErrorText(err))}`, err); }
     }, 600);
   }
   async function applyZoom(z, initial) {
@@ -1492,7 +1617,7 @@ UHnI4pCfU/hQA71xz+NJ34oJHGcH60N+fPJoATqM5HHelxk9c4P+cUdew6dRSHn69RQAuDu4Hajg5Gef
     if (E.video.readyState < 2 || !E.video.videoWidth) return;
     const now = performance.now();
     if (now - pump.activeAt > 1800 && now - pump.lastSendAt < 85) return; // idle: ~12 fps to save battery
-    const w = engine.workers.find((x) => !x.busy);
+    const w = pickWorker();
     if (!w) return;
     pump.sent = pump.latest; pump.lastSendAt = now;
     sendFrame(w);
@@ -1509,18 +1634,22 @@ UHnI4pCfU/hQA71xz+NJ34oJHGcH60N+fPJoATqM5HHelxk9c4P+cUdew6dRSHn69RQAuDu4Hajg5Gef
     const roi = computeRoi();
     if (!roi) return;
     const job = { id: ++jobSeq, t: performance.now(), roi };
-    w.busy = true; w.job = job;
     if (engine.capture === 'bitmap') {
+      w.busy = true; w.job = job; // reserve while the bitmap is being made
       createImageBitmap(E.video, roi.x, roi.y, roi.w, roi.h).then((bmp) => {
-        if (w.job !== job) { if (bmp.close) bmp.close(); return; }
-        w.worker.postMessage({ type: 'frame', id: job.id, bitmap: bmp, want: wantCount() }, [bmp]);
-      }).catch(() => { w.busy = false; w.job = null; engine.capture = 'canvas'; renderAbout(); });
+        engine.bitmapFails = 0;
+        if (w.job !== job || w.dead) { if (bmp.close) bmp.close(); return; }
+        postJob(w, job, { type: 'frame', id: job.id, bitmap: bmp, want: wantCount() }, [bmp]);
+      }).catch(() => {
+        if (w.job === job) { w.busy = false; w.job = null; }
+        if (++engine.bitmapFails >= 3) { engine.capture = 'canvas'; renderAbout(); }
+      });
     } else {
       try {
         const ctx = capCtx(roi.w, roi.h);
         ctx.drawImage(E.video, roi.x, roi.y, roi.w, roi.h, 0, 0, roi.w, roi.h);
         const img = ctx.getImageData(0, 0, roi.w, roi.h);
-        w.worker.postMessage({ type: 'frame', id: job.id, rgba: img.data.buffer, w: roi.w, h: roi.h, want: wantCount() }, [img.data.buffer]);
+        postJob(w, job, { type: 'frame', id: job.id, rgba: img.data.buffer, w: roi.w, h: roi.h, want: wantCount() }, [img.data.buffer]);
       } catch (e) { w.busy = false; w.job = null; }
     }
   }
@@ -1723,7 +1852,10 @@ UHnI4pCfU/hQA71xz+NJ34oJHGcH60N+fPJoATqM5HHelxk9c4P+cUdew6dRSHn69RQAuDu4Hajg5Gef
     } else if (v.kind === 'error') html = `<div class="last-head"><span class="badge bad">Ошибка</span></div><div class="idle-text">${esc(v.text)}</div>`;
     else {
       const n = asm.boxes.length;
-      html = `<div class="last-head"><span class="badge idle">Готов</span><span class="meta">${n ? 'в истории ' + n + ' шт' : ''}</span></div><div class="idle-text">Наведите рамку на этикетку с IMEI. При распознавании прозвучит сигнал, а номера появятся здесь.</div>`;
+      const text = cameraBlocked
+        ? 'Камера в этом окне недоступна. Сфотографируйте этикетку кнопкой «Фото коробки» — номера появятся здесь.'
+        : 'Наведите рамку на этикетку с IMEI. При распознавании прозвучит сигнал, а номера появятся здесь.';
+      html = `<div class="last-head"><span class="badge idle">Готов</span><span class="meta">${n ? 'в истории ' + n + ' шт' : ''}</span></div><div class="idle-text">${esc(text)}</div>`;
     }
     E.last.innerHTML = html;
   }
@@ -1757,7 +1889,7 @@ UHnI4pCfU/hQA71xz+NJ34oJHGcH60N+fPJoATqM5HHelxk9c4P+cUdew6dRSHn69RQAuDu4Hajg5Gef
       const tail = [];
       if (b.serial) tail.push('SN ' + b.serial);
       if (b.gtin) tail.push((b.gtinType || 'UPC') + ' ' + b.gtin);
-      rows.push(`<li class="row${b.id === openId ? ' open' : ''}${b.id === flashId ? ' flash' : ''}" data-id="${esc(b.id)}">
+      rows.push(`<li class="row${b.id === openId ? ' open' : ''}${b.id === flashId ? ' flash' : ''}" data-id="${esc(b.id)}" tabindex="0" aria-expanded="${b.id === openId}">
         <span class="n">${b.n}</span><span class="a">${esc(fmt(b.imei1))}</span><span class="t">${timeStr(b.at)}</span>
         <span class="b">${b.imei2 ? esc(fmt(b.imei2)) : '<em>IMEI 2 не найден</em>'}${tail.length ? ' <em>· ' + esc(tail.join(' · ')) + '</em>' : ''}</span>
         <div class="acts">${b.imei2 ? `<button class="icon-btn" type="button" data-act="swap" data-id="${esc(b.id)}">${ICON_SWAP}Поменять 1⇄2</button>` : ''}<button class="icon-btn" type="button" data-act="copy" data-id="${esc(b.id)}">Копировать</button><button class="icon-btn" type="button" data-act="del" data-id="${esc(b.id)}">Удалить</button></div>
@@ -1782,12 +1914,14 @@ UHnI4pCfU/hQA71xz+NJ34oJHGcH60N+fPJoATqM5HHelxk9c4P+cUdew6dRSHn69RQAuDu4Hajg5Gef
     if (v.videoWidth) parts.push(v.videoWidth + '×' + v.videoHeight);
     parts.push(cameraShort(cam.label));
     if (cam.caps && cam.caps.zoom) parts.push(String(Math.round(cam.zoom * 10) / 10).replace('.', ',') + '×');
+    while (stats.times.length && stats.times[0] < now - 1000) stats.times.shift();
     if (stats.ms.length) {
       const avg = stats.ms.reduce((a, b) => a + b, 0) / stats.ms.length;
       parts.push(Math.round(avg) + ' мс/кадр');
       parts.push(stats.times.length + ' к/с');
     }
     if (stats.passes && stats.passes[0] && stats.passes[0].kind === 'rect') parts.push('угол ' + Math.round(stats.passes[0].deg) + '°');
+    if (stats.lastFailAt && now - stats.lastFailAt < 5000) parts.push('сбой: ' + stats.lastFail);
     E.hud.textContent = parts.join(' · ');
   }
   function renderAbout() {
@@ -1804,6 +1938,7 @@ UHnI4pCfU/hQA71xz+NJ34oJHGcH60N+fPJoATqM5HHelxk9c4P+cUdew6dRSHn69RQAuDu4Hajg5Gef
 
   // ---------- live UI state ----------
   let photoMode = false;
+  let cameraBlocked = false;
   function showLiveUi() {
     E.start.hidden = true;
     E.controls.hidden = false;
@@ -1816,19 +1951,37 @@ UHnI4pCfU/hQA71xz+NJ34oJHGcH60N+fPJoATqM5HHelxk9c4P+cUdew6dRSHn69RQAuDu4Hajg5Gef
     E.hint.hidden = false;
     renderHud(true);
   }
-  function showStart(msgHtml) {
+  function showStart(msgHtml, err) {
+    if (photoMode) {
+      photoMode = false;
+      E.stage.classList.remove('photo-mode');
+      photoView = null;
+      E.photo.hidden = true;
+      if (E.photo.dataset.url) { URL.revokeObjectURL(E.photo.dataset.url); delete E.photo.dataset.url; }
+      E.photo.removeAttribute('src');
+      drawOverlay();
+    }
+    stopPump();
+    E.video.hidden = false;
     E.start.hidden = false;
     E.controls.hidden = true;
     E.hint.hidden = true;
     E.hud.hidden = true;
     E.back.hidden = true;
     E.startBtn.disabled = false;
+    const blocked = !!err && inFrame && /NotAllowed|Security|NotSupported|InsecureContext/.test(err.name || '');
+    cameraBlocked = cameraBlocked || blocked;
+    E.start.classList.toggle('has-msg', !!msgHtml);
+    E.startBtn.hidden = cameraBlocked;
+    E.startPhoto.classList.toggle('primary', cameraBlocked);
+    E.startPhoto.classList.toggle('quiet', !cameraBlocked);
     if (msgHtml) { E.startMsg.innerHTML = msgHtml; E.startMsg.hidden = false; } else E.startMsg.hidden = true;
+    renderLast();
   }
   function cameraErrorText(err) {
     const name = (err && err.name) || '';
     if (inFrame && /NotAllowed|Security|NotSupported|InsecureContext/.test(name)) {
-      return 'В этом окне браузер не даёт доступ к камере. Живой режим работает, когда страница открыта напрямую в Safari — с вашего сервера по https. Фото можно распознать прямо здесь.';
+      return 'В этом окне браузер не даёт доступ к камере. Живой режим работает, когда сканер открыт напрямую в Safari по своей ссылке. Фото можно распознать прямо здесь.';
     }
     if (name === 'InsecureContext') return 'Камера работает только на странице с адресом https://.';
     if (name === 'NotAllowedError' || name === 'SecurityError') {
@@ -1850,7 +2003,7 @@ UHnI4pCfU/hQA71xz+NJ34oJHGcH60N+fPJoATqM5HHelxk9c4P+cUdew6dRSHn69RQAuDu4Hajg5Gef
       await startCamera();
     } catch (err) {
       setDot('err');
-      showStart(`<b>Камера не включилась</b>${esc(cameraErrorText(err))}`);
+      showStart(`<b>Камера не включилась</b>${esc(cameraErrorText(err))}`, err);
       return;
     }
     showLiveUi();
@@ -1890,54 +2043,52 @@ UHnI4pCfU/hQA71xz+NJ34oJHGcH60N+fPJoATqM5HHelxk9c4P+cUdew6dRSHn69RQAuDu4Hajg5Gef
     if (cam.running) { showLiveUi(); startPump(); }
     else showStart();
   }
-  async function decodeImage(blob) {
-    if (typeof createImageBitmap === 'function') {
-      try { return await createImageBitmap(blob); } catch (e) { /* fall back to <img> */ }
-    }
-    const url = URL.createObjectURL(blob);
-    try {
-      const img = new Image();
-      img.decoding = 'async';
-      img.src = url;
-      await img.decode();
-      const c = document.createElement('canvas');
-      c.width = img.naturalWidth; c.height = img.naturalHeight;
-      c.getContext('2d').drawImage(img, 0, 0);
-      return typeof createImageBitmap === 'function' ? await createImageBitmap(c) : c;
-    } finally { URL.revokeObjectURL(url); }
+  // Decode through <img> so the pixels match what is shown (EXIF orientation applied), then draw into a canvas
+  // of at most 4032 px on the long side (big iPhone photos exceed Safari's canvas limit at full size).
+  async function loadPhoto(url) {
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = url;
+    await img.decode();
+    const natW = img.naturalWidth, natH = img.naturalHeight;
+    const k = Math.min(1, 4032 / Math.max(natW, natH));
+    const w = Math.max(1, Math.round(natW * k)), h = Math.max(1, Math.round(natH * k));
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, 0, 0, w, h);
+    return { canvas: c, ctx, natW, natH, k };
   }
-  async function resizeTo(src, w, h) {
-    try { return await createImageBitmap(src, { resizeWidth: w, resizeHeight: h, resizeQuality: 'high' }); }
-    catch (e) {
-      const c = document.createElement('canvas'); c.width = w; c.height = h;
-      const ctx = c.getContext('2d'); ctx.imageSmoothingQuality = 'high'; ctx.drawImage(src, 0, 0, w, h);
-      return await createImageBitmap(c);
-    }
-  }
-  function idleWorker(timeoutMs) {
+  function waitWorker(timeoutMs) {
     return new Promise((resolve, reject) => {
       const t0 = performance.now();
       (function poll() {
-        const w = engine.workers.find((x) => !x.busy);
+        const w = pickWorker();
         if (w) return resolve(w);
         if (performance.now() - t0 > timeoutMs) return reject(new Error('движок занят'));
         setTimeout(poll, 15);
       })();
     });
   }
-  async function runPhoto(src) {
-    const w = await idleWorker(4000);
+  async function runPhoto(ph) {
+    const w = await waitWorker(6000);
+    let msg, transfer;
+    if (w.offscreen && typeof createImageBitmap === 'function') {
+      try {
+        const bmp = await createImageBitmap(ph.canvas);
+        msg = { type: 'photo', bitmap: bmp }; transfer = [bmp];
+      } catch (e) { msg = null; }
+    }
+    if (!msg) {
+      const img = ph.ctx.getImageData(0, 0, ph.canvas.width, ph.canvas.height);
+      msg = { type: 'photo', rgba: img.data.buffer, w: ph.canvas.width, h: ph.canvas.height }; transfer = [img.data.buffer];
+    }
     return new Promise((resolve) => {
       const job = { id: ++jobSeq, resolve };
-      w.busy = true; w.job = job;
-      if (w.offscreen && typeof ImageBitmap !== 'undefined' && src instanceof ImageBitmap) {
-        w.worker.postMessage({ type: 'photo', id: job.id, bitmap: src }, [src]);
-      } else {
-        const c = document.createElement('canvas'); c.width = src.width; c.height = src.height;
-        const ctx = c.getContext('2d'); ctx.drawImage(src, 0, 0);
-        const img = ctx.getImageData(0, 0, c.width, c.height);
-        w.worker.postMessage({ type: 'photo', id: job.id, rgba: img.data.buffer, w: c.width, h: c.height }, [img.data.buffer]);
-      }
+      msg.id = job.id;
+      if (w.dead || w.busy) { resolve({ type: 'fail', message: 'движок занят' }); return; }
+      postJob(w, job, msg, transfer);
     });
   }
   async function scanPhoto(blob, demo) {
@@ -1952,11 +2103,9 @@ UHnI4pCfU/hQA71xz+NJ34oJHGcH60N+fPJoATqM5HHelxk9c4P+cUdew6dRSHn69RQAuDu4Hajg5Gef
     drawOverlay();
     try {
       await initEngine();
-      let bmp = await decodeImage(blob);
-      const natW = bmp.width, natH = bmp.height;
-      const k = Math.min(1, 4032 / Math.max(natW, natH));
-      if (k < 1) { const r = await resizeTo(bmp, Math.round(natW * k), Math.round(natH * k)); if (bmp.close) bmp.close(); bmp = r; }
-      const m = await runPhoto(bmp);
+      const ph = await loadPhoto(url);
+      const natW = ph.natW, natH = ph.natH, k = ph.k;
+      const m = await runPhoto(ph);
       if (m.type === 'fail') throw new Error(m.message);
       const dets = m.results.map((r) => ({ text: r.text, format: r.format, via: r.via, pos: r.pos.map((v) => v / k) }));
       photoView = { dets, w: natW, h: natH };
@@ -1974,14 +2123,13 @@ UHnI4pCfU/hQA71xz+NJ34oJHGcH60N+fPJoATqM5HHelxk9c4P+cUdew6dRSHn69RQAuDu4Hajg5Gef
         const boxesNew = evs.filter((e) => e.type === 'box').map((e) => e.box);
         const ups = evs.filter((e) => e.type === 'update').map((e) => e.box);
         const dups = evs.filter((e) => e.type === 'duplicate').map((e) => e.box);
-        if (ups.length) saveBoxes();
+        if (evs.length) saveBoxes();
         if (!boxesNew.length && ups.length) {
           beep('ok');
           lastView = { kind: 'photo', box: ups[0], more: ups.length - 1 };
         } else if (boxesNew.length) {
           beep('ok');
           lastView = { kind: 'photo', box: boxesNew[0], more: boxesNew.length - 1 };
-          saveBoxes();
         } else if (dups.length) {
           beep('dup');
           lastView = { kind: 'dup', box: dups[0] };
@@ -2028,7 +2176,9 @@ UHnI4pCfU/hQA71xz+NJ34oJHGcH60N+fPJoATqM5HHelxk9c4P+cUdew6dRSHn69RQAuDu4Hajg5Gef
     });
     return [head].concat(rows).map((r) => r.map((c) => {
       const s = String(c);
-      return sep === ';' && /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+      if (sep !== ';') return s;
+      if (/^\d{11,}$/.test(s)) return '="' + s + '"'; // keeps IMEI/UPC as text in Excel (no 3,58E+14, no lost zeros)
+      return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
     }).join(sep)).join(sep === ';' ? '\r\n' : '\n');
   }
   let downloadsApi = null;
@@ -2065,13 +2215,23 @@ UHnI4pCfU/hQA71xz+NJ34oJHGcH60N+fPJoATqM5HHelxk9c4P+cUdew6dRSHn69RQAuDu4Hajg5Gef
     renderCameraSelect();
     renderAbout();
   }
-  function openSettings() { syncSettingsUi(); E.clearConfirm.hidden = true; E.clearBtn.hidden = false; E.settings.hidden = false; }
-  function closeSettings() { E.settings.hidden = true; }
+  let settingsReturn = null;
+  function openSettings() {
+    syncSettingsUi(); E.clearConfirm.hidden = true; E.clearBtn.hidden = false;
+    settingsReturn = document.activeElement;
+    E.settings.hidden = false;
+    E.settingsClose.focus();
+  }
+  function closeSettings() {
+    E.settings.hidden = true;
+    if (settingsReturn && settingsReturn.focus) settingsReturn.focus();
+    settingsReturn = null;
+  }
   async function restartCameraIfLive() {
     if (!cam.running) return;
     stopPump();
     try { await startCamera(); if (!photoMode) startPump(); setDot('live'); }
-    catch (err) { setDot('err'); showStart(`<b>Камера не включилась</b>${esc(cameraErrorText(err))}`); }
+    catch (err) { setDot('err'); showStart(`<b>Камера не включилась</b>${esc(cameraErrorText(err))}`, err); }
     renderHud(true);
   }
   async function onSetting(key, val) {
@@ -2081,10 +2241,9 @@ UHnI4pCfU/hQA71xz+NJ34oJHGcH60N+fPJoATqM5HHelxk9c4P+cUdew6dRSHn69RQAuDu4Hajg5Gef
     if (key === 'res') await restartCameraIfLive();
     else if (key === 'mode') asm.setMode(val);
     else if (key === 'workers') {
-      const wasLive = pump.on;
       stopPump(); resetEngine();
-      try { await initEngine(); } catch (err) { showLastError('Движок распознавания не запустился: ' + engineErrorText(err)); return; }
-      if (wasLive) startPump();
+      try { await initEngine(); } catch (err) { if (!err.superseded) showLastError('Движок распознавания не запустился: ' + engineErrorText(err)); return; }
+      if (cam.running && !photoMode) startPump();
       renderAbout();
     }
   }
@@ -2129,7 +2288,17 @@ UHnI4pCfU/hQA71xz+NJ34oJHGcH60N+fPJoATqM5HHelxk9c4P+cUdew6dRSHn69RQAuDu4Hajg5Gef
   E.settingsBtn.addEventListener('click', openSettings);
   E.settingsClose.addEventListener('click', closeSettings);
   E.settings.addEventListener('click', (e) => { if (e.target === E.settings) closeSettings(); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !E.settings.hidden) closeSettings(); });
+  document.addEventListener('keydown', (e) => {
+    if (E.settings.hidden) return;
+    if (e.key === 'Escape') { closeSettings(); return; }
+    if (e.key === 'Tab') { // keep focus inside the settings sheet
+      const f = [...E.settings.querySelectorAll('button:not([hidden]), select, input')].filter((x) => x.offsetParent !== null);
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
   for (const seg of document.querySelectorAll('.seg[data-set]')) {
     seg.addEventListener('click', (e) => { const b = e.target.closest('button[data-val]'); if (b) onSetting(seg.dataset.set, b.dataset.val); });
   }
@@ -2168,12 +2337,22 @@ UHnI4pCfU/hQA71xz+NJ34oJHGcH60N+fPJoATqM5HHelxk9c4P+cUdew6dRSHn69RQAuDu4Hajg5Gef
     const act = e.target.closest('button[data-act]');
     if (act) { onBoxAction(act.dataset.act, act.dataset.id); return; }
     const row = e.target.closest('.row');
-    if (!row) return;
+    if (row) toggleRow(row);
+  });
+  function toggleRow(row) {
     const wasOpen = row.classList.contains('open');
-    for (const r of E.list.querySelectorAll('.row.open')) r.classList.remove('open');
-    if (!wasOpen) row.classList.add('open');
+    for (const r of E.list.querySelectorAll('.row.open')) { r.classList.remove('open'); r.setAttribute('aria-expanded', 'false'); }
+    if (!wasOpen) { row.classList.add('open'); row.setAttribute('aria-expanded', 'true'); }
+  }
+  E.list.addEventListener('keydown', (e) => {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('row')) { e.preventDefault(); toggleRow(e.target); }
   });
   E.last.addEventListener('click', (e) => { const act = e.target.closest('button[data-act]'); if (act) onBoxAction(act.dataset.act, act.dataset.id); });
+
+  document.addEventListener('pointerdown', () => {
+    if (audio.ctx && audio.ctx.state !== 'running') unlockAudio();
+    if (cam.running && !wakeLock) keepAwake();
+  }, { capture: true, passive: true });
 
   let resumeOnShow = false;
   document.addEventListener('visibilitychange', () => {
@@ -2184,7 +2363,7 @@ UHnI4pCfU/hQA71xz+NJ34oJHGcH60N+fPJoATqM5HHelxk9c4P+cUdew6dRSHn69RQAuDu4Hajg5Gef
       if (resumeOnShow) {
         resumeOnShow = false;
         startCamera().then(() => { if (!photoMode) { startPump(); setDot('live'); } renderHud(true); })
-          .catch((err) => { setDot('err'); showStart(`<b>Камера не включилась</b>${esc(cameraErrorText(err))}`); });
+          .catch((err) => { setDot('err'); showStart(`<b>Камера не включилась</b>${esc(cameraErrorText(err))}`, err); });
       }
     }
   });
@@ -2195,7 +2374,7 @@ UHnI4pCfU/hQA71xz+NJ34oJHGcH60N+fPJoATqM5HHelxk9c4P+cUdew6dRSHn69RQAuDu4Hajg5Gef
   syncSettingsUi();
   renderAll();
   if (inFrame) {
-    E.startNote.textContent = 'Если камера здесь не включится, распознайте фото — или откройте страницу в Safari со своего сервера.';
+    E.startNote.textContent = 'Если камера здесь не включится, распознайте фото — или откройте сканер по ссылке в Safari.';
   }
   // test hook for automated checks
   window.__imei = { asm, engine, cam, settings, stats, scanPhoto, sampleBlob };
